@@ -46,6 +46,18 @@ def main():
   for bm in full_graph.benchmarks:
     print("Benchmark " + bm.zone1 + "--" + bm.zone2)
 
+  create_benchmark_schedule(full_graph)
+
+
+
+def create_benchmark_schedule(benchmark_graph):
+
+  pass
+
+
+def run_benchmarks(benchmark_graph):
+  pass
+
 
 def create_graph_from_config_list(benchmark_config_list):
   """[summary]
@@ -112,59 +124,35 @@ def create_graph_from_config_list(benchmark_config_list):
     if bm.zone1 != bm.zone2:
       cpu_count = cpu_count_from_machine_type(bm.cloud, bm.machine_type)
 
-      success1, status1 = full_graph.check_if_can_add_vm(cpu_count=cpu_count,
-                                                         zone=bm.zone1,
-                                                         os_type=bm.os_type,
-                                                         network_tier=bm.network_tier,
-                                                         machine_type=bm.machine_type,
-                                                         cloud=bm.cloud)
+      print("Trying to add " + bm.zone1 + " and " + bm.zone2)
 
-      success2, status2 = full_graph.check_if_can_add_vm(cpu_count=cpu_count,
-                                                         zone=bm.zone2,
-                                                         os_type=bm.os_type,
-                                                         network_tier=bm.network_tier,
-                                                         machine_type=bm.machine_type,
-                                                         cloud=bm.cloud)
+      success1, tmp_vm1 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
+                                                    zone=bm.zone1,
+                                                    os_type=bm.os_type,
+                                                    network_tier=bm.network_tier,
+                                                    machine_type=bm.machine_type,
+                                                    cloud=bm.cloud)
 
+      success2, tmp_vm2 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
+                                                    zone=bm.zone2,
+                                                    os_type=bm.os_type,
+                                                    network_tier=bm.network_tier,
+                                                    machine_type=bm.machine_type,
+                                                    cloud=bm.cloud)
+
+      # added both vms
       if success1 and success2:
-
-        print("Trying to add " + bm.zone1 + " and " + bm.zone2)
-
-        suc1, tmp_vm1 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                      zone=bm.zone1,
-                                                      os_type=bm.os_type,
-                                                      network_tier=bm.network_tier,
-                                                      machine_type=bm.machine_type,
-                                                      cloud=bm.cloud)
-
-        suc2, tmp_vm2 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                      zone=bm.zone2,
-                                                      os_type=bm.os_type,
-                                                      network_tier=bm.network_tier,
-                                                      machine_type=bm.machine_type,
-                                                      cloud=bm.cloud)
-
         full_graph.benchmarks.append(bm)
-
+      # added one, other exists
       elif (success1 and tmp_vm2):
-        print("ADD VM 1")
-        suc1, tmp_vm1 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                      zone=bm.zone1,
-                                                      os_type=bm.os_type,
-                                                      network_tier=bm.network_tier,
-                                                      machine_type=bm.machine_type,
-                                                      cloud=bm.cloud)
         full_graph.benchmarks.append(bm)
+      # added one, other exsists
       elif (success2 and tmp_vm1):
-        print("ADD VM 2")
-        suc2, tmp_vm2 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                      zone=bm.zone2,
-                                                      os_type=bm.os_type,
-                                                      network_tier=bm.network_tier,
-                                                      machine_type=bm.machine_type,
-                                                      cloud=bm.cloud)
         full_graph.benchmarks.append(bm)
-      elif:
+      #both exist already
+      elif (tmp_vm1 and tmp_vm2):
+        full_graph.benchmarks.append(bm)
+      else:
         print("WAITLISTED")
         full_graph.benchmark_wait_list.append(bm)
 

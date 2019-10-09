@@ -1,6 +1,4 @@
-import graph
-
-class VirtualMachine(graph.Node):
+class VirtualMachine():
   """[summary]
   
   [description]
@@ -8,6 +6,7 @@ class VirtualMachine(graph.Node):
 
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None, cloud=None, 
                network_tier=None, vpn=False, vpn_gateway_count=0, vpn_tunnel_count=0):        
+    self.node_id = node_id
     self.cpu_count = cpu_count
     self.os_type = os_type
     self.zone = zone
@@ -17,19 +16,4 @@ class VirtualMachine(graph.Node):
     self.vpn = vpn
     self.ssh_key = None
     self.status = 'Not Created'
-    # self.ssh_key = None
-    # self.ip = None
-    
-    graph.Node.__init__(self, node_id)
-    
-  def add_adjacent_node(self, adjacent_node):
-    self.adjacent_node_list.append(adjacent_node)
-    
-  def add_edge(self, edge):
-    self.edge_list.append(edge)
-  
-  def create_edge(self, adjacent_node, benchmark):
-    pass
-  
-  def add_benchmark(self, benchmark):
-    pass
+    # self.ip_address = None

@@ -11,6 +11,7 @@ import subprocess
 import json
 import region
 import benchmark
+import networkx as nx
 
 # TODO fix config parse
 # currently not working correctly
@@ -48,6 +49,12 @@ def main():
 
   create_benchmark_schedule(full_graph)
 
+  print(full_graph.get_list_of_nodes())
+  print(full_graph.get_list_of_edges())
+  print(full_graph.maximum_matching())
+
+  full_graph.create_vm(full_graph.graph.nodes[0]['vm'])
+
 
 
 def create_benchmark_schedule(benchmark_graph):
@@ -72,7 +79,10 @@ def create_graph_from_config_list(benchmark_config_list):
     [type]
   """
 
-  full_graph = benchmark_graph.BenchmarkGraph()
+  full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub", 
+                                              ssh_priv="ssh_key", 
+                                              ssl_cert="cert.pem", 
+                                              pkb_location="python /home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py")
 
   # First pass, find all the regions and add them to the graph
   # config[0] is the benchmark_name
@@ -86,11 +96,6 @@ def create_graph_from_config_list(benchmark_config_list):
     new_region = region.Region(region_name=key,
                                cpu_quota=region_dict[key]['CPUS']['limit'])
     full_graph.add_region_if_not_exists(new_region=new_region)
-
-  
-
-  # benchmark_config_list.append(copy.deepcopy(benchmark_config_list[0]))
-
 
   # This takes all the stuff from the config dictionaries
   # and puts them in benchmark objects
@@ -140,18 +145,25 @@ def create_graph_from_config_list(benchmark_config_list):
                                                     machine_type=bm.machine_type,
                                                     cloud=bm.cloud)
 
+      add_vms_and_benchmark = False
       # added both vms
-      if success1 and success2:
-        full_graph.benchmarks.append(bm)
+      if (success1 and success2):
+        add_vms_and_benchmark = True
       # added one, other exists
       elif (success1 and tmp_vm2):
-        full_graph.benchmarks.append(bm)
+        add_vms_and_benchmark = True
       # added one, other exsists
       elif (success2 and tmp_vm1):
-        full_graph.benchmarks.append(bm)
-      #both exist already
+        add_vms_and_benchmark = True
+      # both exist already
       elif (tmp_vm1 and tmp_vm2):
+        add_vms_and_benchmark = True
+
+      if add_vms_and_benchmark:
+        bm.vms.append(tmp_vm1)
+        bm.vms.append(tmp_vm2)
         full_graph.benchmarks.append(bm)
+        full_graph.add_benchmark(bm, tmp_vm1.node_id, tmp_vm2.node_id)
       else:
         print("WAITLISTED")
         full_graph.benchmark_wait_list.append(bm)
@@ -253,7 +265,8 @@ def parse_config_file(path="configs/file.yaml"):
   if not isinstance(yaml_contents, dict):
     return []
 
-  benchmark_name = yaml_contents.keys()[0]
+  print(yaml_contents.keys())
+  benchmark_name = list(yaml_contents.keys())[0]
   config_dict = yaml_contents[benchmark_name]
 
   flag_matrix_name = config_dict.get('flag_matrix', None)

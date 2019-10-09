@@ -1,7 +1,7 @@
 import graph
 
 
-class Region(graph.NodeGroup):
+class Region():
   """[summary]
 
   [description]
@@ -12,7 +12,6 @@ class Region(graph.NodeGroup):
     self.usage = 0.0
     self.virtual_machines = []
     self.name = region_name
-    graph.NodeGroup.__init__(self)
 
   def get_available_cpus(self):
     return self.cpu_quota - self.usage

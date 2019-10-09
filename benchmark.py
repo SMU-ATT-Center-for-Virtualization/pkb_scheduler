@@ -16,6 +16,7 @@ class Benchmark():
     self.os_type = os_type
     self.network_tier = network_tier
     self.vpn = vpn
+    self.vms = []
     # self.ssh_key = None
     # self.ip = None
     

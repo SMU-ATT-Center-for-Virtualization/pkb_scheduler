@@ -1,23 +1,20 @@
 import region
 import virtual_machine
-import graph
 import benchmark
+import networkx as nx
 
-class BenchmarkGraph(graph.Graph):
+class BenchmarkGraph():
   """[summary]
   [description]
   """
 
   def __init__(self):
+    self.graph = nx.MultiGraph()
     self.regions = {}
     self.virtual_machines = []
     self.benchmarks = []
     self.benchmark_wait_list = []
     self.vm_total_count = 0
-    graph.Graph.__init__(self)
-
-    self.regions = self.node_groups
-    self.virtual_machines = self.nodes
 
   def add_region_if_not_exists(self, new_region):
     if new_region.name not in self.regions:
@@ -40,8 +37,8 @@ class BenchmarkGraph(graph.Graph):
 
     # print(os_type)
 
-    for vm in self.virtual_machines:
-
+    for index in self.graph.nodes:
+      vm = self.graph.nodes[index]['vm']
       if (vm.cloud == cloud and
           vm.zone == zone and
           vm.machine_type == machine_type and
@@ -59,8 +56,8 @@ class BenchmarkGraph(graph.Graph):
   def get_vm_if_exists(self, cloud, zone, machine_type,
                          network_tier, os_type, vpn=False):
 
-    for vm in self.virtual_machines:
-
+    for index in self.graph.nodes:
+      vm = self.graph.nodes[index]['vm']
       if (vm.cloud == cloud and
           vm.zone == zone and
           vm.machine_type == machine_type and
@@ -104,7 +101,8 @@ class BenchmarkGraph(graph.Graph):
       return False, tmp_vm
 
     # create virtual_machine object
-    vm = virtual_machine.VirtualMachine(node_id=self.vm_total_count,
+    vm_id = self.vm_total_count
+    vm = virtual_machine.VirtualMachine(node_id=vm_id,
                                         cpu_count=cpu_count,
                                         zone=zone,
                                         os_type=os_type,
@@ -120,8 +118,20 @@ class BenchmarkGraph(graph.Graph):
     if status is True:
       print("adding vm in zone " + vm.zone)
       self.virtual_machines.append(vm)
+      self.graph.add_node(vm_id, vm=vm)
       self.vm_total_count += 1
       return True, vm
     # return false, -1 if not enough space in region
     else:
-      return False, None
+      return False, None, None
+
+  def get_list_of_nodes(self):
+    return self.graph.nodes
+
+  def get_list_of_edges(self):
+    return self.graph.edges
+
+  def add_benchmark(self, new_benchmark, node1, node2):
+    #  M[v1][v2]
+    # M.add_edges_from([(v1,v2,{'route':45645})])
+    self.graph.add_edges_from([(node1, node2, {'bm':new_benchmark})])

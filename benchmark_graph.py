@@ -2,19 +2,33 @@ import region
 import virtual_machine
 import benchmark
 import networkx as nx
+import threading
+from queue import Queue
+import time
+import os
+import subprocess
 
 class BenchmarkGraph():
   """[summary]
   [description]
   """
 
-  def __init__(self):
+  def __init__(self, ssh_pub="", ssh_priv="", ssl_cert="", pkb_location="./pkb.py"):
     self.graph = nx.MultiGraph()
     self.regions = {}
     self.virtual_machines = []
     self.benchmarks = []
     self.benchmark_wait_list = []
     self.vm_total_count = 0
+
+    self.network = {}
+    #TODO create randomized run ID
+    self.network['name'] = 'pkb-scheduler'
+    self.ssh_private_key_file = ssh_priv
+    self.ssh_public_key_file = ssh_pub
+    self.ssl_cert_file = ssl_cert
+    self.pkb_location = pkb_location
+
 
   def add_region_if_not_exists(self, new_region):
     if new_region.name not in self.regions:
@@ -135,3 +149,40 @@ class BenchmarkGraph():
     #  M[v1][v2]
     # M.add_edges_from([(v1,v2,{'route':45645})])
     self.graph.add_edges_from([(node1, node2, {'bm':new_benchmark})])
+
+  def maximum_matching(self):
+    return nx.max_weight_matching(self.graph, maxcardinality=True)
+
+
+  def create_vms(self):
+    # go through nodes in network. Stand up Vms that have not been created
+    node_list = list(self.graph.nodes)
+
+    for index in node_list:
+      vm = self.graph.nodes[index]['vm']
+      # TODO: thread this bitch
+      create_vm(vm)
+    pass
+
+  def create_vm(self, vm):
+    # TODO make this more robust
+    cmd = (self.pkb_location + " --benchmarks=vm_setup"
+            + " --gce_network_name=pkb-scheduler"
+            + " --ssh_key_file=" + self.ssh_private_key_file
+            + " --ssl_cert_file=" + self.ssl_cert_file
+            + " --zones=" + vm.zone
+            + " --os_type=" + vm.os_type
+            + " --machine_type=" + vm.machine_type
+            + " --cloud=" + vm.cloud
+            + " --gce_network_tier=" + vm.network_tier
+            + " --run_stage=provision,prepare")
+
+    process = subprocess.Popen(cmd.split(),
+                             stdout=subprocess.PIPE)
+    output, error = process.communicate()
+
+    # TODO change vm state to created
+    # get information about this vm from somewhere?
+
+    print(output)
+    print(error)

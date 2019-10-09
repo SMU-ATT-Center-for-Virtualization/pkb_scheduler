@@ -51,7 +51,9 @@ def main():
 
   print(full_graph.get_list_of_nodes())
   print(full_graph.get_list_of_edges())
-  print(nx.maximal_matching(full_graph.graph))
+  print(full_graph.maximum_matching())
+
+  full_graph.create_vm(full_graph.graph.nodes[0]['vm'])
 
 
 
@@ -77,7 +79,10 @@ def create_graph_from_config_list(benchmark_config_list):
     [type]
   """
 
-  full_graph = benchmark_graph.BenchmarkGraph()
+  full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub", 
+                                              ssh_priv="ssh_key", 
+                                              ssl_cert="cert.pem", 
+                                              pkb_location="python /home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py")
 
   # First pass, find all the regions and add them to the graph
   # config[0] is the benchmark_name
@@ -142,7 +147,7 @@ def create_graph_from_config_list(benchmark_config_list):
 
       add_vms_and_benchmark = False
       # added both vms
-      if success1 and success2:
+      if (success1 and success2):
         add_vms_and_benchmark = True
       # added one, other exists
       elif (success1 and tmp_vm2):
@@ -260,7 +265,8 @@ def parse_config_file(path="configs/file.yaml"):
   if not isinstance(yaml_contents, dict):
     return []
 
-  benchmark_name = yaml_contents.keys()[0]
+  print(yaml_contents.keys())
+  benchmark_name = list(yaml_contents.keys())[0]
   config_dict = yaml_contents[benchmark_name]
 
   flag_matrix_name = config_dict.get('flag_matrix', None)

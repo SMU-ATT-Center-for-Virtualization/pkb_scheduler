@@ -6,7 +6,7 @@ class Benchmark():
 
   def __init__(self, benchmark_id, benchmark_type, zone1, zone2, more_zones=[],
                os_type='ubuntu1804', machine_type=None, cloud='GCP',
-               network_tier='Premium', vpn=False, vpn_gateway_count=0,
+               network_tier='premium', vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, flags=None):        
 
     self.zone1 = zone1

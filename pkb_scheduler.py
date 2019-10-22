@@ -31,7 +31,8 @@ from absl import app
 # add in logic to not teardown a vm if a benchmark on the waitlist needs it
 
 # TODO add logic to add identical VM if there is space
-# TODO add logic to spread out tests across existing identical VMs
+
+# TODO make work for config directories
 
 # re get quota on every creation/deletion
 
@@ -43,9 +44,21 @@ flags.DEFINE_boolean('no_run', False,
                      'run them')
 flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
                     'prints debug statements')
+
 #not implemented
-flags.DEFINE_boolean('optimize_time', True, 
-                    'If true, it will make duplicate vms' )
+flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'] 
+                  'Chooses whether algorithm should be more time or ' 
+                   'space efficient.')
+
+flags.DEFINE_boolean('allow_duplicate_vms', True, 
+                     'Defines whether or not tool should create '
+                     'multiple identical VMs if there is capacity '
+                     'and run tests in parallel or if it should '
+                     'wait for existing vm to become available')
+
+flags.DEFINE_string('config', 'config.yaml', 
+                    'pass config file or directory')
+
 
 logger = None
 
@@ -56,8 +69,10 @@ def main(argv):
   start_time = time.time()
 
   logger.debug("DEBUG LOGGING MODE")
+  config_file = FLAGS.config
+  benchmark_config_list = parse_config_file(config_file)
 
-  benchmark_config_list = parse_config_file("gartner_all.yaml")
+  print(benchmark_config_list)
 
   logger.debug("\nNUMBER OF CONFIGS")
   logger.debug(len(benchmark_config_list))
@@ -69,6 +84,9 @@ def main(argv):
   # print(benchmark_config_list)
 
   full_graph = create_graph_from_config_list(benchmark_config_list)
+
+
+##########################
 
   logger.debug("\nVMS TO CREATE:")
   for vm in full_graph.virtual_machines:
@@ -86,22 +104,13 @@ def main(argv):
   logger.debug(full_graph.get_list_of_edges())
   logger.debug("\n\n")
 
-  # full_graph.create_vm(full_graph.graph.nodes[0]['vm'])
-  # full_graph.create_vm(full_graph.graph.nodes[1]['vm'])
-
-  # full_graph.create_vms()
-  # maximum_set = list(full_graph.maximum_matching())
-  # print(maximum_set)
-  # full_graph.run_benchmark_set(maximum_set)
-
-  # support benchmarks with more than two endpoints
-
   run_benchmarks(full_graph)
 
   end_time = time.time()
   total_run_time = (end_time - start_time)
   print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
+############################################################
 
   # full_graph.create_benchmark_config_file(full_graph.benchmarks[0], full_graph.benchmarks[0].vms)
 
@@ -142,6 +151,7 @@ def run_benchmarks(benchmark_graph):
     print(benchmark_graph.benchmarks_left())
     time.sleep(2)
 
+  print(len(benchmarks_run))
   print("BMS RUN EACH LOOP")
   for bmset in benchmarks_run:
     print(len(bmset))

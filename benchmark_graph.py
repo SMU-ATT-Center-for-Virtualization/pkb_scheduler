@@ -345,18 +345,24 @@ class BenchmarkGraph():
     return True
 
 
-  def create_benchmark_config_file(self, bm: Benchmark, vm_list):
+  def create_benchmark_config_file(self, bm, vm_list):
 
     config_yaml = {}
-    # config_yaml['static_vms'] = []
     counter = 1
     vm_yaml_list = []
 
     config_yaml[bm.benchmark_type] = {}
     config_yaml[bm.benchmark_type]['vm_groups'] = {}
+    config_yaml[bm.benchmark_type]['flags'] = bm.flags
+    config_flags = config_yaml[bm.benchmark_type]['flags']
+
+    #TODO move this to the parsing bit
+    config_flags.pop("zones", None)
+    config_flags.pop("extra_zones", None)
+    config_flags.pop("machine_type", None)
+    config_flags.pop("cloud", None)
 
     for vm in vm_list:
-
       temp = config_yaml[bm.benchmark_type]['vm_groups']
       vm_num = 'vm_' + str(counter)
       temp[vm_num] = {}

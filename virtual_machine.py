@@ -80,7 +80,8 @@ class VirtualMachine():
             + " --machine_type=" + self.machine_type
             + " --cloud=" + self.cloud
             + " --gce_network_tier=" + self.network_tier
-            + " --run_stage=provision,prepare")
+            + " --run_stage=provision,prepare"
+            + " --gce_remote_access_firewall_rule=allow-ssh")
 
     if FLAGS.no_run:
       print("CREATE INSTANCE: " + cmd)

@@ -5,15 +5,15 @@
 #Includes iperf, netperf, ping
 #Tests between all zones in region us-central-1
 #zones defined in anchors.yaml
-throughput_latency_jitter:
+iperf:
   flag_matrix: fmatrix
   flag_matrix_filters:
     fmatrix: "zones < extra_zones"
   flag_matrix_defs:
     fmatrix:
-      zones: [us-central1-a, us-central1-b]
-      extra_zones: [us-east1-b, us-east1-c]
-      machine_type: [n1-standard-16]
+      zones: [northamerica-northeast1-a]
+      extra_zones: [northamerica-northeast1-b]
+      machine_type: [n1-standard-2, n1-standard-4]
   flags:
     cloud: GCP
     iperf_runtime_in_seconds: 30

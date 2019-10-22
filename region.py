@@ -7,9 +7,10 @@ class Region():
   [description]
   """
 
-  def __init__(self, region_name, cpu_quota=None):
+  def __init__(self, region_name, cpu_quota=0.0, usage=0.0):
     self.cpu_quota = cpu_quota
-    self.usage = 0.0
+    self.usage = usage
+    self.reserved_usage = 0.0
     self.virtual_machines = []
     self.name = region_name
 
@@ -23,7 +24,13 @@ class Region():
     if self.get_available_cpus() >= vm.cpu_count:
       self.virtual_machines.append(vm)
       self.usage += vm.cpu_count
+      print("USAGE: " + str(self.usage) + " QUOTA: " + str(self.cpu_quota))
       return True
     else:
       print("Quota reached for region: " + self.name)
       return False
+
+  def remove_virtual_machine(self, vm):
+    # TODO add safety checks here
+    self.virtual_machines.remove(vm)
+    self.usage -= vm.cpu_count

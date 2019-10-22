@@ -1,0 +1,34 @@
+throughput_latency_jitter:
+  description: Run tlj over vpn 
+  flags:
+    use_vpn: True
+    vpn_service_gateway_count: 1 # gw_count needs to be in global flags so it's available to network setup
+    iperf_runtime_in_seconds: 30
+    netperf_histogram_buckets: 1000
+    netperf_benchmarks: TCP_RR,TCP_STREAM,UDP_RR,UDP_STREAM
+    #netperf_rr_test_length: 100000
+    netperf_test_length: 30
+    netperf_num_streams: 4
+    iperf_sending_thread_count: 1,32
+    #ping_also_run_using_external_ip: True
+    vpn_service_tunnel_count: 2
+  vpn_service:
+    tunnel_count: 2
+    ike_version: 2
+    routing_type: static
+  vm_groups:
+    vm_1:
+      cloud: GCP
+      cidr: 10.0.1.0/24
+      #zone: us-west1-b
+      vm_spec: 
+        GCP:
+            zone: us-east4-a
+            machine_type: n1-standard-2
+    vm_2:
+      cloud: GCP
+      cidr: 192.168.1.0/24
+      vm_spec:
+        GCP:
+            zone: europe-west2-a
+            machine_type: n1-standard-2

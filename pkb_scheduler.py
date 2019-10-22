@@ -1,36 +1,61 @@
-import virtual_machine
-import graph
+# import graph
 import yaml
 import six
-import collections
+# import collections
 import copy
 import itertools
 import os
 import benchmark_graph
 import subprocess
 import json
-import region
-import benchmark
-import networkx as nx
+import time
+import logging
+# import networkx as nx
 
-# TODO fix config parse
-# currently not working correctly
+from typing import List, Dict, Tuple, Set
+from benchmark import Benchmark
+from virtual_machine import VirtualMachine
+from region import Region
+from absl import flags
+from absl import app
+
+# TODO
+# parse diff types of files
+# tighter cohesion with pkb (use pkb classes)?
+# add in timing metrics
+# add phase to make more VMs
+
+# put configs into unique directory
+#   generate unique id per pkb_scheduler run
+#   put all configs into that directory
+# add in logic to not teardown a vm if a benchmark on the waitlist needs it
+
+# TODO add logic to add identical VM if there is space
+# TODO add logic to spread out tests across existing identical VMs
+
+FLAGS = flags.FLAGS
 
 
-def main():
+flags.DEFINE_boolean('no_run', False, 
+                     'Prints out commands, but does not actually '
+                     'run them')
+flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
+                    'prints debug statements')
 
-  # a.add_adjacent_node(b)
-  # e = graph.edge(a, b, "adfasfd")
+logger = None
 
-  # a.add_edge(e)
-  # print(a.node_id)
-  # print(a.adjacent_node_list[0].node_id)
-  # print(a.edge_list[0].metadata)
+def main(argv):
 
-  benchmark_config_list = parse_config_file("example1.yaml")
+  setup_logging()
 
-  print("NUMBER OF CONFIGS")
-  print(len(benchmark_config_list))
+  start_time = time.time()
+
+  logger.debug("DEBUG LOGGING MODE")
+
+  benchmark_config_list = parse_config_file("gartner_all.yaml")
+
+  logger.debug("\nNUMBER OF CONFIGS")
+  logger.debug(len(benchmark_config_list))
   # for config in benchmark_config_list:
   #   print(config)
 
@@ -40,30 +65,77 @@ def main():
 
   full_graph = create_graph_from_config_list(benchmark_config_list)
 
+  logger.debug("\nVMS TO CREATE:")
   for vm in full_graph.virtual_machines:
-    print(vm.zone + " " + vm.network_tier + " " + vm.machine_type
+    logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type
           + " " + vm.os_type + " " + vm.cloud)
 
+  logger.debug("\nBENCHMARKS TO RUN:")
   for bm in full_graph.benchmarks:
-    print("Benchmark " + bm.zone1 + "--" + bm.zone2)
+    logger.debug("Benchmark " + bm.zone1 + "--" + bm.zone2)
 
   create_benchmark_schedule(full_graph)
 
-  print(full_graph.get_list_of_nodes())
-  print(full_graph.get_list_of_edges())
-  print(full_graph.maximum_matching())
+  logger.debug("\n\nFULL GRAPH:")
+  logger.debug(full_graph.get_list_of_nodes())
+  logger.debug(full_graph.get_list_of_edges())
+  logger.debug("\n\n")
 
-  full_graph.create_vm(full_graph.graph.nodes[0]['vm'])
+  # full_graph.create_vm(full_graph.graph.nodes[0]['vm'])
+  # full_graph.create_vm(full_graph.graph.nodes[1]['vm'])
+
+  # full_graph.create_vms()
+  # maximum_set = list(full_graph.maximum_matching())
+  # print(maximum_set)
+  # full_graph.run_benchmark_set(maximum_set)
+
+  # support benchmarks with more than two endpoints
+
+  run_benchmarks(full_graph)
+
+  end_time = time.time()
+  total_run_time = (end_time - start_time)
+  print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
 
+  # full_graph.create_benchmark_config_file(full_graph.benchmarks[0], full_graph.benchmarks[0].vms)
+
+def setup_logging():
+
+  global logger 
+  numeric_level = getattr(logging, FLAGS.log_level.upper(), None)
+  # create logger
+  logger = logging.getLogger('pkb_scheduler')
+  logger.setLevel(numeric_level)
+  # create console handler and set level to debug
+  ch = logging.StreamHandler()
+  ch.setLevel(numeric_level)
+  formatter = logging.Formatter('%(message)s')
+  ch.setFormatter(formatter)
+  logger.propagate = False
+  logger.addHandler(ch)
+
+  return logger
 
 def create_benchmark_schedule(benchmark_graph):
-
   pass
 
 
 def run_benchmarks(benchmark_graph):
-  pass
+  benchmark_graph.create_vms()
+  
+  while benchmark_graph.benchmarks_left() > 0:
+    maximum_set = list(benchmark_graph.maximum_matching())
+    benchmark_graph.run_benchmark_set(maximum_set)
+    # possibly check
+    # Completion statuses can be found at: 
+    # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
+    # before removal of edges
+    benchmark_graph.remove_orphaned_nodes()
+    benchmark_graph.add_benchmarks_from_waitlist()
+    print(benchmark_graph.benchmarks_left())
+    time.sleep(2)
+    
 
 
 def create_graph_from_config_list(benchmark_config_list):
@@ -93,8 +165,9 @@ def create_graph_from_config_list(benchmark_config_list):
   region_dict = get_region_info()
   for key in region_dict:
     # if region['description'] in full_graph.regions
-    new_region = region.Region(region_name=key,
-                               cpu_quota=region_dict[key]['CPUS']['limit'])
+    new_region = Region(region_name=key,
+                        cpu_quota=region_dict[key]['CPUS']['limit'],
+                        usage=region_dict[key]['CPUS']['usage'])
     full_graph.add_region_if_not_exists(new_region=new_region)
 
   # This takes all the stuff from the config dictionaries
@@ -107,56 +180,55 @@ def create_graph_from_config_list(benchmark_config_list):
     region_name = config[1]['flags']['zones']
     # print(config[1]['flags']['extra_zones'])
     # full_graph.add_region_if_not_exists(region_name)
-    new_benchmark = benchmark.Benchmark(benchmark_id=benchmark_counter,
-                                        benchmark_type=config[0],
-                                        zone1=config[1]['flags']['zones'],
-                                        zone2=config[1]['flags']['extra_zones'],
-                                        machine_type=config[1]['flags']['machine_type'],
-                                        cloud=config[1]['flags']['cloud'],
-                                        flags=config[1]['flags'])
+    new_benchmark = Benchmark(benchmark_id=benchmark_counter,
+                              benchmark_type=config[0],
+                              zone1=config[1]['flags']['zones'],
+                              zone2=config[1]['flags']['extra_zones'],
+                              machine_type=config[1]['flags']['machine_type'],
+                              cloud=config[1]['flags']['cloud'],
+                              flags=config[1]['flags'])
     temp_benchmarks.append(new_benchmark)
     benchmark_counter += 1
 
-  print("Number of benchmarks: " + str(len(temp_benchmarks)))
+  logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
 
   # create virtual machines (node)
   # attach with edges and benchmarks
   for bm in temp_benchmarks:
-
-    print(bm.zone1)
-    print(bm.zone2)
-
     if bm.zone1 != bm.zone2:
       cpu_count = cpu_count_from_machine_type(bm.cloud, bm.machine_type)
-
-      print("Trying to add " + bm.zone1 + " and " + bm.zone2)
+      logger.debug("Trying to add " + bm.zone1 + " and " + bm.zone2)
 
       success1, tmp_vm1 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                    zone=bm.zone1,
-                                                    os_type=bm.os_type,
-                                                    network_tier=bm.network_tier,
-                                                    machine_type=bm.machine_type,
-                                                    cloud=bm.cloud)
+                                                        zone=bm.zone1,
+                                                        os_type=bm.os_type,
+                                                        network_tier=bm.network_tier,
+                                                        machine_type=bm.machine_type,
+                                                        cloud=bm.cloud)
 
       success2, tmp_vm2 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                    zone=bm.zone2,
-                                                    os_type=bm.os_type,
-                                                    network_tier=bm.network_tier,
-                                                    machine_type=bm.machine_type,
-                                                    cloud=bm.cloud)
+                                                        zone=bm.zone2,
+                                                        os_type=bm.os_type,
+                                                        network_tier=bm.network_tier,
+                                                        machine_type=bm.machine_type,
+                                                        cloud=bm.cloud)
 
       add_vms_and_benchmark = False
       # added both vms
       if (success1 and success2):
+        logger.debug("Added Both")
         add_vms_and_benchmark = True
       # added one, other exists
       elif (success1 and tmp_vm2):
+        logger.debug("Added 1")
         add_vms_and_benchmark = True
       # added one, other exsists
       elif (success2 and tmp_vm1):
+        logger.debug("Added 1")
         add_vms_and_benchmark = True
       # both exist already
       elif (tmp_vm1 and tmp_vm2):
+        logger.debug("Both Exist")
         add_vms_and_benchmark = True
 
       if add_vms_and_benchmark:
@@ -165,13 +237,14 @@ def create_graph_from_config_list(benchmark_config_list):
         full_graph.benchmarks.append(bm)
         full_graph.add_benchmark(bm, tmp_vm1.node_id, tmp_vm2.node_id)
       else:
-        print("WAITLISTED")
+        logger.debug("BM WAITLISTED")
+        bm.status = "Waitlist"
         full_graph.benchmark_wait_list.append(bm)
 
     else:
-      print("VM 1 and VM 2 are the same region")
+      logger.debug("VM 1 and VM 2 are the same zone")
 
-  print("Number of benchmarks: " + str(len(full_graph.benchmarks)))
+  logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 
 
   # Second pass, add
@@ -331,4 +404,4 @@ def parse_named_config(config):
 
 
 if __name__ == "__main__":
-  main()
+  app.run(main)

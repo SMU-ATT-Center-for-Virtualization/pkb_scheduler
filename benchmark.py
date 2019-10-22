@@ -9,6 +9,8 @@ class Benchmark():
                network_tier='premium', vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, flags=None):        
 
+    self.benchmark_id = benchmark_id
+    self.benchmark_type = benchmark_type
     self.zone1 = zone1
     self.zone2 = zone2
     self.machine_type = machine_type
@@ -17,20 +19,11 @@ class Benchmark():
     self.network_tier = network_tier
     self.vpn = vpn
     self.vms = []
+    self.status = "Not Executed"
+    self.config_file = None
     # self.ssh_key = None
     # self.ip = None
-    
-  def add_adjacent_node(self, adjacent_node):
-    self.adjacent_node_list.append(adjacent_node)
-    
-  def add_edge(self, edge):
-    self.edge_list.append(edge)
-  
-  def create_edge(self, adjacent_node, benchmark):
-    pass
-  
-  def add_benchmark(self, benchmark):
-    pass
-  
 
 
+  def run(self):
+    pass

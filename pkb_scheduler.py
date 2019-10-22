@@ -33,6 +33,8 @@ from absl import app
 # TODO add logic to add identical VM if there is space
 # TODO add logic to spread out tests across existing identical VMs
 
+# re get quota on every creation/deletion
+
 FLAGS = flags.FLAGS
 
 
@@ -42,7 +44,7 @@ flags.DEFINE_boolean('no_run', False,
 flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
                     'prints debug statements')
 #not implemented
-flags.DEFINE_string('optimize_time', True, 
+flags.DEFINE_boolean('optimize_time', True, 
                     'If true, it will make duplicate vms' )
 
 logger = None
@@ -126,9 +128,10 @@ def create_benchmark_schedule(benchmark_graph):
 
 def run_benchmarks(benchmark_graph):
   benchmark_graph.create_vms()
-  
+  benchmarks_run = []
   while benchmark_graph.benchmarks_left() > 0:
     maximum_set = list(benchmark_graph.maximum_matching())
+    benchmarks_run.append(maximum_set)
     benchmark_graph.run_benchmark_set(maximum_set)
     # possibly check
     # Completion statuses can be found at: 
@@ -138,6 +141,10 @@ def run_benchmarks(benchmark_graph):
     benchmark_graph.add_benchmarks_from_waitlist()
     print(benchmark_graph.benchmarks_left())
     time.sleep(2)
+
+  print("BMS RUN EACH LOOP")
+  for bmset in benchmarks_run:
+    print(len(bmset))
     
 
 

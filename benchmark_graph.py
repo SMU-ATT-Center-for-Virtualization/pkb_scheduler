@@ -118,7 +118,7 @@ class BenchmarkGraph():
       if self.required_vm_exists(vm):
         # returns this is vm exists but there is enough space
         # for another
-        return True, "VM exists"
+        return True, "VM Exists. Quota not Exceeded"
       else:
         # returns True if the vm doesn't already exist
         # and if region has enough space
@@ -148,16 +148,28 @@ class BenchmarkGraph():
     tmp_vm_list = self.get_list_if_vm_exists(vm)
 
     if len(tmp_vm_list) > 0:
-      can_add_another, status = check_if_can_add_vm(vm)
-      if status == "VM exists":
-        self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        self.virtual_machines.append(vm)
-        self.graph.add_node(vm_id, vm=vm)
-        self.vm_total_count += 1
-        return True, vm
+      can_add_another, status = self.check_if_can_add_vm(vm)
+      if can_add_another and status == "VM Exists. Quota not Exceeded":
+        status2 = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+        if status2:
+          self.virtual_machines.append(vm)
+          self.graph.add_node(vm_id, vm=vm)
+          self.vm_total_count += 1
+          return True, vm
+        else:
+          logger.debug("QUOTA EXCEEDED")
+          return False, None
       else:
         #TODO return a tmp vm from list. fix this
-        return False, tmp_vm_list[0]
+        tmp_vm_index = 0
+        min_degree_index = 0
+        min_degree = self.graph.degree[tmp_vm_list[0].node_id]
+        while tmp_vm_index < len(tmp_vm_list):
+          degree = self.graph.degree[tmp_vm_list[tmp_vm_index].node_id]
+          if degree < min_degree:
+            min_degree_index = tmp_vm_index
+          tmp_vm_index += 1
+        return False, tmp_vm_list[min_degree_index]
 
     else:
       # try to add vm to region
@@ -173,6 +185,7 @@ class BenchmarkGraph():
         return True, vm
       # return false, -1 if not enough space in region
       else:
+        logger.debug("QUOTA EXCEEDED")
         return False, None
 
   def get_list_of_nodes(self):
@@ -276,6 +289,7 @@ class BenchmarkGraph():
       # TODO change this into a dict?
       bm_data = [bm, benchmarks_to_run_tuples[bm_thread_counter], False]
       bm_thread_results.append(bm_data)
+      logger.debug(bm.zone1 + " <-> " + bm.zone2)
       t = threading.Thread(target=self.run_benchmark, 
                            args=(bm,
                                  bm_thread_results,

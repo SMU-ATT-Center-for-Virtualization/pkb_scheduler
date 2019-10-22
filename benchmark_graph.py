@@ -112,15 +112,17 @@ class BenchmarkGraph():
     return vm_list
 
   def check_if_can_add_vm(self, vm):
-    vm_region = self.get_region_from_zone(cloud, zone)
+    vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
 
-    if self.regions[vm_region].has_enough_cpus(cpu_count):
+    if self.regions[vm_region].has_enough_cpus(vm.cpu_count):
       if self.required_vm_exists(vm):
+        # returns this is vm exists but there is enough space
+        # for another
         return True, "VM exists"
-      # returns True if the vm doesn't already exist
-      # and if region has enough space
       else:
-        return True, "Does not exist"
+        # returns True if the vm doesn't already exist
+        # and if region has enough space
+        return True, "VM does not exist"
 
     return False, "Quota Exceeded"
 
@@ -144,26 +146,34 @@ class BenchmarkGraph():
 
     # if VM with same specs already exists, return false 0
     tmp_vm_list = self.get_list_if_vm_exists(vm)
+
     if len(tmp_vm_list) > 0:
-      can_add_another = check_if_can_add_vm()
-      return False, tmp_vm
+      can_add_another, status = check_if_can_add_vm(vm)
+      if status == "VM exists":
+        self.regions[vm_region].add_virtual_machine_if_possible(vm)
+        self.virtual_machines.append(vm)
+        self.graph.add_node(vm_id, vm=vm)
+        self.vm_total_count += 1
+        return True, vm
+      else:
+        #TODO return a tmp vm from list. fix this
+        return False, tmp_vm_list[0]
 
-    # TODO add logic to add identical VM if there is space
-
-    # try to add vm to region
-    status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-
-    # if successful, also add that vm to virtual_machines list
-    # and increment total number of vms, return True, 1
-    if status is True:
-      print("adding vm in zone " + vm.zone)
-      self.virtual_machines.append(vm)
-      self.graph.add_node(vm_id, vm=vm)
-      self.vm_total_count += 1
-      return True, vm
-    # return false, -1 if not enough space in region
     else:
-      return False, None
+      # try to add vm to region
+      status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+
+      # if successful, also add that vm to virtual_machines list
+      # and increment total number of vms, return True, 1
+      if status is True:
+        print("adding vm in zone " + vm.zone)
+        self.virtual_machines.append(vm)
+        self.graph.add_node(vm_id, vm=vm)
+        self.vm_total_count += 1
+        return True, vm
+      # return false, -1 if not enough space in region
+      else:
+        return False, None
 
   def get_list_of_nodes(self):
     return self.graph.nodes

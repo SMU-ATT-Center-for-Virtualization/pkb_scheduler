@@ -41,6 +41,9 @@ flags.DEFINE_boolean('no_run', False,
                      'run them')
 flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
                     'prints debug statements')
+#not implemented
+flags.DEFINE_string('optimize_time', True, 
+                    'If true, it will make duplicate vms' )
 
 logger = None
 

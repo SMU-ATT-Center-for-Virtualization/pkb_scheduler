@@ -128,7 +128,6 @@ class VirtualMachine():
       elif "UID" in line:
         self.uid = line.split()[1]
 
-    # TODO add in logic if we cant create the VM
     if self.run_uri is None:
       print("INFO SECTION NOT FOUND")
       print("CREATION OUTPUT: ")
@@ -142,12 +141,12 @@ class VirtualMachine():
 
     return (True, self.status)
 
-
-  #TODO, for delete instance store run uri on create
-  #      continue run of that run uri
   def delete_instance(self, pkb_location):
     """Deletes an existing vm instance on the cloud
-    
+
+       Deletes an existing vm instances using the run_uri
+       of that vm and PKB's run_stage functionality
+
     Args:
       vm: [description]
     """
@@ -161,10 +160,10 @@ class VirtualMachine():
     # TODO make the network a parameter
     print("DELETING VM INSTANCE")
     cmd = (pkb_location + " --benchmarks=vm_setup"
-            + " --gce_network_name=pkb-scheduler"
-            + " --cloud=" + self.cloud
-            + " --run_uri=" + self.run_uri
-            + " --run_stage=cleanup,teardown")
+           + " --gce_network_name=pkb-scheduler"
+           + " --cloud=" + self.cloud
+           + " --run_uri=" + self.run_uri
+           + " --run_stage=cleanup,teardown")
 
     if FLAGS.no_run:
       print("DELETING INSTANCE: " + cmd)
@@ -172,7 +171,7 @@ class VirtualMachine():
       return (True, self.status)
 
     process = subprocess.Popen(cmd.split(),
-                             stdout=subprocess.PIPE)
+                               stdout=subprocess.PIPE)
     output, error = process.communicate()
 
     self.status = "Shutdown"

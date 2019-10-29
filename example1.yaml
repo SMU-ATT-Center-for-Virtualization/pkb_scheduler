@@ -16,10 +16,11 @@ iperf:
       machine_type: [n1-standard-2]
   flags:
     cloud: GCP
-    iperf_runtime_in_seconds: 30
+    iperf_runtime_in_seconds: 60
     netperf_histogram_buckets: 1000
     netperf_benchmarks: TCP_RR,TCP_STREAM,UDP_RR,UDP_STREAM
     #netperf_rr_test_length: 100000
-    netperf_test_length: 30
-    netperf_num_streams: 4
-    iperf_sending_thread_count: 1,32
+    netperf_test_length: 60
+    netperf_num_streams: 1,4,32
+    iperf_sending_thread_count: 1,4,32
+    ping_also_run_using_external_ip: True

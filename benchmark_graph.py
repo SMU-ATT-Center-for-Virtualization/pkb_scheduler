@@ -216,7 +216,6 @@ class BenchmarkGraph():
 
     for index in node_list:
       vm = self.graph.nodes[index]['vm']
-      # TODO: thread this bitch
       if vm.status == 'Not Created':
         # vm.create_instance(self.pkb_location)
         t = threading.Thread(target=self.create_vm,
@@ -237,7 +236,6 @@ class BenchmarkGraph():
       print(vm.creation_output)
 
   def create_vm(self, vm):
-    # TODO check quotas again before create
     vm.create_instance(self.pkb_location)
 
   def run_benchmark_set(self, bm_list: List[Tuple[int, int]] ):
@@ -309,7 +307,7 @@ class BenchmarkGraph():
 
     print("All threads done")
 
-    # TODO remove successful benchmarks from graph
+    # TODO remove only successful benchmarks from graph
     for bm_data in bm_thread_results:
       bm = bm_data[0]
       bm_loc = bm_data[1]
@@ -340,9 +338,17 @@ class BenchmarkGraph():
       bm.status = "Executed"
       return True
 
+    start_time = time.time()
+
     process = subprocess.Popen(cmd.split(),
                              stdout=subprocess.PIPE)
     output, error = process.communicate()
+
+    end_time = time.time()
+
+    run_time = end_time - start_time
+
+    self.benchmark_run_times.append(run_time)
 
     # TODO make this actually do something on failure
     result_list[result_index][2] = True
@@ -381,13 +387,11 @@ class BenchmarkGraph():
       vm_config_dict['ip_address'] = vm.ip_address
       vm_config_dict['internal_ip'] = vm.internal_ip
       vm_config_dict['install_packages'] = True
-      vm_config_dict['zones'] = vm.zone
+      vm_config_dict['zone'] = vm.zone
       vm_config_dict['machine_type'] = vm.machine_type
       temp[vm_num]['static_vms'].append(vm_config_dict)
 
       counter += 1
-    # TODO add the flags stuff
-    # config_yaml[bm.benchmark_type]['flags'] = {}
 
     file_name = (self.generated_config_path + "config_" 
                  + str(bm.benchmark_id) + ".yaml")

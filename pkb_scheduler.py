@@ -48,6 +48,8 @@ from absl import app
 
 # TODO thread and optimize what is happening at once when max threads is used
 
+# TODO experiment with install_packages flag
+
 
 FLAGS = flags.FLAGS
 
@@ -129,8 +131,9 @@ def main(argv):
     avg_vm_create_time = sum(filter(None, full_graph.vm_creation_times))/len(list(filter(None, full_graph.vm_creation_times)))
     print("AVG VM CREATION TIME: " + str(avg_vm_create_time))
 
-  avg_benchmark_run_time = 0
-  print("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
+  if len(list(filter(None, full_graph.benchmark_run_times))) > 0:
+    avg_vm_create_time = sum(filter(None, full_graph.benchmark_run_times))/len(list(filter(None, full_graph.benchmark_run_times)))
+    print("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
 ###########################################################
 

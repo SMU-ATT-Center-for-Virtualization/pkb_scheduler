@@ -51,7 +51,7 @@ from absl import app
 
 # TODO experiment with install_packages flag
 
-
+# python3
 
 FLAGS = flags.FLAGS
 
@@ -82,6 +82,9 @@ flags.DEFINE_integer('max_threads', 30,
                       'as it wants. This may result in system slow downs '
                       'or hang ups')
 
+flags.DEFINE_string('pkb_location', 
+                    "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py", 
+                    'location of pkb on disk')
 
 logger = None
 
@@ -93,7 +96,7 @@ def main(argv):
 
   logger.debug("DEBUG LOGGING MODE")
   config_file = FLAGS.config
-  pkb_command = "python /home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py"
+  pkb_command = "python " + FLAGS.pkb_location
   benchmark_config_list = parse_config_file(config_file)
 
   print(benchmark_config_list)

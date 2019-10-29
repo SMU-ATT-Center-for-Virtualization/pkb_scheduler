@@ -50,7 +50,7 @@ class BenchmarkGraph():
     self.gce_project = 'smu-benchmarking'
     self.bigquery_table = 'daily_tests.scheduler_test_1'
     self.bq_project = 'smu-benchmarking'
-    self.generated_config_path = '/home/derek/projects/pkb_scheduler/run_configs/'
+    self.generated_config_path = 'run_configs/'
 
     self.vm_creation_times = []
     self.benchmark_run_times = []

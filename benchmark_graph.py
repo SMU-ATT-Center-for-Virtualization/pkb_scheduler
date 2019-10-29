@@ -114,7 +114,7 @@ class BenchmarkGraph():
   def check_if_can_add_vm(self, vm):
     vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
 
-    if self.regions[vm_region].has_enough_cpus(vm.cpu_count):
+    if self.regions[vm_region].has_enough_resources(vm.cpu_count):
       if self.required_vm_exists(vm):
         # returns this is vm exists but there is enough space
         # for another
@@ -208,26 +208,41 @@ class BenchmarkGraph():
   def maximum_matching(self):
     return nx.max_weight_matching(self.graph, maxcardinality=True)
 
+
   def create_vms(self):
+    # TODO add max thread logic here, make sure things are stood up in a reasonable way
     # go through nodes in network. Stand up Vms that have not been created
+    max_threads = FLAGS.max_threads
+
     node_list = list(self.graph.nodes)
+    node_index = 0
+    created_nodes = []
 
-    vm_threads = []
+    logger.debug("LENGTH NODE LIST: " + str(len(node_list)))
 
-    for index in node_list:
-      vm = self.graph.nodes[index]['vm']
-      if vm.status == 'Not Created':
-        # vm.create_instance(self.pkb_location)
-        t = threading.Thread(target=self.create_vm,
-                             args=(vm,))
-        vm_threads.append(t)
-        t.start()
+    while node_index < len(node_list):
+      vm_threads = []
+      thread_count = 0
+      while (thread_count < max_threads or max_threads < 0) and node_index < len(node_list) :
+      # for index in node_list:
+        logger.debug(node_index)
+        vm = self.graph.nodes[node_index]['vm']
+        if vm.status == 'Not Created':
+          # vm.create_instance(self.pkb_location)
+          t = threading.Thread(target=self.create_vm,
+                               args=(vm,))
+          vm_threads.append(t)
+          t.start()
+          created_nodes.append(node_index)
+          thread_count += 1
 
-    for t in vm_threads:
-      t.join()
-      print("Thread Done")
+        node_index += 1
 
-    for index in node_list:
+      for t in vm_threads:
+        t.join()
+        print("Thread Done")
+
+    for index in created_nodes:
       vm = self.graph.nodes[index]['vm']
       self.vm_creation_times.append(vm.creation_time)
       print("VM INDEX: " + str(index))
@@ -238,7 +253,7 @@ class BenchmarkGraph():
   def create_vm(self, vm):
     vm.create_instance(self.pkb_location)
 
-  def run_benchmark_set(self, bm_list: List[Tuple[int, int]] ):
+  def run_benchmark_set(self, bm_list: List[Tuple[int, int]]):
     """When given a list of tuples, where each element
        in the tuple is a node id, this function figures
        out the benchmark to run between those nodes.
@@ -284,26 +299,35 @@ class BenchmarkGraph():
 
     # run benchmark configs
     # run in parallel
-    bm_threads = []
+    
     bm_thread_results = []
-    bm_thread_counter = 0
+    # bm_thread_result_counter = 0
+    bm_index = 0
 
-    for bm in benchmarks_to_run:
-      # TODO change this into a dict?
-      bm_data = [bm, benchmarks_to_run_tuples[bm_thread_counter], False]
-      bm_thread_results.append(bm_data)
-      logger.debug(bm.zone1 + " <-> " + bm.zone2)
-      t = threading.Thread(target=self.run_benchmark, 
-                           args=(bm,
-                                 bm_thread_results,
-                                 bm_thread_counter,))
-      bm_threads.append(t)
-      t.start()
-      bm_thread_counter += 1
+    max_threads = FLAGS.max_threads
 
-    for bm_thread in bm_threads:
-      bm_thread.join()
-      print("thread done")
+    while bm_index < len(benchmarks_to_run):
+      bm_threads = []
+      bm = benchmarks_to_run[bm_index]
+      thread_count = 0
+      while (thread_count < max_threads or max_threads < 0) and bm_index < len(benchmarks_to_run):
+        # TODO change this into a dict?
+        bm_data = [bm, benchmarks_to_run_tuples[bm_index], False]
+        bm_thread_results.append(bm_data)
+        logger.debug(bm.zone1 + " <-> " + bm.zone2)
+        t = threading.Thread(target=self.run_benchmark, 
+                             args=(bm,
+                                   bm_thread_results,
+                                   bm_index,))
+        bm_threads.append(t)
+        t.start()
+        # bm_thread_result_counter += 1
+        bm_index += 1
+        thread_count += 1
+
+      for bm_thread in bm_threads:
+        bm_thread.join()
+        print("thread done")
 
     print("All threads done")
 

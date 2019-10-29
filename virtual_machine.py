@@ -40,7 +40,7 @@ class VirtualMachine():
     self.creation_output = ""
     self.creation_time = None
     self.deletion_time = None
-    #TODO use this instead of static network name
+    # TODO use this instead of static network name
     self.network_name = None
     # self.ip_address = None
 
@@ -96,7 +96,7 @@ class VirtualMachine():
 
     start_time = time.time()
     process = subprocess.Popen(cmd.split(),
-                             stdout=subprocess.PIPE)
+                               stdout=subprocess.PIPE)
     output, error = process.communicate()
 
     end_time = time.time()

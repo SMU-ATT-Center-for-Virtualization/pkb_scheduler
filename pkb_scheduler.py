@@ -46,9 +46,11 @@ from absl import app
 # TODO add in the linear programming optimization stuff
 # TODO support AWS and multicloud
 
+# TODO implement max_threads
 # TODO thread and optimize what is happening at once when max threads is used
 
 # TODO experiment with install_packages flag
+
 
 
 FLAGS = flags.FLAGS
@@ -57,6 +59,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_boolean('no_run', False, 
                      'Prints out commands, but does not actually '
                      'run them')
+
 flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
                     'prints debug statements')
 #not implemented
@@ -74,7 +77,10 @@ flags.DEFINE_string('config', 'config.yaml',
                     'pass config file or directory')
 
 flags.DEFINE_integer('max_threads', 30, 
-                      'max threads to use')
+                      'max threads to use. A value of -1 will give '
+                      'the system permission to use as many threads '
+                      'as it wants. This may result in system slow downs '
+                      'or hang ups')
 
 
 logger = None
@@ -87,6 +93,7 @@ def main(argv):
 
   logger.debug("DEBUG LOGGING MODE")
   config_file = FLAGS.config
+  pkb_command = "python /home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py"
   benchmark_config_list = parse_config_file(config_file)
 
   print(benchmark_config_list)
@@ -100,7 +107,7 @@ def main(argv):
 
   print(benchmark_config_list)
 
-  full_graph = create_graph_from_config_list(benchmark_config_list)
+  full_graph = create_graph_from_config_list(benchmark_config_list, pkb_command)
 
 
 ##########################
@@ -132,7 +139,7 @@ def main(argv):
     print("AVG VM CREATION TIME: " + str(avg_vm_create_time))
 
   if len(list(filter(None, full_graph.benchmark_run_times))) > 0:
-    avg_vm_create_time = sum(filter(None, full_graph.benchmark_run_times))/len(list(filter(None, full_graph.benchmark_run_times)))
+    avg_benchmark_run_time = sum(filter(None, full_graph.benchmark_run_times))/len(list(filter(None, full_graph.benchmark_run_times)))
     print("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
 ###########################################################
@@ -186,11 +193,13 @@ def update_region_quota_usage(benchmark_graph):
   region_dict = get_region_info()
   # print(region_dict)
   for region_name in benchmark_graph.regions:
-    usage = region_dict[region_name]['CPUS']['usage']
-    benchmark_graph.regions[region_name].update_cpu_usage(usage)
+    cpu_usage = region_dict[region_name]['CPUS']['usage']
+    address_usage = region_dict[region_name]['IN_USE_ADDRESSES']['usage']
+    benchmark_graph.regions[region_name].update_cpu_usage(cpu_usage)
+    benchmark_graph.regions[region_name].update_address_usage(address_usage)
 
 
-def create_graph_from_config_list(benchmark_config_list):
+def create_graph_from_config_list(benchmark_config_list, pkb_command):
   """[summary]
 
   [description]
@@ -206,7 +215,7 @@ def create_graph_from_config_list(benchmark_config_list):
   full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub", 
                                               ssh_priv="ssh_key", 
                                               ssl_cert="cert.pem", 
-                                              pkb_location="python /home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py")
+                                              pkb_location=pkb_command)
 
   # First pass, find all the regions and add them to the graph
   # config[0] is the benchmark_name
@@ -221,6 +230,8 @@ def create_graph_from_config_list(benchmark_config_list):
     new_region = Region(region_name=key,
                         cpu_quota=region_dict[key]['CPUS']['limit'],
                         cpu_usage=region_dict[key]['CPUS']['usage'])
+    new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
+    new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
     full_graph.add_region_if_not_exists(new_region=new_region)
 
   # This takes all the stuff from the config dictionaries
@@ -336,7 +347,7 @@ def get_region_info():
       # print(region_dict['us-central1']['CPUS']['limit'])
       # print(region_dict['us-central1']['CPUS']['usage'])
   # print(region_dict['us-west2'])
-
+  print(region_dict)
   return region_dict
 
 

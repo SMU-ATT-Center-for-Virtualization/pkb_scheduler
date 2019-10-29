@@ -38,7 +38,8 @@ class VirtualMachine():
     self.run_uri = None
     self.uid = None
     self.creation_output = ""
-
+    self.creation_time = None
+    self.deletion_time = None
     #TODO use this instead of static network name
     self.network_name = None
     # self.ip_address = None
@@ -93,12 +94,14 @@ class VirtualMachine():
       self.status = "Running"
       return (True, self.status)
 
-
+    start_time = time.time()
     process = subprocess.Popen(cmd.split(),
                              stdout=subprocess.PIPE)
     output, error = process.communicate()
 
+    end_time = time.time()
 
+    self.creation_time = end_time - start_time
 
     print("PARSING OUTPUT")
     output = output.decode("utf-8")
@@ -109,7 +112,7 @@ class VirtualMachine():
 
     self.creation_output = output
     # info_section_found = False
-    time.sleep(5)
+    time.sleep(1)
 
     # have to use this instead of line in output
     # because that splits by letter when threading?

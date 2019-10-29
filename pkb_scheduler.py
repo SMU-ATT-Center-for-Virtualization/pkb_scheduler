@@ -1,7 +1,13 @@
-# import graph
+# This tool requires the SMU AT&T CENTER pkb_autopilot branch
+# of PerfkitBenchmarker to run properly
+
+# It also requires config files passed to it to be formatted
+# in a certain way. They should include the cloud and
+# machine type flags, as well as other things that might be
+# default when using just PKB
+
 import yaml
 import six
-# import collections
 import copy
 import itertools
 import os
@@ -10,7 +16,7 @@ import subprocess
 import json
 import time
 import logging
-# import networkx as nx
+
 
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
@@ -30,11 +36,18 @@ from absl import app
 #   put all configs into that directory
 # add in logic to not teardown a vm if a benchmark on the waitlist needs it
 
-# TODO add logic to add identical VM if there is space
-
 # TODO make work for config directories
 
 # re get quota on every creation/deletion
+
+# TODO add zone/machine_type/cloud/network_tier/disk_stuff/dedicated host
+# to every config file. Edit the static vm stuff in pkb to handle it
+
+# TODO add in the linear programming optimization stuff
+# TODO support AWS and multicloud
+
+# TODO thread and optimize what is happening at once when max threads is used
+
 
 FLAGS = flags.FLAGS
 
@@ -44,9 +57,8 @@ flags.DEFINE_boolean('no_run', False,
                      'run them')
 flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
                     'prints debug statements')
-
 #not implemented
-flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'] 
+flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'],
                   'Chooses whether algorithm should be more time or ' 
                    'space efficient.')
 
@@ -58,6 +70,9 @@ flags.DEFINE_boolean('allow_duplicate_vms', True,
 
 flags.DEFINE_string('config', 'config.yaml', 
                     'pass config file or directory')
+
+flags.DEFINE_integer('max_threads', 30, 
+                      'max threads to use')
 
 
 logger = None
@@ -81,7 +96,7 @@ def main(argv):
 
   # benchmark_config_list = parse_config_folder("/home/derek/projects/pkb_scheduler")
 
-  # print(benchmark_config_list)
+  print(benchmark_config_list)
 
   full_graph = create_graph_from_config_list(benchmark_config_list)
 
@@ -110,7 +125,14 @@ def main(argv):
   total_run_time = (end_time - start_time)
   print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
-############################################################
+  if len(list(filter(None, full_graph.vm_creation_times))) > 0:
+    avg_vm_create_time = sum(filter(None, full_graph.vm_creation_times))/len(list(filter(None, full_graph.vm_creation_times)))
+    print("AVG VM CREATION TIME: " + str(avg_vm_create_time))
+
+  avg_benchmark_run_time = 0
+  print("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
+
+###########################################################
 
   # full_graph.create_benchmark_config_file(full_graph.benchmarks[0], full_graph.benchmarks[0].vms)
 
@@ -147,6 +169,7 @@ def run_benchmarks(benchmark_graph):
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
     benchmark_graph.remove_orphaned_nodes()
+    update_region_quota_usage(benchmark_graph)
     benchmark_graph.add_benchmarks_from_waitlist()
     print(benchmark_graph.benchmarks_left())
     time.sleep(2)
@@ -156,6 +179,12 @@ def run_benchmarks(benchmark_graph):
   for bmset in benchmarks_run:
     print(len(bmset))
     
+def update_region_quota_usage(benchmark_graph):
+  region_dict = get_region_info()
+  # print(region_dict)
+  for region_name in benchmark_graph.regions:
+    usage = region_dict[region_name]['CPUS']['usage']
+    benchmark_graph.regions[region_name].update_cpu_usage(usage)
 
 
 def create_graph_from_config_list(benchmark_config_list):
@@ -183,11 +212,12 @@ def create_graph_from_config_list(benchmark_config_list):
   # get all regions from gcloud
   # make regions
   region_dict = get_region_info()
+  # print(region_dict)
   for key in region_dict:
     # if region['description'] in full_graph.regions
     new_region = Region(region_name=key,
                         cpu_quota=region_dict[key]['CPUS']['limit'],
-                        usage=region_dict[key]['CPUS']['usage'])
+                        cpu_usage=region_dict[key]['CPUS']['usage'])
     full_graph.add_region_if_not_exists(new_region=new_region)
 
   # This takes all the stuff from the config dictionaries
@@ -284,7 +314,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
   else:
     return None
 
-
+#TODO support other clouds
 def get_region_info():
   region_list_command = "gcloud compute regions list --format=json"
   process = subprocess.Popen(region_list_command.split(),
@@ -358,7 +388,7 @@ def parse_config_file(path="configs/file.yaml"):
   if not isinstance(yaml_contents, dict):
     return []
 
-  print(yaml_contents.keys())
+  # print(yaml_contents.keys())
   benchmark_name = list(yaml_contents.keys())[0]
   config_dict = yaml_contents[benchmark_name]
 
@@ -393,8 +423,9 @@ def parse_config_file(path="configs/file.yaml"):
     # print(config)
     if (flag_matrix_filter and not eval(flag_matrix_filter, {}, 
                                         config['flags'])):
-      print("FMF failed")
+      print("Did not pass Flag Matrix Filter")
       continue
+
     benchmark_config_list.append((benchmark_name, config));
     # print("BENCHMARK CONFIG")
     # print(benchmark_config_list[0])

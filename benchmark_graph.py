@@ -48,7 +48,7 @@ class BenchmarkGraph():
 
     # TODO parameterize these
     self.gce_project = 'smu-benchmarking'
-    self.bigquery_table = 'daily_tests.scheduler_test'
+    self.bigquery_table = 'daily_tests.scheduler_test_1'
     self.bq_project = 'smu-benchmarking'
     self.generated_config_path = '/home/derek/projects/pkb_scheduler/run_configs/'
 
@@ -147,9 +147,13 @@ class BenchmarkGraph():
     # if VM with same specs already exists, return false 0
     tmp_vm_list = self.get_list_if_vm_exists(vm)
 
+    # if a vm already exists
     if len(tmp_vm_list) > 0:
       can_add_another, status = self.check_if_can_add_vm(vm)
-      if can_add_another and status == "VM Exists. Quota not Exceeded":
+      # if there is room to add a duplicate vm and if flags allow it 
+      if (can_add_another 
+          and status == "VM Exists. Quota not Exceeded" 
+          and FLAGS.allow_duplicate_vms == True):
         status2 = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         if status2:
           self.virtual_machines.append(vm)
@@ -159,8 +163,8 @@ class BenchmarkGraph():
         else:
           logger.debug("QUOTA EXCEEDED")
           return False, None
+      #if not room in quota, return duplicate vm with lowest degree
       else:
-        #TODO return a tmp vm from list. fix this
         tmp_vm_index = 0
         min_degree_index = 0
         min_degree = self.graph.degree[tmp_vm_list[0].node_id]
@@ -170,7 +174,7 @@ class BenchmarkGraph():
             min_degree_index = tmp_vm_index
           tmp_vm_index += 1
         return False, tmp_vm_list[min_degree_index]
-
+    # if vm does not exist yet
     else:
       # try to add vm to region
       status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
@@ -226,6 +230,7 @@ class BenchmarkGraph():
 
     for index in node_list:
       vm = self.graph.nodes[index]['vm']
+      self.vm_creation_times.append(vm.creation_time)
       print("VM INDEX: " + str(index))
       print(vm.status)
       print(vm.run_uri)
@@ -356,11 +361,13 @@ class BenchmarkGraph():
     config_yaml[bm.benchmark_type]['flags'] = bm.flags
     config_flags = config_yaml[bm.benchmark_type]['flags']
 
-    #TODO move this to the parsing bit
     config_flags.pop("zones", None)
     config_flags.pop("extra_zones", None)
     config_flags.pop("machine_type", None)
-    config_flags.pop("cloud", None)
+    # config_flags.pop("cloud", None)
+    config_flags["static_cloud_metadata"] = bm.cloud
+    config_flags["static_network_tier_metadata"] = bm.network_tier
+
 
     for vm in vm_list:
       temp = config_yaml[bm.benchmark_type]['vm_groups']
@@ -374,6 +381,8 @@ class BenchmarkGraph():
       vm_config_dict['ip_address'] = vm.ip_address
       vm_config_dict['internal_ip'] = vm.internal_ip
       vm_config_dict['install_packages'] = True
+      vm_config_dict['zones'] = vm.zone
+      vm_config_dict['machine_type'] = vm.machine_type
       temp[vm_num]['static_vms'].append(vm_config_dict)
 
       counter += 1
@@ -458,20 +467,38 @@ class BenchmarkGraph():
 
 
   def remove_orphaned_nodes(self):
+    # TODO check waitlist before remove node
+
+    # get dictionary of node degrees from graph
     node_degree_dict = dict(nx.degree(self.graph))
 
-    # TODO thread this bit
+    vm_threads = []
+    keys_to_remove = []
+
+    # start threads to remove vms
     for key in node_degree_dict.keys():
+      # if a node has no edges
       if node_degree_dict[key] == 0:
         vm = self.graph.nodes[key]['vm']
         if vm.status == "Running":
-          vm.delete_instance(self.pkb_location)
-        print("VM removed: " + str(key))
-        self.graph.remove_node(key)
+          # vm.delete_instance(self.pkb_location)
+          keys_to_remove.append(key)
+          t = threading.Thread(target=vm.delete_instance,
+                             args=(self.pkb_location,))
+          vm_threads.append(t)
+          t.start()
+       
+    # join threads
+    for t in vm_threads:
+      t.join()
+      print("Thread Done")
 
-        vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
-        self.regions[vm_region].remove_virtual_machine(vm)
-
+    for key in keys_to_remove:
+      vm = self.graph.nodes[key]['vm']
+      print("VM removed: " + str(key))
+      self.graph.remove_node(key)
+      vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
+      self.regions[vm_region].remove_virtual_machine(vm)
 
   def do_it_all(self):
     # this function does it all

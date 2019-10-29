@@ -7,9 +7,11 @@ class Region():
   [description]
   """
 
-  def __init__(self, region_name, cpu_quota=0.0, usage=0.0):
+  def __init__(self, region_name, cpu_quota=0.0, cpu_usage=0.0):
     self.cpu_quota = cpu_quota
-    self.usage = usage
+    self.address_quota = None
+    self.address_usage = 0
+    self.usage = cpu_usage
     self.reserved_usage = 0.0
     self.virtual_machines = []
     self.name = region_name
@@ -34,3 +36,23 @@ class Region():
     # TODO add safety checks here
     self.virtual_machines.remove(vm)
     self.usage -= vm.cpu_count
+
+  def update_cpu_quota(self, quota):
+    self.cpu_quota = quota
+
+  def update_cpu_usage(self, usage):
+    if usage <= self.cpu_quota:
+      self.usage = usage
+      return True
+    else:
+      return False
+
+  def update_address_quota(self, quota):
+    self.address_quota = quota
+
+  def update_address_usage(self, usage):
+    if usage <= self.address_quota:
+      self.address_usage = usage
+      return True
+    else:
+      return False

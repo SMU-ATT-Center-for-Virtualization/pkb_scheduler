@@ -82,6 +82,12 @@ flags.DEFINE_integer('max_threads', 30,
                       'as it wants. This may result in system slow downs '
                       'or hang ups')
 
+flags.DEFINE_integer('max_processes', 30, 
+                      'max threads to use. A value of -1 will give '
+                      'the system permission to use as many threads '
+                      'as it wants. This may result in system slow downs '
+                      'or hang ups')
+
 flags.DEFINE_string('pkb_location', 
                     "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py", 
                     'location of pkb on disk')

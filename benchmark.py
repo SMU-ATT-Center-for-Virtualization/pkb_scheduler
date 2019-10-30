@@ -25,6 +25,24 @@ class Benchmark():
     # self.ssh_key = None
     # self.ip = None
 
+  def copy_contents(self, bm):       
+    self.benchmark_id = bm.benchmark_id
+    self.benchmark_type = bm.benchmark_type
+    self.zone1 = bm.zone1
+    self.zone2 = bm.zone2
+    self.machine_type = bm.machine_type
+    self.cloud = bm.cloud
+    self.os_type = bm.os_type
+    self.network_tier = bm.network_tier
+    self.vpn = bm.vpn
+    # self.vms = []
+    self.status = bm.status
+    self.config_file = bm.config_file
+    self.flags = bm.flags
+    # self.ssh_key = None
+    # self.ip = None
+
+
 
   def run(self):
     pass

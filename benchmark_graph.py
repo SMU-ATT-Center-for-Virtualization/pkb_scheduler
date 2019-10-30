@@ -1,5 +1,6 @@
 import networkx as nx
 import threading
+import multiprocessing as mp
 from queue import Queue
 import time
 import os
@@ -212,7 +213,7 @@ class BenchmarkGraph():
   def create_vms(self):
     # TODO add max thread logic here, make sure things are stood up in a reasonable way
     # go through nodes in network. Stand up Vms that have not been created
-    max_threads = FLAGS.max_threads
+    max_processes = FLAGS.max_processes
 
     node_list = list(self.graph.nodes)
     node_index = 0
@@ -221,26 +222,46 @@ class BenchmarkGraph():
     logger.debug("LENGTH NODE LIST: " + str(len(node_list)))
 
     while node_index < len(node_list):
-      vm_threads = []
+      vm_processes = []
       thread_count = 0
-      while (thread_count < max_threads or max_threads < 0) and node_index < len(node_list) :
+      while (thread_count < max_processes or max_processes < 0) and node_index < len(node_list) :
       # for index in node_list:
+
         logger.debug(node_index)
         vm = self.graph.nodes[node_index]['vm']
+
+        vm_proc_container = {}
+        vm_proc_container['vm'] = vm
+
+
         if vm.status == 'Not Created':
           # vm.create_instance(self.pkb_location)
-          t = threading.Thread(target=self.create_vm,
-                               args=(vm,))
-          vm_threads.append(t)
-          t.start()
+          # t = threading.Thread(target=self.create_vm,
+          #                      args=(vm,))
+          queue = mp.Queue()
+          p = mp.Process(target=self.create_vm_process,
+                         args=(vm, queue))
+          vm_proc_container['process'] = p
+          vm_proc_container['data'] = queue
+
+          vm_processes.append(vm_proc_container)
+          p.start()
           created_nodes.append(node_index)
           thread_count += 1
 
         node_index += 1
 
-      for t in vm_threads:
-        t.join()
-        print("Thread Done")
+      for container in vm_processes:
+        p = container['process']
+        new_vm = container['data'].get()
+        container['vm'].copy_contents(new_vm)
+        print("VM PROCESS INFO STUFF HERE:")
+        print("IN PROCESS VM:")
+        print(container['vm'].creation_output)
+        print("OUT PROCESS VM:")
+        print(new_vm.creation_output)
+        p.join()
+        print("Process Done")
 
     for index in created_nodes:
       vm = self.graph.nodes[index]['vm']
@@ -249,6 +270,10 @@ class BenchmarkGraph():
       print(vm.status)
       print(vm.run_uri)
       print(vm.creation_output)
+
+  def create_vm_process(self, vm, queue):
+    vm.create_instance(self.pkb_location)
+    queue.put(vm)
 
   def create_vm(self, vm):
     vm.create_instance(self.pkb_location)
@@ -300,7 +325,7 @@ class BenchmarkGraph():
     # run benchmark configs
     # run in parallel
     
-    bm_thread_results = []
+    bm_all_thread_results = []
     # bm_thread_result_counter = 0
     bm_index = 0
 
@@ -312,30 +337,42 @@ class BenchmarkGraph():
       thread_count = 0
       while (thread_count < max_threads or max_threads < 0) and bm_index < len(benchmarks_to_run):
         # TODO change this into a dict?
-        bm_data = [bm, benchmarks_to_run_tuples[bm_index], False]
-        bm_thread_results.append(bm_data)
+        queue = mp.Queue()
+        
         logger.debug(bm.zone1 + " <-> " + bm.zone2)
-        t = threading.Thread(target=self.run_benchmark, 
+        p = mp.Process(target=self.run_benchmark_process, 
                              args=(bm,
-                                   bm_thread_results,
-                                   bm_index,))
-        bm_threads.append(t)
-        t.start()
-        # bm_thread_result_counter += 1
+                                   benchmarks_to_run_tuples[bm_index],
+                                   bm_index,
+                                   queue))
+        
+        bm_data = {}
+        bm_data['bm'] = bm
+        bm_data['tuple'] = benchmarks_to_run_tuples[bm_index]
+        bm_data['process'] = p
+        bm_data['queue'] = queue
+        # bm_data = [bm, benchmarks_to_run_tuples[bm_index], p, queue]
+        bm_all_thread_results.append(bm_data)
+        bm_threads.append(bm_data)
+        p.start()
         bm_index += 1
         thread_count += 1
 
-      for bm_thread in bm_threads:
-        bm_thread.join()
+      for bm_data in bm_threads:
+        bm_data['process'].join()
+        results_dict = bm_data['queue'].get()
+        self.benchmark_run_times.append(results_dict['run_time'])
+        bm_data['bm'].status = results_dict['status']
+        bm_data['success'] = results_dict['success']
         print("thread done")
 
     print("All threads done")
 
     # TODO remove only successful benchmarks from graph
-    for bm_data in bm_thread_results:
-      bm = bm_data[0]
-      bm_loc = bm_data[1]
-      success = bm_data[2]
+    for bm_data in bm_all_thread_results:
+      bm = bm_data['bm']
+      bm_loc = bm_data['tuple']
+      success = bm_data['success']
       if success:
         self.graph.remove_edge(bm_loc[0], bm_loc[1], bm_loc[2])
         print("benchmark removed: " + str(bm_loc))
@@ -343,11 +380,18 @@ class BenchmarkGraph():
         pass
 
 
-  def run_benchmark(self, bm, result_list, result_index):
+  def run_benchmark_process(self, bm, bm_tuple, result_index, queue):
     # ./pkb.py --benchmarks=throughput_latency_jitter
     # --benchmark_config_file=static_config2.yaml
 
     config_file_path = self.generated_config_path + bm.config_file
+
+    results_dict = {}
+    results_dict['bm_tuple'] = bm_tuple
+    results_dict['result_index'] = result_index
+    results_dict['bm'] = bm
+    results_dict['success'] = False
+    results_dict['run_time'] = None
 
     cmd = (self.pkb_location 
             + " --benchmarks=" + bm.benchmark_type
@@ -358,26 +402,27 @@ class BenchmarkGraph():
 
     print("RUN BM: " + cmd)
     if FLAGS.no_run:
-      result_list[result_index][2] = True
+      results_dict['status'] = "Executed"
       bm.status = "Executed"
-      return True
+      results_dict['success'] = True
+      queue.put(results_dict)
+      return
 
     start_time = time.time()
-
     process = subprocess.Popen(cmd.split(),
                              stdout=subprocess.PIPE)
     output, error = process.communicate()
-
     end_time = time.time()
-
     run_time = end_time - start_time
-
-    self.benchmark_run_times.append(run_time)
+    # self.benchmark_run_times.append(run_time)
 
     # TODO make this actually do something on failure
-    result_list[result_index][2] = True
     bm.status = "Executed"
-    return True
+    results_dict['status'] = "Executed"
+    results_dict['success'] = True
+    results_dict['run_time'] = run_time
+    queue.put(results_dict)
+    return
 
 
   def create_benchmark_config_file(self, bm, vm_list):

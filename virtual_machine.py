@@ -177,3 +177,26 @@ class VirtualMachine():
     self.status = "Shutdown"
 
     return (True, self.status)
+
+
+  def copy_contents(self, vm):   
+    self.node_id = vm.node_id
+    self.cpu_count = vm.cpu_count
+    self.os_type = vm.os_type
+    self.zone = vm.zone
+    self.machine_type = vm.machine_type
+    self.cloud = vm.cloud
+    self.network_tier = vm.network_tier
+    self.vpn = vm.vpn
+    self.ssh_private_key = vm.ssh_private_key
+    self.ssl_cert = vm.ssl_cert
+    self.status = vm.status
+    self.internal_ip = vm.internal_ip
+    self.ip_address = vm.ip_address
+    self.name = vm.name
+    self.run_uri = vm.run_uri
+    self.uid = vm.uid
+    self.creation_output = vm.creation_output
+    self.creation_time = vm.creation_time
+    self.deletion_time = vm.deletion_time
+    self.network_name = vm.network_name

@@ -51,6 +51,8 @@ from absl import app
 
 # TODO experiment with install_packages flag
 
+# TODO check ssh key permissions
+
 # python3
 
 FLAGS = flags.FLAGS

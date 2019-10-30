@@ -151,6 +151,9 @@ def main(argv):
     avg_benchmark_run_time = sum(filter(None, full_graph.benchmark_run_times))/len(list(filter(None, full_graph.benchmark_run_times)))
     print("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
+  print("ALL BENCHMARK TIMES:")
+  print(full_graph.benchmark_run_times)
+
 ###########################################################
 
   # full_graph.create_benchmark_config_file(full_graph.benchmarks[0], full_graph.benchmarks[0].vms)

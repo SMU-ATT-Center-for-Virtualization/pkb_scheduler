@@ -333,12 +333,12 @@ class BenchmarkGraph():
 
     while bm_index < len(benchmarks_to_run):
       bm_threads = []
-      bm = benchmarks_to_run[bm_index]
+      
       thread_count = 0
       while (thread_count < max_threads or max_threads < 0) and bm_index < len(benchmarks_to_run):
         # TODO change this into a dict?
+        bm = benchmarks_to_run[bm_index]
         queue = mp.Queue()
-        
         logger.debug(bm.zone1 + " <-> " + bm.zone2)
         p = mp.Process(target=self.run_benchmark_process, 
                              args=(bm,
@@ -400,6 +400,10 @@ class BenchmarkGraph():
             + " --bigquery_table=" + self.bigquery_table
             + " --bq_project=" + self.bq_project)
 
+    print(bm_tuple)
+    print(bm.zone1)
+    print(bm.zone2)
+    print(bm.config_file)
     print("RUN BM: " + cmd)
     if FLAGS.no_run:
       results_dict['status'] = "Executed"

@@ -356,7 +356,7 @@ def get_region_info():
       # print(region_dict['us-central1']['CPUS']['limit'])
       # print(region_dict['us-central1']['CPUS']['usage'])
   # print(region_dict['us-west2'])
-  print(region_dict)
+  # print(region_dict)
   return region_dict
 
 

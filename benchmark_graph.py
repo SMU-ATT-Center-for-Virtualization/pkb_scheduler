@@ -338,6 +338,18 @@ class BenchmarkGraph():
       while (thread_count < max_threads or max_threads < 0) and bm_index < len(benchmarks_to_run):
         # TODO change this into a dict?
         bm = benchmarks_to_run[bm_index]
+
+        # make sure that all vms for benchmark have been created
+        vms_created = True
+        for vm in bm.vms:
+          if vm.status != "Running":
+            vms_created = False
+
+        if not vms_created:
+          print("DO NOT RUN")
+          bm_index += 1
+          continue
+
         queue = mp.Queue()
         logger.debug(bm.zone1 + " <-> " + bm.zone2)
         p = mp.Process(target=self.run_benchmark_process, 
@@ -357,6 +369,8 @@ class BenchmarkGraph():
         p.start()
         bm_index += 1
         thread_count += 1
+
+        # TODO check to make sure both VMS are created
 
       for bm_data in bm_threads:
         bm_data['process'].join()

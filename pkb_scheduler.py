@@ -194,6 +194,7 @@ def run_benchmarks(benchmark_graph):
     # before removal of edges
     benchmark_graph.remove_orphaned_nodes()
     update_region_quota_usage(benchmark_graph)
+    print("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
     print(benchmark_graph.benchmarks_left())
     time.sleep(2)

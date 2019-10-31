@@ -340,6 +340,8 @@ class BenchmarkGraph():
         bm = benchmarks_to_run[bm_index]
 
         # make sure that all vms for benchmark have been created
+        # TODO try to ssh into it to make sure it is up
+        #      or at least ping it
         vms_created = True
         for vm in bm.vms:
           if vm.status != "Running":
@@ -499,7 +501,7 @@ class BenchmarkGraph():
       print(bm.zone2)
 
       if bm.zone1 != bm.zone2:
-        cpu_count = cpu_count_from_machine_type(bm.cloud, bm.machine_type)
+        cpu_count = self.cpu_count_from_machine_type(bm.cloud, bm.machine_type)
 
         logger.debug("Trying to add " + bm.zone1 + " and " + bm.zone2)
 
@@ -544,7 +546,7 @@ class BenchmarkGraph():
           bms_added.append(bm)
         else:
           print("WAITLISTED")
-          full_graph.benchmark_wait_list.append(bm)
+          self.benchmark_wait_list.append(bm)
 
       else:
         print("VM 1 and VM 2 are the same zone")

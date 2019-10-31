@@ -308,10 +308,11 @@ class BenchmarkGraph():
 
     while bm_index < len(benchmarks_to_run):
       bm_threads = []
-      bm = benchmarks_to_run[bm_index]
       thread_count = 0
+
       while (thread_count < max_threads or max_threads < 0) and bm_index < len(benchmarks_to_run):
         # TODO change this into a dict?
+        bm = benchmarks_to_run[bm_index]
         bm_data = [bm, benchmarks_to_run_tuples[bm_index], False]
         bm_thread_results.append(bm_data)
         logger.debug(bm.zone1 + " <-> " + bm.zone2)

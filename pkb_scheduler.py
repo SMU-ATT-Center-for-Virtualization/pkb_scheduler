@@ -38,10 +38,10 @@ from absl import app
 
 # TODO make work for config directories
 
-# re get quota on every creation/deletion
+# TODO get quota on every creation/deletion
 
-# TODO add zone/machine_type/cloud/network_tier/disk_stuff/dedicated host
-# to every config file. Edit the static vm stuff in pkb to handle it
+# TODO disk_stuff/dedicated host
+#      to every config file. Edit the static vm stuff in pkb to handle it
 
 # TODO add in the linear programming optimization stuff
 # TODO support AWS and multicloud

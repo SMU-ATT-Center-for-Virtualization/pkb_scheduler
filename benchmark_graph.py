@@ -466,7 +466,8 @@ class BenchmarkGraph():
             + " --gce_network_name=pkb-scheduler"
             + " --benchmark_config_file=" + bm.config_file
             + " --bigquery_table=" + self.bigquery_table
-            + " --bq_project=" + self.bq_project)
+            + " --bq_project=" + self.bq_project
+            + " --ignore_package_requirements=True")
 
     print(bm_tuple)
     print(bm.zone1)

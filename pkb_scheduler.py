@@ -45,13 +45,12 @@ from absl import app
 
 # TODO add in the linear programming optimization stuff
 # TODO support AWS and multicloud
-
-# TODO implement max_threads
 # TODO thread and optimize what is happening at once when max threads is used
-
 # TODO experiment with install_packages flag
-
 # TODO check ssh key permissions
+# TODO add VM alive timing data
+# TODO add summary at the end of all round, how many VMS destroyed each round
+# TODO add support for vms in the same zones
 
 # python3
 
@@ -94,6 +93,9 @@ flags.DEFINE_string('pkb_location',
                     "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py", 
                     'location of pkb on disk')
 
+flags.DEFINE_boolean('print_graph', False,
+                     'If True, tool will use pyplot to print a visual representation '
+                     'of the benchmark_graph after every iteration')
 logger = None
 
 def main(argv):
@@ -140,6 +142,7 @@ def main(argv):
   logger.debug("\n\n")
 
   run_benchmarks(full_graph)
+  # test_stuff(full_graph)
 
   end_time = time.time()
   total_run_time = (end_time - start_time)
@@ -155,6 +158,12 @@ def main(argv):
 
   print("ALL BENCHMARK TIMES:")
   print(full_graph.benchmark_run_times)
+
+  print("TOTAL VM UPTIME: ")
+  total_time = 0
+  for vm in full_graph.virtual_machines:
+    total_time = total_time + vm.uptime()
+  print(total_time)
 
 ###########################################################
 
@@ -180,11 +189,20 @@ def setup_logging():
 def create_benchmark_schedule(benchmark_graph):
   pass
 
+def test_stuff(benchmark_graph):
+  maximum_set = benchmark_graph.get_benchmark_set()
+  print(maximum_set)
+  print(len(maximum_set))
+
 
 def run_benchmarks(benchmark_graph):
   benchmark_graph.create_vms()
   benchmarks_run = []
+  # benchmark_graph.print_graph()
+  vms_removed = []
   while benchmark_graph.benchmarks_left() > 0:
+
+    # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
     benchmarks_run.append(maximum_set)
     benchmark_graph.run_benchmark_set(maximum_set)
@@ -192,17 +210,23 @@ def run_benchmarks(benchmark_graph):
     # Completion statuses can be found at: 
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
-    benchmark_graph.remove_orphaned_nodes()
+    removed_count = benchmark_graph.remove_orphaned_nodes()
+    vms_removed.append(removed_count)
     update_region_quota_usage(benchmark_graph)
     print("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
     print(benchmark_graph.benchmarks_left())
     time.sleep(2)
+    # benchmark_graph.print_graph()
 
   print(len(benchmarks_run))
   print("BMS RUN EACH LOOP")
   for bmset in benchmarks_run:
     print(len(bmset))
+
+  print("VMS REMOVED EACH LOOP")
+  for vm_count in vms_removed:
+    print(vm_count)
     
 def update_region_quota_usage(benchmark_graph):
   region_dict = get_region_info()
@@ -315,6 +339,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
         bm.vms.append(tmp_vm2)
         full_graph.benchmarks.append(bm)
         full_graph.add_benchmark(bm, tmp_vm1.node_id, tmp_vm2.node_id)
+      # if none added and none exist  
       else:
         logger.debug("BM WAITLISTED")
         bm.status = "Waitlist"
@@ -462,6 +487,8 @@ def parse_config_file(path="configs/file.yaml"):
   # print("BENCHMARK CONFIG LIST")
   # for config in benchmark_config_list:
   #   print(config)
+
+  f.close()
 
   return benchmark_config_list
 

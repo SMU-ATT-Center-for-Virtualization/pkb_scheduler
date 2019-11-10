@@ -1,4 +1,5 @@
 import networkx as nx
+import matplotlib.pyplot as plt
 import threading
 import multiprocessing as mp
 from queue import Queue
@@ -8,6 +9,7 @@ import subprocess
 import yaml
 import threading
 import logging
+import math
 
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
@@ -82,6 +84,11 @@ class BenchmarkGraph():
       else:
         continue
     return False
+
+  def print_graph(self):
+    nx.draw(self.graph)
+    plt.show()
+
 
   def get_vm_if_exists(self, cloud, zone, machine_type,
                          network_tier, os_type, vpn=False):
@@ -208,6 +215,51 @@ class BenchmarkGraph():
 
   def maximum_matching(self):
     return nx.max_weight_matching(self.graph, maxcardinality=True)
+
+  def get_benchmark_set(self):
+    # return bm_list: List[Tuple[int, int]]   list of tuples  [(node1, node2)]
+
+
+    # convert multigraph to simplified graph with weighted edges
+    node_degree_dict = dict(nx.degree(self.graph))
+    tmp_graph = nx.Graph()
+    tmp_graph.add_nodes_from(self.graph.nodes)
+    edges_list = []
+    for e in self.graph.edges:
+      edges_list.append(e[0:2])
+
+    edges_set = set(edges_list)
+    edges_to_add = []
+
+    # calculate weight based on degree of each node (n1.degree * n2.degree)
+    for e in edges_set:
+      c = 1 / (node_degree_dict[e[0]] * node_degree_dict[e[1]])
+      t = (e[0], e[1], c)
+      edges_to_add.append(t)
+
+    tmp_graph.add_weighted_edges_from(edges_to_add)
+    print("NODES:")
+    print(tmp_graph.nodes)
+    print("EDGES:")
+    print(tmp_graph.edges)
+    for e in tmp_graph.edges:
+      print(tmp_graph.edges[e])
+
+    node_list = self.graph.nodes
+
+    # for i in node_list:
+    #   node_list[i]['evenlevel'] = math.inf
+    #   node_list[i]['oddlevel'] = math.inf
+    #   node_list[i]['blossom'] = None
+    #   node_list[i]['predecessors'] = []
+    #   node_list[i]['anomalies'] = []
+    #   node_list[i]['visited'] = False
+
+    # for e in self.graph.edges:
+    #   self.graph.edges[e]['visited'] = False
+    #   self.graph.edges[e]['used'] = False
+
+    return nx.max_weight_matching(tmp_graph, maxcardinality=True, weight='weight')
 
 
   def create_vms(self):
@@ -486,6 +538,7 @@ class BenchmarkGraph():
                  + str(bm.benchmark_id) + ".yaml")
     file = open(file_name, 'w+')
     yaml.dump(config_yaml, file, default_flow_style=False)
+    file.close()
 
     return file_name
 
@@ -551,6 +604,7 @@ class BenchmarkGraph():
       else:
         print("VM 1 and VM 2 are the same zone")
 
+    # Remove bm from waitlist if it is added to graph
     for bm in bms_added:
       self.benchmark_wait_list.remove(bm)
 
@@ -567,6 +621,7 @@ class BenchmarkGraph():
 
     vm_threads = []
     keys_to_remove = []
+    vm_removed_count = 0
 
     # start threads to remove vms
     for key in node_degree_dict.keys():
@@ -574,6 +629,9 @@ class BenchmarkGraph():
       if node_degree_dict[key] == 0:
         vm = self.graph.nodes[key]['vm']
         if vm.status == "Running":
+
+          # TODO check if waitlist needs this node before removal
+
           # vm.delete_instance(self.pkb_location)
           keys_to_remove.append(key)
           t = threading.Thread(target=vm.delete_instance,
@@ -592,12 +650,9 @@ class BenchmarkGraph():
       self.graph.remove_node(key)
       vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
       self.regions[vm_region].remove_virtual_machine(vm)
+      vm_removed_count += 1
 
-  def do_it_all(self):
-    # this function does it all
-    # it finds the maximal set
-    # it runs benchmarks
-    pass
+    return vm_removed_count
 
   def benchmarks_left(self):
     # TODO fix this

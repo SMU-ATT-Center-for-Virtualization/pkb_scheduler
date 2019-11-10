@@ -38,6 +38,8 @@ class VirtualMachine():
     self.run_uri = None
     self.uid = None
     self.creation_output = ""
+    self.create_timestamp = None
+    self.delete_timestamp = None
     self.creation_time = None
     self.deletion_time = None
     # TODO use this instead of static network name
@@ -57,6 +59,18 @@ class VirtualMachine():
       return True
     
     return False
+
+  def uptime(self):
+    if self.status == "Running":
+      current_time = time.time()
+      return current_time - self.create_timestamp
+
+    elif self.status == "Shutdown":
+      return self.delete_timestamp - self.create_timestamp
+
+    else:
+      return 0
+
 
   def create_instance(self, pkb_location):
     """Creates a VM on the cloud from a VM object
@@ -92,15 +106,17 @@ class VirtualMachine():
       self.internal_ip = "172.0.0.1"
       self.name = "no run"
       self.status = "Running"
+      self.create_timestamp = time.time()
       return (True, self.status)
 
     start_time = time.time()
+    self.create_timestamp = time.time()
+
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
 
     end_time = time.time()
-
     self.creation_time = end_time - start_time
 
     print("PARSING OUTPUT")
@@ -168,12 +184,17 @@ class VirtualMachine():
     if FLAGS.no_run:
       print("DELETING INSTANCE: " + cmd)
       self.status = "Shutdown"
+      self.delete_timestamp = time.time()
       return (True, self.status)
+
+    start_time = time.time()
 
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
 
+    end_time = time.time()
+    self.delete_timestamp = time.time()
     self.status = "Shutdown"
 
     return (True, self.status)
@@ -200,3 +221,10 @@ class VirtualMachine():
     self.creation_time = vm.creation_time
     self.deletion_time = vm.deletion_time
     self.network_name = vm.network_name
+    self.create_timestamp = vm.create_timestamp
+    self.delete_timestamp = vm.delete_timestamp
+
+    # TODO, do something like this instead
+    # vm2.__dict__ = vm1.__dict__.copy()
+    # or this
+    # destination.__dict__.update(source.__dict__).

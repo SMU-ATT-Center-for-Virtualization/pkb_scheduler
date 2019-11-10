@@ -468,7 +468,7 @@ class BenchmarkGraph():
             + " --bigquery_table=" + self.bigquery_table
             + " --bq_project=" + self.bq_project
             + " --ignore_package_requirements=True"
-            + " --install_packages=True")
+            + " --install_packages=False")
 
     print(bm_tuple)
     print(bm.zone1)

@@ -467,8 +467,9 @@ class BenchmarkGraph():
             + " --benchmark_config_file=" + bm.config_file
             + " --bigquery_table=" + self.bigquery_table
             + " --bq_project=" + self.bq_project
-            + " --ignore_package_requirements=True"
-            + " --install_packages=False")
+            + " --ignore_package_requirements=True")
+
+    # TODO do install_packages if vm has already been used
 
     print(bm_tuple)
     print(bm.zone1)

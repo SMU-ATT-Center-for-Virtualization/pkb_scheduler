@@ -52,6 +52,8 @@ from absl import app
 # TODO add summary at the end of all round, how many VMS destroyed each round
 # TODO add support for vms in the same zones
 
+# TODO try reuse_ssh_connections
+
 # python3
 
 FLAGS = flags.FLAGS

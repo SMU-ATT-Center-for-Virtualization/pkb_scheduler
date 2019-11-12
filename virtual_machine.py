@@ -180,7 +180,8 @@ class VirtualMachine():
            + " --gce_network_name=pkb-scheduler"
            + " --cloud=" + self.cloud
            + " --run_uri=" + self.run_uri
-           + " --run_stage=cleanup,teardown")
+           + " --run_stage=cleanup,teardown"
+           + " --ignore_package_requirements=True")
 
     if FLAGS.no_run:
       print("DELETING INSTANCE: " + cmd)

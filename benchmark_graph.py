@@ -397,6 +397,7 @@ class BenchmarkGraph():
         vms_created = True
         for vm in bm.vms:
           if vm.status != "Running":
+            print("Needed VM is ", vm.status)
             vms_created = False
 
         if not vms_created:

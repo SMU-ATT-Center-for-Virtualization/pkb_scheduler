@@ -28,17 +28,12 @@ from absl import app
 # TODO
 # parse diff types of files
 # tighter cohesion with pkb (use pkb classes)?
-# add in timing metrics
-# add phase to make more VMs
 
 # put configs into unique directory
 #   generate unique id per pkb_scheduler run
 #   put all configs into that directory
 # add in logic to not teardown a vm if a benchmark on the waitlist needs it
 
-# TODO make work for config directories
-
-# TODO get quota on every creation/deletion
 
 # TODO disk_stuff/dedicated host
 #      to every config file. Edit the static vm stuff in pkb to handle it
@@ -48,11 +43,12 @@ from absl import app
 # TODO thread and optimize what is happening at once when max threads is used
 # TODO experiment with install_packages flag
 # TODO check ssh key permissions
-# TODO add VM alive timing data
-# TODO add summary at the end of all round, how many VMS destroyed each round
 # TODO add support for vms in the same zones
 
 # TODO try reuse_ssh_connections
+# TODO get to work with windows vms
+# TODO get to work with VPNs
+
 
 # python3
 
@@ -79,17 +75,12 @@ flags.DEFINE_boolean('allow_duplicate_vms', True,
 flags.DEFINE_string('config', 'config.yaml', 
                     'pass config file or directory')
 
-flags.DEFINE_integer('max_threads', 30, 
-                      'max threads to use. A value of -1 will give '
-                      'the system permission to use as many threads '
-                      'as it wants. This may result in system slow downs '
-                      'or hang ups')
 
 flags.DEFINE_integer('max_processes', 30, 
-                      'max threads to use. A value of -1 will give '
-                      'the system permission to use as many threads '
-                      'as it wants. This may result in system slow downs '
-                      'or hang ups')
+                     'max threads to use. A value of -1 will give '
+                     'the system permission to use as many threads '
+                     'as it wants. This may result in system slow downs '
+                     'or hang ups')
 
 flags.DEFINE_string('pkb_location', 
                     "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py", 
@@ -98,7 +89,15 @@ flags.DEFINE_string('pkb_location',
 flags.DEFINE_boolean('print_graph', False,
                      'If True, tool will use pyplot to print a visual representation '
                      'of the benchmark_graph after every iteration')
+
+flags.DEFINE_string('bigquery_table', 'daily_tests.scheduler_test_1',
+                    'bigquery table to push results to')
+
+flags.DEFINE_string('bq_project', 'smu-benchmarking',
+                    'bigquery project to push results to')
+
 logger = None
+
 
 def main(argv):
 
@@ -107,9 +106,14 @@ def main(argv):
   start_time = time.time()
 
   logger.debug("DEBUG LOGGING MODE")
-  config_file = FLAGS.config
+  config_location = FLAGS.config
   pkb_command = "python " + FLAGS.pkb_location
-  benchmark_config_list = parse_config_file(config_file)
+
+  benchmark_config_list = []
+  if(config_location.endswith(".yaml")):   
+    benchmark_config_list = parse_config_file(config_location)
+  else:
+    benchmark_config_list = parse_config_folder(config_location)
 
   print(benchmark_config_list)
 
@@ -120,9 +124,11 @@ def main(argv):
 
   # benchmark_config_list = parse_config_folder("/home/derek/projects/pkb_scheduler")
 
+  print("COMPLETE BENCHMARK CONFIG LIST")
   print(benchmark_config_list)
 
-  full_graph = create_graph_from_config_list(benchmark_config_list, pkb_command)
+  full_graph = create_graph_from_config_list(benchmark_config_list,
+                                             pkb_command)
 
 
 ##########################
@@ -256,7 +262,9 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub", 
                                               ssh_priv="ssh_key", 
                                               ssl_cert="cert.pem", 
-                                              pkb_location=pkb_command)
+                                              pkb_location=pkb_command,
+                                              bigquery_table=FLAGS.bigquery_table,
+                                              bq_project=FLAGS.bq_project)
 
   # First pass, find all the regions and add them to the graph
   # config[0] is the benchmark_name

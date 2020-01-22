@@ -27,7 +27,9 @@ class BenchmarkGraph():
   [description]
   """
 
-  def __init__(self, ssh_pub="", ssh_priv="", ssl_cert="", pkb_location="./pkb.py"):
+  def __init__(self, ssh_pub="", ssh_priv="", ssl_cert="", pkb_location="./pkb.py",
+               bigquery_table="daily_tests.scheduler_test_1",
+               bq_project="smu-benchmarking"):
 
     # get logger
     global logger 
@@ -51,8 +53,8 @@ class BenchmarkGraph():
 
     # TODO parameterize these
     self.gce_project = 'smu-benchmarking'
-    self.bigquery_table = 'daily_tests.scheduler_test_1'
-    self.bq_project = 'smu-benchmarking'
+    self.bigquery_table = bigquery_table
+    self.bq_project = bq_project
     self.generated_config_path = 'run_configs/'
 
     self.vm_creation_times = []
@@ -381,13 +383,13 @@ class BenchmarkGraph():
     # bm_thread_result_counter = 0
     bm_index = 0
 
-    max_threads = FLAGS.max_threads
+    max_processes = FLAGS.max_processes
 
     while bm_index < len(benchmarks_to_run):
       bm_threads = []
       
       thread_count = 0
-      while (thread_count < max_threads or max_threads < 0) and bm_index < len(benchmarks_to_run):
+      while (thread_count < max_processes or max_processes < 0) and bm_index < len(benchmarks_to_run):
         # TODO change this into a dict?
         bm = benchmarks_to_run[bm_index]
 

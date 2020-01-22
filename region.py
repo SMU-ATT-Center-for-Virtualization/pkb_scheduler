@@ -48,6 +48,11 @@ class Region():
     self.cpu_usage -= vm.cpu_count
     self.address_usage -= 1
 
+    if self.cpu_usage < 0:
+      self.cpu_usage = 0
+    if self.address_usage < 0:
+      self.address_usage = 0
+
   def update_cpu_quota(self, quota):
     self.cpu_quota = quota
 

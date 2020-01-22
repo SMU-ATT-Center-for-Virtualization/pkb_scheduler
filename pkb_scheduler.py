@@ -101,16 +101,16 @@ logger = None
 
 def main(argv):
 
-  setup_logging()
-
   start_time = time.time()
 
+  # setup logging and debug
+  setup_logging()
   logger.debug("DEBUG LOGGING MODE")
   config_location = FLAGS.config
   pkb_command = "python " + FLAGS.pkb_location
 
   benchmark_config_list = []
-  if(config_location.endswith(".yaml")):   
+  if(config_location.endswith(".yaml")):
     benchmark_config_list = parse_config_file(config_location)
   else:
     benchmark_config_list = parse_config_folder(config_location)
@@ -127,28 +127,26 @@ def main(argv):
   print("COMPLETE BENCHMARK CONFIG LIST")
   print(benchmark_config_list)
 
+
+  # Create the initial graph from the config directory or file
   full_graph = create_graph_from_config_list(benchmark_config_list,
                                              pkb_command)
 
-
-##########################
-
   logger.debug("\nVMS TO CREATE:")
   for vm in full_graph.virtual_machines:
-    logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type
-          + " " + vm.os_type + " " + vm.cloud)
+    logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type +
+                 " " + vm.os_type + " " + vm.cloud)
 
   logger.debug("\nBENCHMARKS TO RUN:")
   for bm in full_graph.benchmarks:
     logger.debug("Benchmark " + bm.zone1 + "--" + bm.zone2)
-
-  create_benchmark_schedule(full_graph)
 
   logger.debug("\n\nFULL GRAPH:")
   logger.debug(full_graph.get_list_of_nodes())
   logger.debug(full_graph.get_list_of_edges())
   logger.debug("\n\n")
 
+  # This method does almost everything
   run_benchmarks(full_graph)
   # test_stuff(full_graph)
 
@@ -156,13 +154,16 @@ def main(argv):
   total_run_time = (end_time - start_time)
   print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
+  # Print out Timing Metrics
   if len(list(filter(None, full_graph.vm_creation_times))) > 0:
-    avg_vm_create_time = sum(filter(None, full_graph.vm_creation_times))/len(list(filter(None, full_graph.vm_creation_times)))
-    print("AVG VM CREATION TIME: " + str(avg_vm_create_time))
+    avg_vm_create_time = (sum(filter(None, full_graph.vm_creation_times)) /
+                          len(list(filter(None, full_graph.vm_creation_times))))
+    logging.info("AVG VM CREATION TIME: " + str(avg_vm_create_time))
 
   if len(list(filter(None, full_graph.benchmark_run_times))) > 0:
-    avg_benchmark_run_time = sum(filter(None, full_graph.benchmark_run_times))/len(list(filter(None, full_graph.benchmark_run_times)))
-    print("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
+    avg_benchmark_run_time = (sum(filter(None, full_graph.benchmark_run_times)) /
+                              len(list(filter(None, full_graph.benchmark_run_times))))
+    logging.info("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
   print("ALL BENCHMARK TIMES:")
   print(full_graph.benchmark_run_times)
@@ -194,8 +195,6 @@ def setup_logging():
 
   return logger
 
-def create_benchmark_schedule(benchmark_graph):
-  pass
 
 def test_stuff(benchmark_graph):
   maximum_set = benchmark_graph.get_benchmark_set()
@@ -221,22 +220,32 @@ def run_benchmarks(benchmark_graph):
     removed_count = benchmark_graph.remove_orphaned_nodes()
     vms_removed.append(removed_count)
     update_region_quota_usage(benchmark_graph)
-    print("create vms and add benchmarks")
+    logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
-    print(benchmark_graph.benchmarks_left())
+    logging.debug(benchmark_graph.benchmarks_left())
     time.sleep(2)
     # benchmark_graph.print_graph()
 
-  print(len(benchmarks_run))
-  print("BMS RUN EACH LOOP")
+  logging.debug(len(benchmarks_run))
+  logging.debug("BMS RUN EACH LOOP")
   for bmset in benchmarks_run:
-    print(len(bmset))
+    logging.debug(len(bmset))
 
-  print("VMS REMOVED EACH LOOP")
+  logging.debug("VMS REMOVED EACH LOOP")
   for vm_count in vms_removed:
-    print(vm_count)
-    
+    logging.debug(vm_count)
+
+
 def update_region_quota_usage(benchmark_graph):
+  """update the regional quotas based on data pulled from the cloud provider
+
+  Pulls current usage information from the cloud provider and updates
+  quota information based off of that
+
+  Args:
+    benchmark_graph: Benchmark/VM Graph to update
+  """
+
   region_dict = get_region_info()
   # print(region_dict)
   for region_name in benchmark_graph.regions:
@@ -253,15 +262,15 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   Args:
     benchmark_config_list: list of dictionaries containing benchmark configs
-  
+
   Returns:
     [description]
     [type]
   """
 
-  full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub", 
-                                              ssh_priv="ssh_key", 
-                                              ssl_cert="cert.pem", 
+  full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub",
+                                              ssh_priv="ssh_key",
+                                              ssl_cert="cert.pem",
                                               pkb_location=pkb_command,
                                               bigquery_table=FLAGS.bigquery_table,
                                               bq_project=FLAGS.bq_project)
@@ -429,9 +438,9 @@ def parse_config_folder(path="configs/", ignore_hidden_folders=True):
 
 
 def parse_config_file(path="configs/file.yaml"):
-  """[summary]
+  """Parse config file functions
 
-  [description]
+  largely taken from the PKB parsing function
 
   Args:
     path: [description] (default: {"configs/file.yaml"})

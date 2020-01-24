@@ -10,7 +10,9 @@ import yaml
 import threading
 import logging
 import math
+import cloud_util
 
+from deprecated import deprecated
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
@@ -23,8 +25,14 @@ FLAGS = flags.FLAGS
 logger = None
 
 class BenchmarkGraph():
-  """[summary]
-  [description]
+  """Graph of VMs and benchmarks to be run between them
+  
+  A container of several datastructures and associated logic
+  1. A graph of VMs (nodes) and benchmarks (edges)
+  2. Region objects, representing regional quotas for clouds
+  3. benchmark waitlist, a list of benchmarks and associated VMs 
+     that have not been allocated or added to the graph yet
+  4. metrics about the VMs and benchmarks
   """
 
   def __init__(self, ssh_pub="", ssh_priv="", ssl_cert="", pkb_location="./pkb.py",
@@ -71,12 +79,6 @@ class BenchmarkGraph():
   def get_available_cpus(self, region_name):
     return region['region_name'].get_available_cpus()
 
-  def get_region_from_zone(self, cloud, zone):
-    if cloud == 'GCP':
-      return zone[:len(zone) - 2]
-    else:
-      return None
-
   def required_vm_exists(self, vm):
     # print(os_type)
     for index in self.graph.nodes:
@@ -91,10 +93,14 @@ class BenchmarkGraph():
     nx.draw(self.graph)
     plt.show()
 
-
+  @deprecated(reason="Use get_list_if_vm_exists instead")
   def get_vm_if_exists(self, cloud, zone, machine_type,
-                         network_tier, os_type, vpn=False):
+                       network_tier, os_type, vpn=False):
+    """Tries to find a VM in the graph that match the given parameters
 
+    Searches the graph nodes to find a VM
+    that matches the parameters passed in
+    """
     for index in self.graph.nodes:
       vm = self.graph.nodes[index]['vm']
       if (vm.cloud == cloud and
@@ -111,6 +117,18 @@ class BenchmarkGraph():
     return None
 
   def get_list_if_vm_exists(self, vm):
+    """Tries to find a VM in the graph with equivalent specs
+
+    Searches graph nodes and returns a list of VMs
+    with identical specs to the argument vm
+
+    Args:
+      vm: vm with specs to search for
+
+    Returns:
+      list of VMs with matching specs to parameter
+      list[virtual_machine.VirtualMachine]
+    """
     vm_list = []
     for index in self.graph.nodes:
       tmp_vm = self.graph.nodes[index]['vm']
@@ -122,7 +140,18 @@ class BenchmarkGraph():
     return vm_list
 
   def check_if_can_add_vm(self, vm):
-    vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
+    """Checks if there is enough space in the region to add VM
+
+    Checks region quotas to see if it can add VM
+
+    Args:
+      vm: Virtual Machine to add
+
+    Returns:
+      Boolean and description of if it can/cannot add and why
+      bool, String
+    """
+    vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
 
     if self.regions[vm_region].has_enough_resources(vm.cpu_count):
       if self.required_vm_exists(vm):
@@ -139,8 +168,26 @@ class BenchmarkGraph():
   def add_vm_if_possible(self, cpu_count, zone,
                          os_type, network_tier, machine_type,
                          cloud, vpn=False):
+    """[summary]
 
-    vm_region = self.get_region_from_zone(cloud, zone)
+    [description]
+
+    Args:
+      cpu_count: [description]
+      zone: [description]
+      os_type: [description]
+      network_tier: [description]
+      machine_type: [description]
+      cloud: [description]
+      vpn: [description] (default: {False})
+
+    Returns:
+      [description]
+      [type]
+    """
+
+    # Need region because quotas are regional
+    vm_region = cloud_util.get_region_from_zone(cloud, zone)
 
     # create virtual_machine object
     vm_id = self.vm_total_count
@@ -161,11 +208,12 @@ class BenchmarkGraph():
     if len(tmp_vm_list) > 0:
       can_add_another, status = self.check_if_can_add_vm(vm)
       # if there is room to add a duplicate vm and if flags allow it 
+      # then add the VM
       if (can_add_another 
           and status == "VM Exists. Quota not Exceeded" 
           and FLAGS.allow_duplicate_vms == True):
-        status2 = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        if status2:
+        success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+        if success:
           self.virtual_machines.append(vm)
           self.graph.add_node(vm_id, vm=vm)
           self.vm_total_count += 1
@@ -190,7 +238,7 @@ class BenchmarkGraph():
       status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
 
       # if successful, also add that vm to virtual_machines list
-      # and increment total number of vms, return True, 1
+      # and increment total number of vms, return True, and the vm
       if status is True:
         print("adding vm in zone " + vm.zone)
         self.virtual_machines.append(vm)
@@ -202,13 +250,17 @@ class BenchmarkGraph():
         logger.debug("QUOTA EXCEEDED")
         return False, None
 
+  def add_same_zone_vms(self, vm1, vm2):
+    vm1_list = get_list_if_vm_exists(vm1)
+    pass
+
   def get_list_of_nodes(self):
     return self.graph.nodes
 
   def get_list_of_edges(self):
     return self.graph.edges
 
-  def add_benchmark(self, new_benchmark, node1, node2):
+  def add_benchmark_as_edge(self, new_benchmark, node1, node2):
     #  M[v1][v2]
     # M.add_edges_from([(v1,v2,{'route':45645})])
     new_benchmark.benchmark_id = self.bm_total_count
@@ -279,14 +331,13 @@ class BenchmarkGraph():
       vm_processes = []
       thread_count = 0
       while (thread_count < max_processes or max_processes < 0) and node_index < len(node_list) :
-      # for index in node_list:
+        # for index in node_list:
 
         logger.debug(node_index)
         vm = self.graph.nodes[node_index]['vm']
 
         vm_proc_container = {}
         vm_proc_container['vm'] = vm
-
 
         if vm.status == 'Not Created':
           # vm.create_instance(self.pkb_location)
@@ -338,7 +389,7 @@ class BenchmarkGraph():
        out the benchmark to run between those nodes.
        It then calls a function to create a config file for
        the benchmarks and then runs the benchmarks
-    
+
     """
     benchmarks_to_run = []
     benchmarks_to_run_tuples = []
@@ -378,7 +429,7 @@ class BenchmarkGraph():
 
     # run benchmark configs
     # run in parallel
-    
+
     bm_all_thread_results = []
     # bm_thread_result_counter = 0
     bm_index = 0
@@ -387,9 +438,10 @@ class BenchmarkGraph():
 
     while bm_index < len(benchmarks_to_run):
       bm_threads = []
-      
+
       thread_count = 0
-      while (thread_count < max_processes or max_processes < 0) and bm_index < len(benchmarks_to_run):
+      while ((thread_count < max_processes or max_processes < 0) and
+              bm_index < len(benchmarks_to_run)):
         # TODO change this into a dict?
         bm = benchmarks_to_run[bm_index]
 
@@ -409,11 +461,11 @@ class BenchmarkGraph():
 
         queue = mp.Queue()
         logger.debug(bm.zone1 + " <-> " + bm.zone2)
-        p = mp.Process(target=self.run_benchmark_process, 
-                             args=(bm,
-                                   benchmarks_to_run_tuples[bm_index],
-                                   bm_index,
-                                   queue))
+        p = mp.Process(target=self.run_benchmark_process,
+                       args=(bm,
+                             benchmarks_to_run_tuples[bm_index],
+                             bm_index,
+                             queue))
         
         bm_data = {}
         bm_data['bm'] = bm
@@ -560,7 +612,7 @@ class BenchmarkGraph():
       print(bm.zone2)
 
       if bm.zone1 != bm.zone2:
-        cpu_count = self.cpu_count_from_machine_type(bm.cloud, bm.machine_type)
+        cpu_count = cloud_util.cpu_count_from_machine_type(bm.cloud, bm.machine_type)
 
         logger.debug("Trying to add " + bm.zone1 + " and " + bm.zone2)
 
@@ -601,7 +653,7 @@ class BenchmarkGraph():
           bm.vms.append(tmp_vm2)
           bm.status = "Not Executed"
           self.benchmarks.append(bm)
-          self.add_benchmark(bm, tmp_vm1.node_id, tmp_vm2.node_id)
+          self.add_benchmark_as_edge(bm, tmp_vm1.node_id, tmp_vm2.node_id)
           bms_added.append(bm)
         else:
           print("WAITLISTED")
@@ -615,8 +667,6 @@ class BenchmarkGraph():
       self.benchmark_wait_list.remove(bm)
 
     print("Number of benchmarks to run: " + str(len(self.graph.edges)))
-
-
 
 
   def remove_orphaned_nodes(self):
@@ -641,10 +691,10 @@ class BenchmarkGraph():
           # vm.delete_instance(self.pkb_location)
           keys_to_remove.append(key)
           t = threading.Thread(target=vm.delete_instance,
-                             args=(self.pkb_location,))
+                               args=(self.pkb_location,))
           vm_threads.append(t)
           t.start()
-       
+
     # join threads
     for t in vm_threads:
       t.join()
@@ -654,7 +704,7 @@ class BenchmarkGraph():
       vm = self.graph.nodes[key]['vm']
       print("VM removed: " + str(key))
       self.graph.remove_node(key)
-      vm_region = self.get_region_from_zone(vm.cloud, vm.zone)
+      vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
       self.regions[vm_region].remove_virtual_machine(vm)
       vm_removed_count += 1
 
@@ -663,16 +713,3 @@ class BenchmarkGraph():
   def benchmarks_left(self):
     # TODO fix this
     return len(self.graph.edges) + len(self.benchmark_wait_list)
-
-
-  @staticmethod
-  def cpu_count_from_machine_type(cloud, machine_type):
-    if cloud == 'GCP':
-      return int(machine_type.split('-')[2])
-    elif cloud == 'AWS':
-      return None
-    elif cloud == 'Azure':
-      return None
-    else:
-      return None
-

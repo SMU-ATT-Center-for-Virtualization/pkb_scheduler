@@ -1,13 +1,13 @@
 class Benchmark():
   """[summary]
-  
+
   [description]
   """
 
   def __init__(self, benchmark_id, benchmark_type, zone1, zone2, more_zones=[],
                os_type='ubuntu1804', machine_type=None, cloud='GCP',
                network_tier='premium', vpn=False, vpn_gateway_count=0,
-               vpn_tunnel_count=0, flags={}):        
+               vpn_tunnel_count=0, flags={}):
 
     self.benchmark_id = benchmark_id
     self.benchmark_type = benchmark_type
@@ -25,7 +25,7 @@ class Benchmark():
     # self.ssh_key = None
     # self.ip = None
 
-  def copy_contents(self, bm):       
+  def copy_contents(self, bm):
     self.benchmark_id = bm.benchmark_id
     self.benchmark_type = bm.benchmark_type
     self.zone1 = bm.zone1
@@ -41,8 +41,6 @@ class Benchmark():
     self.flags = bm.flags
     # self.ssh_key = None
     # self.ip = None
-
-
 
   def run(self):
     pass

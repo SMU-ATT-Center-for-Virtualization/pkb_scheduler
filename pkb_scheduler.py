@@ -16,6 +16,7 @@ import subprocess
 import json
 import time
 import logging
+import cloud_util
 
 
 from typing import List, Dict, Tuple, Set
@@ -61,34 +62,35 @@ flags.DEFINE_boolean('no_run', False,
 
 flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
                     'prints debug statements')
-#not implemented
-flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'],
-                  'Chooses whether algorithm should be more time or ' 
-                   'space efficient.')
 
-flags.DEFINE_boolean('allow_duplicate_vms', True, 
+# not implemented
+flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'],
+                  'Chooses whether algorithm should be more time or '
+                  'space efficient.')
+
+flags.DEFINE_boolean('allow_duplicate_vms', True,
                      'Defines whether or not tool should create '
                      'multiple identical VMs if there is capacity '
                      'and run tests in parallel or if it should '
                      'wait for existing vm to become available')
 
-flags.DEFINE_string('config', 'config.yaml', 
+flags.DEFINE_string('config', 'config.yaml',
                     'pass config file or directory')
 
-
-flags.DEFINE_integer('max_processes', 30, 
+flags.DEFINE_integer('max_processes', 30,
                      'max threads to use. A value of -1 will give '
                      'the system permission to use as many threads '
                      'as it wants. This may result in system slow downs '
                      'or hang ups')
 
-flags.DEFINE_string('pkb_location', 
-                    "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py", 
+flags.DEFINE_string('pkb_location',
+                    "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py",
                     'location of pkb on disk')
 
 flags.DEFINE_boolean('print_graph', False,
-                     'If True, tool will use pyplot to print a visual representation '
-                     'of the benchmark_graph after every iteration')
+                     'If True, tool will use pyplot to print a visual '
+                     'representation of the benchmark_graph after every '
+                     'iteration')
 
 flags.DEFINE_string('bigquery_table', 'daily_tests.scheduler_test_1',
                     'bigquery table to push results to')
@@ -125,8 +127,8 @@ def main(argv):
   # benchmark_config_list = parse_config_folder("/home/derek/projects/pkb_scheduler")
 
   print("COMPLETE BENCHMARK CONFIG LIST")
-  print(benchmark_config_list)
-
+  for tmpbm in benchmark_config_list:
+    print(tmpbm)
 
   # Create the initial graph from the config directory or file
   full_graph = create_graph_from_config_list(benchmark_config_list,
@@ -174,13 +176,10 @@ def main(argv):
     total_time = total_time + vm.uptime()
   print(total_time)
 
-###########################################################
-
-  # full_graph.create_benchmark_config_file(full_graph.benchmarks[0], full_graph.benchmarks[0].vms)
 
 def setup_logging():
 
-  global logger 
+  global logger
   numeric_level = getattr(logging, FLAGS.log_level.upper(), None)
   # create logger
   logger = logging.getLogger('pkb_scheduler')
@@ -246,7 +245,7 @@ def update_region_quota_usage(benchmark_graph):
     benchmark_graph: Benchmark/VM Graph to update
   """
 
-  region_dict = get_region_info()
+  region_dict = cloud_util.get_region_info(cloud='GCP')
   # print(region_dict)
   for region_name in benchmark_graph.regions:
     cpu_usage = region_dict[region_name]['CPUS']['usage']
@@ -281,8 +280,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # get all regions from gcloud
   # make regions
-  region_dict = get_region_info()
-  # print(region_dict)
+  region_dict = cloud_util.get_region_info(cloud='GCP')
   for key in region_dict:
     # if region['description'] in full_graph.regions
     new_region = Region(region_name=key,
@@ -317,8 +315,10 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # create virtual machines (node)
   # attach with edges and benchmarks
   for bm in temp_benchmarks:
+    cpu_count = cloud_util.cpu_count_from_machine_type(bm.cloud, bm.machine_type)
+
     if bm.zone1 != bm.zone2:
-      cpu_count = cpu_count_from_machine_type(bm.cloud, bm.machine_type)
+
       logger.debug("Trying to add " + bm.zone1 + " and " + bm.zone2)
 
       success1, tmp_vm1 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
@@ -357,8 +357,8 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
         bm.vms.append(tmp_vm1)
         bm.vms.append(tmp_vm2)
         full_graph.benchmarks.append(bm)
-        full_graph.add_benchmark(bm, tmp_vm1.node_id, tmp_vm2.node_id)
-      # if none added and none exist  
+        full_graph.add_benchmark_as_edge(bm, tmp_vm1.node_id, tmp_vm2.node_id)
+      # if none added and none exist
       else:
         logger.debug("BM WAITLISTED")
         bm.status = "Waitlist"
@@ -369,45 +369,11 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 
-
   # Second pass, add
   for config in benchmark_config_list:
     pass
 
   return full_graph
-
-
-def cpu_count_from_machine_type(cloud, machine_type):
-  if cloud == 'GCP':
-    return int(machine_type.split('-')[2])
-  elif cloud == 'AWS':
-    return None
-  elif cloud == 'Azure':
-    return None
-  else:
-    return None
-
-#TODO support other clouds
-def get_region_info():
-  region_list_command = "gcloud compute regions list --format=json"
-  process = subprocess.Popen(region_list_command.split(),
-                             stdout=subprocess.PIPE)
-  output, error = process.communicate()
-
-  # load json and convert to a more useable output
-  region_json = json.loads(output)
-  region_dict = {}
-  for region_iter in region_json:
-    region_dict[region_iter['description']] = {}
-    for quota in region_iter['quotas']:
-      region_dict[region_iter['description']][quota['metric']] = quota
-      region_dict[region_iter['description']][quota['metric']].pop('metric', None)
-
-      # print(region_dict['us-central1']['CPUS']['limit'])
-      # print(region_dict['us-central1']['CPUS']['usage'])
-  # print(region_dict['us-west2'])
-  # print(region_dict)
-  return region_dict
 
 
 def parse_config_folder(path="configs/", ignore_hidden_folders=True):
@@ -467,10 +433,10 @@ def parse_config_file(path="configs/file.yaml"):
 
   flag_matrix_name = config_dict.get('flag_matrix', None)
   flag_matrix = config_dict.pop(
-    'flag_matrix_defs', {}).get(flag_matrix_name, {})
+      'flag_matrix_defs', {}).get(flag_matrix_name, {})
 
   flag_matrix_filter = config_dict.pop(
-    'flag_matrix_filters', {}).get(flag_matrix_name, {})
+      'flag_matrix_filters', {}).get(flag_matrix_name, {})
 
   config_dict.pop('flag_matrix', None)
   config_dict.pop('flag_zip', None)
@@ -486,7 +452,7 @@ def parse_config_file(path="configs/file.yaml"):
 
   # print("crossed_axes")
   # print(crossed_axes)
-  
+
   for flag_config in itertools.product(*crossed_axes):
     config = {}
     # print("FLAG CONFIG")
@@ -494,12 +460,12 @@ def parse_config_file(path="configs/file.yaml"):
     config = _GetConfigForAxis(config_dict, flag_config)
     # print("CONFIG")
     # print(config)
-    if (flag_matrix_filter and not eval(flag_matrix_filter, {}, 
+    if (flag_matrix_filter and not eval(flag_matrix_filter, {},
                                         config['flags'])):
       print("Did not pass Flag Matrix Filter")
       continue
 
-    benchmark_config_list.append((benchmark_name, config));
+    benchmark_config_list.append((benchmark_name, config))
     # print("BENCHMARK CONFIG")
     # print(benchmark_config_list[0])
 
@@ -522,8 +488,10 @@ def _GetConfigForAxis(benchmark_config, flag_config):
   return_config = copy.deepcopy(config)
   return return_config
 
+
 def parse_named_configs(config):
   pass
+
 
 def parse_named_config(config):
   pass

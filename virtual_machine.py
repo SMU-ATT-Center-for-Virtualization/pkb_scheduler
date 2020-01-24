@@ -7,18 +7,19 @@ import logging
 FLAGS = flags.FLAGS
 logger = None
 
+
 class VirtualMachine():
   """[summary]
-  
+
   [description]
   """
 
-  def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None, cloud=None, 
-               network_tier=None, vpn=False, vpn_gateway_count=0, vpn_tunnel_count=0,
-               ssh_private_key=None, ssl_cert=None):   
+  def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
+               cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
+               vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None):
 
     # get logger
-    global logger 
+    global logger
     logger = logging.getLogger('pkb_scheduler')
 
     self.node_id = node_id
@@ -47,7 +48,7 @@ class VirtualMachine():
     # self.ip_address = None
 
   def vm_spec_is_equivalent(self, vm):
-    """Returns true if the spec of a vm that is 
+    """Returns true if the spec of a vm that is
        passed in is equivalent to this VM
     """
     if (self.cloud == vm.cloud and
@@ -57,7 +58,7 @@ class VirtualMachine():
         self.vpn == vm.vpn and
         self.os_type == vm.os_type):
       return True
-    
+
     return False
 
   def uptime(self):
@@ -71,14 +72,13 @@ class VirtualMachine():
     else:
       return 0
 
-
   def create_instance(self, pkb_location):
     """Creates a VM on the cloud from a VM object
-    
+
     Creates a VM on the cloud from a VM object
     Currently only works for GCP VMs
     TODO add AWS and Azure
-    
+
     Args:
       vm: [description]
     """
@@ -86,18 +86,18 @@ class VirtualMachine():
     if self.status == "Running":
       return (False, self.status)
 
-    cmd = (pkb_location + " --benchmarks=vm_setup"
-            + " --gce_network_name=pkb-scheduler"
-            + " --ssh_key_file=" + self.ssh_private_key
-            + " --ssl_cert_file=" + self.ssl_cert
-            + " --zones=" + self.zone
-            + " --os_type=" + self.os_type
-            + " --machine_type=" + self.machine_type
-            + " --cloud=" + self.cloud
-            + " --gce_network_tier=" + self.network_tier
-            + " --run_stage=provision,prepare"
-            + " --gce_remote_access_firewall_rule=allow-ssh"
-            + " --ignore_package_requirements=True")
+    cmd = (pkb_location + " --benchmarks=vm_setup" +
+           " --gce_network_name=pkb-scheduler" +
+           " --ssh_key_file=" + self.ssh_private_key +
+           " --ssl_cert_file=" + self.ssl_cert +
+           " --zones=" + self.zone +
+           " --os_type=" + self.os_type +
+           " --machine_type=" + self.machine_type +
+           " --cloud=" + self.cloud +
+           " --gce_network_tier=" + self.network_tier +
+           " --run_stage=provision,prepare" +
+           " --gce_remote_access_firewall_rule=allow-ssh" +
+           " --ignore_package_requirements=True")
 
     if FLAGS.no_run:
       print("CREATE INSTANCE: " + cmd)
@@ -176,12 +176,12 @@ class VirtualMachine():
 
     # TODO make the network a parameter
     print("DELETING VM INSTANCE")
-    cmd = (pkb_location + " --benchmarks=vm_setup"
-           + " --gce_network_name=pkb-scheduler"
-           + " --cloud=" + self.cloud
-           + " --run_uri=" + self.run_uri
-           + " --run_stage=cleanup,teardown"
-           + " --ignore_package_requirements=True")
+    cmd = (pkb_location + " --benchmarks=vm_setup" +
+           " --gce_network_name=pkb-scheduler" +
+           " --cloud=" + self.cloud +
+           " --run_uri=" + self.run_uri +
+           " --run_stage=cleanup,teardown" +
+           " --ignore_package_requirements=True")
 
     if FLAGS.no_run:
       print("DELETING INSTANCE: " + cmd)
@@ -197,12 +197,12 @@ class VirtualMachine():
 
     end_time = time.time()
     self.delete_timestamp = time.time()
+    self.deletion_time = end_time - start_time
     self.status = "Shutdown"
 
     return (True, self.status)
 
-
-  def copy_contents(self, vm):   
+  def copy_contents(self, vm):
     self.node_id = vm.node_id
     self.cpu_count = vm.cpu_count
     self.os_type = vm.os_type

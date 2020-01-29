@@ -46,12 +46,13 @@ from absl import app
 # TODO thread and optimize what is happening at once when max threads is used
 # TODO experiment with install_packages flag
 # TODO check ssh key permissions
-# TODO add support for vms in the same zones
 
 # TODO try reuse_ssh_connections
 # TODO get to work with windows vms
 # TODO get to work with VPNs
 # TODO add defaults all in one place
+
+# TODO add 
 
 
 # python3
@@ -277,6 +278,13 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'gce_network_tier' in benchmark_config[1]['flags']:
       network_tier = benchmark_config[1]['flags']['gce_network_tier']
 
+    bigquery_table = FLAGS.bigquery_table
+    bq_project = FLAGS.bq_project
+    if 'bigquery_table' in benchmark_config[1]['flags']:
+      bigquery_table = benchmark_config[1]['flags']['bigquery_table']
+    if 'bq_project' in benchmark_config[1]['flags']:
+      bq_project = benchmark_config[1]['flags']['bq_project']
+
     uuid_1 = uuid.uuid1().int
     uuid_2 = uuid.uuid1().int
 
@@ -296,6 +304,8 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],
                    vm_specs=vm_specs,
+                   bigquery_table=bigquery_table,
+                   bq_project=bq_project,
                    flags=benchmark_config[1]['flags'])
     print("FLAGS STUFF HERE")
     print(benchmark_config[1]['flags'])

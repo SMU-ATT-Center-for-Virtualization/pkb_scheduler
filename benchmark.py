@@ -10,13 +10,15 @@ class Benchmark():
                zone1=None, zone2=None, more_zones=[],
                os_type='ubuntu1804', machine_type=None, cloud='GCP',
                network_tier='premium', vpn=False, vpn_gateway_count=0,
-               vpn_tunnel_count=0, flags={}):
+               vpn_tunnel_count=0, bigquery_table=None, bq_project=None, flags={}):
     self.benchmark_id = benchmark_id
     self.benchmark_type = benchmark_type
     self.status = "Not Executed"
     self.vms = []
     self.config_file = None
     self.flags = flags
+    self.bigquery_table=bigquery_table
+    self.bq_project=bq_project
 
     if len(vm_specs) <= 0:  
       self.zone1 = zone1

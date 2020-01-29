@@ -462,6 +462,7 @@ class BenchmarkGraph():
 
     logger.info("LENGTH NODE LIST: " + str(len(node_list)))
 
+    # for each node in the graph
     while node_index < len(node_list):
       vm_processes = []
       thread_count = 0
@@ -658,8 +659,8 @@ class BenchmarkGraph():
            " --benchmarks=" + bm.benchmark_type +
            " --gce_network_name=pkb-scheduler" +
            " --benchmark_config_file=" + bm.config_file +
-           " --bigquery_table=" + self.bigquery_table +
-           " --bq_project=" + self.bq_project +
+           " --bigquery_table=" + bm.bigquery_table +
+           " --bq_project=" + bm.bq_project +
            " --ignore_package_requirements=True")
 
     # TODO do install_packages if vm has already been used

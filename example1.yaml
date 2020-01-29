@@ -24,3 +24,5 @@ iperf:
     netperf_num_streams: 1,4,32
     iperf_sending_thread_count: 1,4,32
     ping_also_run_using_external_ip: True
+    bigquery_table: daily_tests.config_test_1
+    bq_project: smu-benchmarking

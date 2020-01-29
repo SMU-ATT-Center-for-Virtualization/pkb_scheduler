@@ -227,7 +227,7 @@ def run_benchmarks(benchmark_graph):
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
     benchmark_graph.create_vms()
-    logging.debug(benchmark_graph.benchmarks_left())
+    logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     # benchmark_graph.print_graph()
 

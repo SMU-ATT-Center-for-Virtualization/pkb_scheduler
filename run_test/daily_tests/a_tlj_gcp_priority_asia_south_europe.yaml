@@ -1,0 +1,25 @@
+#benchmark throughput_latency_jitter
+
+#Gartner IaaS test
+#includes iperf, netperf, ping
+throughput_latency_jitter:
+  flag_matrix: inter_region
+  flag_matrix_filters:
+    inter_region: "zones != extra_zones"
+  flag_matrix_defs:
+    inter_region:
+      gce_network_tier: [premium, standard]
+      zones: [asia-south1-a]
+      extra_zones: [europe-west3-a]
+      machine_type: [n1-standard-2]
+  flags:
+    cloud: GCP
+    iperf_runtime_in_seconds: 60
+    netperf_histogram_buckets: 1000
+    netperf_benchmarks: TCP_RR,TCP_STREAM,UDP_RR,UDP_STREAM
+    #netperf_rr_test_length: 100000
+    netperf_test_length: 60
+    netperf_num_streams: 1,4,32
+    iperf_sending_thread_count: 1,4,32
+    ping_also_run_using_external_ip: True
+    netperf_tcp_stream_send_size_in_bytes: 131072

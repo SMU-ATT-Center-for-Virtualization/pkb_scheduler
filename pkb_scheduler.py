@@ -17,11 +17,13 @@ import json
 import time
 import logging
 import cloud_util
+import uuid
 
 
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
+from virtual_machine_spec import VirtualMachineSpec
 from region import Region
 from absl import flags
 from absl import app
@@ -49,6 +51,7 @@ from absl import app
 # TODO try reuse_ssh_connections
 # TODO get to work with windows vms
 # TODO get to work with VPNs
+# TODO add defaults all in one place
 
 
 # python3
@@ -141,7 +144,7 @@ def main(argv):
 
   logger.debug("\nBENCHMARKS TO RUN:")
   for bm in full_graph.benchmarks:
-    logger.debug("Benchmark " + bm.zone1 + "--" + bm.zone2)
+    logger.debug("Benchmark " + bm.vm_specs[0].zone + "--" + bm.vm_specs[1].zone)
 
   logger.debug("\n\nFULL GRAPH:")
   logger.debug(full_graph.get_list_of_nodes())
@@ -218,9 +221,11 @@ def run_benchmarks(benchmark_graph):
     # before removal of edges
     removed_count = benchmark_graph.remove_orphaned_nodes()
     vms_removed.append(removed_count)
+    logging.info("UPDATE REGION QUOTAS")
     update_region_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
+    benchmark_graph.create_vms()
     logging.debug(benchmark_graph.benchmarks_left())
     time.sleep(2)
     # benchmark_graph.print_graph()
@@ -253,6 +258,50 @@ def update_region_quota_usage(benchmark_graph):
     benchmark_graph.regions[region_name].update_cpu_usage(cpu_usage)
     benchmark_graph.regions[region_name].update_address_usage(address_usage)
 
+
+def create_benchmark_from_config(benchmark_config, benchmark_id):
+  bm = None
+  # print(config[1]['flags']['zones'])
+  # print(benchmark_config[1]['flags']['extra_zones'])
+  # full_graph.add_region_if_not_exists(region_name)
+
+  if 'vm_groups' in benchmark_config[1]:
+    logging.error("Configs with vm groups not supported yet")
+  else:
+    cloud = benchmark_config[1]['flags']['cloud']
+    machine_type=benchmark_config[1]['flags']['machine_type']
+    cpu_count = cloud_util.cpu_count_from_machine_type(cloud, machine_type)
+
+    # TODO, set default somewhere else
+    network_tier='premium'
+    if 'gce_network_tier' in benchmark_config[1]['flags']:
+      network_tier = benchmark_config[1]['flags']['gce_network_tier']
+
+    uuid_1 = uuid.uuid1().int
+    uuid_2 = uuid.uuid1().int
+
+    vm_spec_1 = VirtualMachineSpec(uid=uuid_1,
+                                   cpu_count=cpu_count,
+                                   zone=benchmark_config[1]['flags']['zones'],
+                                   cloud=cloud,
+                                   machine_type=machine_type,
+                                   network_tier=network_tier)
+    vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
+                                   cpu_count=cpu_count,
+                                   zone=benchmark_config[1]['flags']['extra_zones'],
+                                   cloud=cloud,
+                                   machine_type=machine_type,
+                                   network_tier=network_tier)
+    vm_specs = [vm_spec_1, vm_spec_2]
+    bm = Benchmark(benchmark_id=benchmark_id,
+                   benchmark_type=benchmark_config[0],
+                   vm_specs=vm_specs,
+                   flags=benchmark_config[1]['flags'])
+    print("FLAGS STUFF HERE")
+    print(benchmark_config[1]['flags'])
+    print(bm.flags)
+
+  return bm
 
 def create_graph_from_config_list(benchmark_config_list, pkb_command):
   """[summary]
@@ -297,16 +346,19 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   temp_benchmarks = []
   for config in benchmark_config_list:
     # print(config[1]['flags']['zones'])
-    region_name = config[1]['flags']['zones']
+    # region_name = config[1]['flags']['zones']
     # print(config[1]['flags']['extra_zones'])
     # full_graph.add_region_if_not_exists(region_name)
-    new_benchmark = Benchmark(benchmark_id=benchmark_counter,
-                              benchmark_type=config[0],
-                              zone1=config[1]['flags']['zones'],
-                              zone2=config[1]['flags']['extra_zones'],
-                              machine_type=config[1]['flags']['machine_type'],
-                              cloud=config[1]['flags']['cloud'],
-                              flags=config[1]['flags'])
+
+    new_benchmark = create_benchmark_from_config(config,
+                                                 benchmark_counter)
+    # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
+    #                           benchmark_type=config[0],
+    #                           zone1=config[1]['flags']['zones'],
+    #                           zone2=config[1]['flags']['extra_zones'],
+    #                           machine_type=config[1]['flags']['machine_type'],
+    #                           cloud=config[1]['flags']['cloud'],
+    #                           flags=config[1]['flags'])
     temp_benchmarks.append(new_benchmark)
     benchmark_counter += 1
 
@@ -315,57 +367,8 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # create virtual machines (node)
   # attach with edges and benchmarks
   for bm in temp_benchmarks:
-    cpu_count = cloud_util.cpu_count_from_machine_type(bm.cloud, bm.machine_type)
-
-    if bm.zone1 != bm.zone2:
-
-      logger.debug("Trying to add " + bm.zone1 + " and " + bm.zone2)
-
-      success1, tmp_vm1 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                        zone=bm.zone1,
-                                                        os_type=bm.os_type,
-                                                        network_tier=bm.network_tier,
-                                                        machine_type=bm.machine_type,
-                                                        cloud=bm.cloud)
-
-      success2, tmp_vm2 = full_graph.add_vm_if_possible(cpu_count=cpu_count,
-                                                        zone=bm.zone2,
-                                                        os_type=bm.os_type,
-                                                        network_tier=bm.network_tier,
-                                                        machine_type=bm.machine_type,
-                                                        cloud=bm.cloud)
-
-      add_vms_and_benchmark = False
-      # added both vms
-      if (success1 and success2):
-        logger.debug("Added Both")
-        add_vms_and_benchmark = True
-      # added one, other exists
-      elif (success1 and tmp_vm2):
-        logger.debug("Added 1")
-        add_vms_and_benchmark = True
-      # added one, other exsists
-      elif (success2 and tmp_vm1):
-        logger.debug("Added 1")
-        add_vms_and_benchmark = True
-      # both exist already
-      elif (tmp_vm1 and tmp_vm2):
-        logger.debug("Both Exist")
-        add_vms_and_benchmark = True
-
-      if add_vms_and_benchmark:
-        bm.vms.append(tmp_vm1)
-        bm.vms.append(tmp_vm2)
-        full_graph.benchmarks.append(bm)
-        full_graph.add_benchmark_as_edge(bm, tmp_vm1.node_id, tmp_vm2.node_id)
-      # if none added and none exist
-      else:
-        logger.debug("BM WAITLISTED")
-        bm.status = "Waitlist"
-        full_graph.benchmark_wait_list.append(bm)
-
-    else:
-      logger.debug("VM 1 and VM 2 are the same zone")
+    logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+    vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
 
   logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 

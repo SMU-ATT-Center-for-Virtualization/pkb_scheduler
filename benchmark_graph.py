@@ -165,9 +165,10 @@ class BenchmarkGraph():
 
     return False, "Quota Exceeded"
 
+  @deprecated(reason="Use add_vms_for_benchmark_if_possible instead")
   def add_vm_if_possible(self, cpu_count, zone,
                          os_type, network_tier, machine_type,
-                         cloud, vpn=False):
+                         cloud, vpn=False, same_zone=False):
     """[summary]
 
     [description]
@@ -211,7 +212,7 @@ class BenchmarkGraph():
       # then add the VM
       if (can_add_another 
           and status == "VM Exists. Quota not Exceeded" 
-          and FLAGS.allow_duplicate_vms == True):
+          and (FLAGS.allow_duplicate_vms == True or same_zone==True)):
         success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         if success:
           self.virtual_machines.append(vm)
@@ -249,6 +250,140 @@ class BenchmarkGraph():
       else:
         logger.debug("QUOTA EXCEEDED")
         return False, None
+
+  def add_or_waitlist_benchmark_and_vms(self, bm):
+    print("here3")
+    vms = self.add_vms_for_benchmark_if_possible(bm)
+    vms_no_none = list(filter(None, vms))
+
+    if len(bm.vm_specs) == len(vms_no_none) == len(vms):
+      bm.vms = vms
+      self.benchmarks.append(bm)
+      self.add_benchmark_as_edge(bm, vms[0].node_id, vms[1].node_id)
+      return bm.vms, "Added"
+    else:
+      logger.debug("BM WAITLISTED")
+      bm.status = "Waitlist"
+      self.benchmark_wait_list.append(bm)
+      return [], "Waitlisted"
+
+
+  def add_vms_for_benchmark_if_possible(self, bm):
+    """[summary]
+    
+    [description]
+    
+    Args:
+      bm: [description]
+    
+    Returns:
+      [description]
+      bool
+    """
+    vm_ids = []
+    vms = []
+    print("here0")
+    for vm_spec in bm.vm_specs:
+
+      print(vm_spec.id)
+      vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
+      vm_id = self.vm_total_count
+      vm = VirtualMachine(node_id=vm_id,
+                          cpu_count=vm_spec.cpu_count,
+                          zone=vm_spec.zone,
+                          os_type=vm_spec.os_type,
+                          network_tier=vm_spec.network_tier,
+                          machine_type=vm_spec.machine_type,
+                          cloud=vm_spec.cloud,
+                          ssh_private_key=self.ssh_private_key_file,
+                          ssl_cert=self.ssl_cert_file,
+                          vm_spec=vm_spec,
+                          vm_spec_id=vm_spec.id)
+
+      # if VM with same specs already exists, return false 0
+      tmp_vm_list = self.get_list_if_vm_exists(vm)
+
+      suitable_vm_found = False
+
+      # if a vm already exists
+      if len(tmp_vm_list) > 0:
+        can_add_another, status = self.check_if_can_add_vm(vm)
+
+        add_from_list = True
+
+        # if there is room to add a duplicate vm and if flags allow it 
+        # then add the VM
+        if (can_add_another 
+            and status == "VM Exists. Quota not Exceeded" 
+            and FLAGS.allow_duplicate_vms == True):
+          print("here1")
+          # checks if there is enough space in a region to add another vm
+          success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+          if success:
+            add_from_list = False
+            self.virtual_machines.append(vm)
+            self.graph.add_node(vm_id, vm=vm)
+            vms.append(vm)
+            vm_ids.append(vm.node_id)
+            self.vm_total_count += 1
+            suitable_vm_found = True
+            continue
+          else:
+            logger.debug("QUOTA EXCEEDED. add from existing")
+            # TODO add to tmp_list
+            add_from_list = True
+        # if not room in quota, return duplicate vm with lowest degree
+        elif add_from_list:
+          tmp_vm_index = 0
+          min_degree_index = 0
+          # find initial min_degree_index that has not been used 
+          # by a vm in this benchmark
+
+          while tmp_vm_index < len(tmp_vm_list):
+            if tmp_vm_list[tmp_vm_index].node_id in vm_ids:
+              tmp_vm_index += 1
+            else:
+              min_degree = self.graph.degree[tmp_vm_list[tmp_vm_index].node_id]
+              min_degree_index = tmp_vm_index
+              tmp_vm_index += 1
+              suitable_vm_found = True
+              break
+
+          while tmp_vm_index < len(tmp_vm_list):
+            degree = self.graph.degree[tmp_vm_list[tmp_vm_index].node_id]
+            # if degree is smaller and vm_id not already in this benchmark
+            if (degree < min_degree and not (tmp_vm_list[tmp_vm_index].node_id in vm_ids)):
+              min_degree_index = tmp_vm_index
+            tmp_vm_index += 1
+
+          if suitable_vm_found:
+            vms.append(tmp_vm_list[min_degree_index])
+            vm_ids.append(tmp_vm_list[min_degree_index].node_id)
+            continue
+
+      # if vm does not exist yet
+      elif (not suitable_vm_found):
+        # try to add vm to region
+        print("here2")
+        status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+        print("Status ", status)
+
+        # if successful, also add that vm to virtual_machines list
+        # and increment total number of vms, return True, and the vm
+        if status is True:
+          print("adding vm in zone " + vm.zone)
+          self.virtual_machines.append(vm)
+          self.graph.add_node(vm_id, vm=vm)
+          vms.append(vm)
+          vm_ids.append(vm.node_id)
+          self.vm_total_count += 1
+        # return false, None if not enough space in region
+        else:
+          logger.debug("QUOTA EXCEEDED. VM waitlisted")
+          vms.append(None)
+
+    print(vms)
+    return vms
 
   def add_same_zone_vms(self, vm1, vm2):
     vm1_list = get_list_if_vm_exists(vm1)
@@ -325,16 +460,19 @@ class BenchmarkGraph():
     node_index = 0
     created_nodes = []
 
-    logger.debug("LENGTH NODE LIST: " + str(len(node_list)))
+    logger.info("LENGTH NODE LIST: " + str(len(node_list)))
 
     while node_index < len(node_list):
       vm_processes = []
       thread_count = 0
-      while (thread_count < max_processes or max_processes < 0) and node_index < len(node_list) :
+      while ((thread_count < max_processes or max_processes < 0) and
+             node_index < len(node_list)):
         # for index in node_list:
 
-        logger.debug(node_index)
-        vm = self.graph.nodes[node_index]['vm']
+        print("NODE INDEX", str(node_index))
+        print(self.graph.nodes)
+        print(node_list)
+        vm = self.graph.nodes[node_list[node_index]]['vm']
 
         vm_proc_container = {}
         vm_proc_container['vm'] = vm
@@ -369,7 +507,7 @@ class BenchmarkGraph():
         print("Process Done")
 
     for index in created_nodes:
-      vm = self.graph.nodes[index]['vm']
+      vm = self.graph.nodes[node_list[index]]['vm']
       self.vm_creation_times.append(vm.creation_time)
       print("VM INDEX: " + str(index))
       print(vm.status)
@@ -460,7 +598,7 @@ class BenchmarkGraph():
           continue
 
         queue = mp.Queue()
-        logger.debug(bm.zone1 + " <-> " + bm.zone2)
+        logger.debug(bm.vm_specs[0].zone + " <-> " + bm.vm_specs[1].zone)
         p = mp.Process(target=self.run_benchmark_process,
                        args=(bm,
                              benchmarks_to_run_tuples[bm_index],
@@ -516,19 +654,19 @@ class BenchmarkGraph():
     results_dict['success'] = False
     results_dict['run_time'] = None
 
-    cmd = (self.pkb_location 
-            + " --benchmarks=" + bm.benchmark_type
-            + " --gce_network_name=pkb-scheduler"
-            + " --benchmark_config_file=" + bm.config_file
-            + " --bigquery_table=" + self.bigquery_table
-            + " --bq_project=" + self.bq_project
-            + " --ignore_package_requirements=True")
+    cmd = (self.pkb_location +
+           " --benchmarks=" + bm.benchmark_type +
+           " --gce_network_name=pkb-scheduler" +
+           " --benchmark_config_file=" + bm.config_file +
+           " --bigquery_table=" + self.bigquery_table +
+           " --bq_project=" + self.bq_project +
+           " --ignore_package_requirements=True")
 
     # TODO do install_packages if vm has already been used
 
     print(bm_tuple)
-    print(bm.zone1)
-    print(bm.zone2)
+    print(bm.vm_specs[0].zone)
+    print(bm.vm_specs[1].zone)
     print(bm.config_file)
     print("RUN BM: " + cmd)
     if FLAGS.no_run:
@@ -569,9 +707,10 @@ class BenchmarkGraph():
     config_flags.pop("zones", None)
     config_flags.pop("extra_zones", None)
     config_flags.pop("machine_type", None)
-    # config_flags.pop("cloud", None)
-    config_flags["static_cloud_metadata"] = bm.cloud
-    config_flags["static_network_tier_metadata"] = bm.network_tier
+
+    # TODO fix these
+    config_flags["static_cloud_metadata"] = bm.vm_specs[0].cloud
+    config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
 
 
     for vm in vm_list:
@@ -603,66 +742,30 @@ class BenchmarkGraph():
   def remove_benchmark(self):
     pass
 
+  # TODO improve this
   def add_benchmarks_from_waitlist(self):
-    
+
+    if len(self.benchmark_wait_list) == 0:
+      logging.info("No benchmarks on waitlist")
+      return
+
+    logging.info("Adding benchmarks from waitlist")
+
     bms_added = []
     for bm in self.benchmark_wait_list:
+      print("here4, ", str(len(self.benchmark_wait_list)))
+      vms = self.add_vms_for_benchmark_if_possible(bm)
+      vms_no_none = list(filter(None, vms))
 
-      print(bm.zone1)
-      print(bm.zone2)
-
-      if bm.zone1 != bm.zone2:
-        cpu_count = cloud_util.cpu_count_from_machine_type(bm.cloud, bm.machine_type)
-
-        logger.debug("Trying to add " + bm.zone1 + " and " + bm.zone2)
-
-        success1, tmp_vm1 = self.add_vm_if_possible(cpu_count=cpu_count,
-                                                    zone=bm.zone1,
-                                                    os_type=bm.os_type,
-                                                    network_tier=bm.network_tier,
-                                                    machine_type=bm.machine_type,
-                                                    cloud=bm.cloud)
-
-        success2, tmp_vm2 = self.add_vm_if_possible(cpu_count=cpu_count,
-                                                    zone=bm.zone2,
-                                                    os_type=bm.os_type,
-                                                    network_tier=bm.network_tier,
-                                                    machine_type=bm.machine_type,
-                                                    cloud=bm.cloud)
-
-        add_vms_and_benchmark = False
-        # added both vms
-        if (success1 and success2):
-          logger.debug("Added Both")
-          add_vms_and_benchmark = True
-        # added one, other exists
-        elif (success1 and tmp_vm2):
-          logger.debug("Added 1")
-          add_vms_and_benchmark = True
-        # added one, other exsists
-        elif (success2 and tmp_vm1):
-          logger.debug("Added 1")
-          add_vms_and_benchmark = True
-        # both exist already
-        elif (tmp_vm1 and tmp_vm2):
-          logger.debug("Both Exist")
-          add_vms_and_benchmark = True
-
-        if add_vms_and_benchmark:
-          bm.vms.append(tmp_vm1)
-          bm.vms.append(tmp_vm2)
-          bm.status = "Not Executed"
-          self.benchmarks.append(bm)
-          self.add_benchmark_as_edge(bm, tmp_vm1.node_id, tmp_vm2.node_id)
-          bms_added.append(bm)
-        else:
-          print("WAITLISTED")
-          self.benchmark_wait_list.append(bm)
-
-      else:
-        print("VM 1 and VM 2 are the same zone")
+      if len(bm.vm_specs) == len(vms_no_none) == len(vms):
+        bm.vms = vms
+        self.benchmarks.append(bm)
+        self.add_benchmark_as_edge(bm, vms[0].node_id, vms[1].node_id)
+        bms_added.append(bm)
 
     # Remove bm from waitlist if it is added to graph
+
+    logging.info("ADDED " + str(len(bms_added)) + " BENCHMARKS")
     for bm in bms_added:
       self.benchmark_wait_list.remove(bm)
 

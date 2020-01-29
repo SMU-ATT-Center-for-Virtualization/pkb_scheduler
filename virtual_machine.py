@@ -3,6 +3,8 @@ import time
 from absl import flags
 import logging
 
+from virtual_machine_spec import VirtualMachineSpec
+
 
 FLAGS = flags.FLAGS
 logger = None
@@ -16,7 +18,8 @@ class VirtualMachine():
 
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
-               vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None):
+               vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
+               vm_spec=None, vm_spec_id=None):
 
     # get logger
     global logger
@@ -46,6 +49,8 @@ class VirtualMachine():
     # TODO use this instead of static network name
     self.network_name = None
     # self.ip_address = None
+    self.vm_spec = vm_spec
+    self.vm_spec_id = vm_spec_id
 
   def vm_spec_is_equivalent(self, vm):
     """Returns true if the spec of a vm that is

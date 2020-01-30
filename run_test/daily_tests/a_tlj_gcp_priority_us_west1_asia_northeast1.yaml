@@ -1,18 +1,16 @@
-#import anchors.yaml
 #benchmark throughput_latency_jitter
 
-#Inter zone benchmark
-#Includes iperf, netperf, ping
-#Tests between all zones in region us-central-1
-#zones defined in anchors.yaml
-iperf:
-  flag_matrix: fmatrix
+#Gartner IaaS test
+#includes iperf, netperf, ping
+throughput_latency_jitter:
+  flag_matrix: inter_region
   flag_matrix_filters:
-    fmatrix: "zones < extra_zones"
+    inter_region: "zones != extra_zones"
   flag_matrix_defs:
-    fmatrix:
-      zones: [northamerica-northeast1-a]
-      extra_zones: [northamerica-northeast1-b]
+    inter_region:
+      gce_network_tier: [premium, standard]
+      zones: [asia-northeast1-a]
+      extra_zones: [us-west1-b]
       machine_type: [n1-standard-2]
   flags:
     cloud: GCP
@@ -24,5 +22,4 @@ iperf:
     netperf_num_streams: 1,4,32
     iperf_sending_thread_count: 1,4,32
     ping_also_run_using_external_ip: True
-    bigquery_table: daily_tests.config_test_1
-    bq_project: smu-benchmarking
+    netperf_tcp_stream_send_size_in_bytes: 131072

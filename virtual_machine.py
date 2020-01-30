@@ -3,22 +3,26 @@ import time
 from absl import flags
 import logging
 
+from virtual_machine_spec import VirtualMachineSpec
+
 
 FLAGS = flags.FLAGS
 logger = None
 
+
 class VirtualMachine():
   """[summary]
-  
+
   [description]
   """
 
-  def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None, cloud=None, 
-               network_tier=None, vpn=False, vpn_gateway_count=0, vpn_tunnel_count=0,
-               ssh_private_key=None, ssl_cert=None):   
+  def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
+               cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
+               vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
+               vm_spec=None, vm_spec_id=None):
 
     # get logger
-    global logger 
+    global logger
     logger = logging.getLogger('pkb_scheduler')
 
     self.node_id = node_id
@@ -38,14 +42,18 @@ class VirtualMachine():
     self.run_uri = None
     self.uid = None
     self.creation_output = ""
+    self.create_timestamp = None
+    self.delete_timestamp = None
     self.creation_time = None
     self.deletion_time = None
     # TODO use this instead of static network name
     self.network_name = None
     # self.ip_address = None
+    self.vm_spec = vm_spec
+    self.vm_spec_id = vm_spec_id
 
   def vm_spec_is_equivalent(self, vm):
-    """Returns true if the spec of a vm that is 
+    """Returns true if the spec of a vm that is
        passed in is equivalent to this VM
     """
     if (self.cloud == vm.cloud and
@@ -55,16 +63,27 @@ class VirtualMachine():
         self.vpn == vm.vpn and
         self.os_type == vm.os_type):
       return True
-    
+
     return False
+
+  def uptime(self):
+    if self.status == "Running":
+      current_time = time.time()
+      return current_time - self.create_timestamp
+
+    elif self.status == "Shutdown":
+      return self.delete_timestamp - self.create_timestamp
+
+    else:
+      return 0
 
   def create_instance(self, pkb_location):
     """Creates a VM on the cloud from a VM object
-    
+
     Creates a VM on the cloud from a VM object
     Currently only works for GCP VMs
     TODO add AWS and Azure
-    
+
     Args:
       vm: [description]
     """
@@ -72,17 +91,18 @@ class VirtualMachine():
     if self.status == "Running":
       return (False, self.status)
 
-    cmd = (pkb_location + " --benchmarks=vm_setup"
-            + " --gce_network_name=pkb-scheduler"
-            + " --ssh_key_file=" + self.ssh_private_key
-            + " --ssl_cert_file=" + self.ssl_cert
-            + " --zones=" + self.zone
-            + " --os_type=" + self.os_type
-            + " --machine_type=" + self.machine_type
-            + " --cloud=" + self.cloud
-            + " --gce_network_tier=" + self.network_tier
-            + " --run_stage=provision,prepare"
-            + " --gce_remote_access_firewall_rule=allow-ssh")
+    cmd = (pkb_location + " --benchmarks=vm_setup" +
+           " --gce_network_name=pkb-scheduler" +
+           " --ssh_key_file=" + self.ssh_private_key +
+           " --ssl_cert_file=" + self.ssl_cert +
+           " --zones=" + self.zone +
+           " --os_type=" + self.os_type +
+           " --machine_type=" + self.machine_type +
+           " --cloud=" + self.cloud +
+           " --gce_network_tier=" + self.network_tier +
+           " --run_stage=provision,prepare" +
+           " --gce_remote_access_firewall_rule=allow-ssh" +
+           " --ignore_package_requirements=True")
 
     if FLAGS.no_run:
       print("CREATE INSTANCE: " + cmd)
@@ -92,15 +112,17 @@ class VirtualMachine():
       self.internal_ip = "172.0.0.1"
       self.name = "no run"
       self.status = "Running"
+      self.create_timestamp = time.time()
       return (True, self.status)
 
     start_time = time.time()
+    self.create_timestamp = time.time()
+
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
 
     end_time = time.time()
-
     self.creation_time = end_time - start_time
 
     print("PARSING OUTPUT")
@@ -159,21 +181,57 @@ class VirtualMachine():
 
     # TODO make the network a parameter
     print("DELETING VM INSTANCE")
-    cmd = (pkb_location + " --benchmarks=vm_setup"
-           + " --gce_network_name=pkb-scheduler"
-           + " --cloud=" + self.cloud
-           + " --run_uri=" + self.run_uri
-           + " --run_stage=cleanup,teardown")
+    cmd = (pkb_location + " --benchmarks=vm_setup" +
+           " --gce_network_name=pkb-scheduler" +
+           " --cloud=" + self.cloud +
+           " --run_uri=" + self.run_uri +
+           " --run_stage=cleanup,teardown" +
+           " --ignore_package_requirements=True")
 
     if FLAGS.no_run:
       print("DELETING INSTANCE: " + cmd)
       self.status = "Shutdown"
+      self.delete_timestamp = time.time()
       return (True, self.status)
+
+    start_time = time.time()
 
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
 
+    end_time = time.time()
+    self.delete_timestamp = time.time()
+    self.deletion_time = end_time - start_time
     self.status = "Shutdown"
 
     return (True, self.status)
+
+  def copy_contents(self, vm):
+    self.node_id = vm.node_id
+    self.cpu_count = vm.cpu_count
+    self.os_type = vm.os_type
+    self.zone = vm.zone
+    self.machine_type = vm.machine_type
+    self.cloud = vm.cloud
+    self.network_tier = vm.network_tier
+    self.vpn = vm.vpn
+    self.ssh_private_key = vm.ssh_private_key
+    self.ssl_cert = vm.ssl_cert
+    self.status = vm.status
+    self.internal_ip = vm.internal_ip
+    self.ip_address = vm.ip_address
+    self.name = vm.name
+    self.run_uri = vm.run_uri
+    self.uid = vm.uid
+    self.creation_output = vm.creation_output
+    self.creation_time = vm.creation_time
+    self.deletion_time = vm.deletion_time
+    self.network_name = vm.network_name
+    self.create_timestamp = vm.create_timestamp
+    self.delete_timestamp = vm.delete_timestamp
+
+    # TODO, do something like this instead
+    # vm2.__dict__ = vm1.__dict__.copy()
+    # or this
+    # destination.__dict__.update(source.__dict__).

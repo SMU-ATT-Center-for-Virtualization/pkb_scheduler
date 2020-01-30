@@ -125,9 +125,9 @@ class VirtualMachine():
     end_time = time.time()
     self.creation_time = end_time - start_time
 
-    print("PARSING OUTPUT")
+    logging.debug("PARSING OUTPUT")
     output = output.decode("utf-8")
-    print(output)
+    logging.debug(output)
     ext_ip = ""
     int_ip = ""
     name = ""
@@ -180,7 +180,7 @@ class VirtualMachine():
     # --run_stage=cleanup,teardown --run_uri=074af5cd
 
     # TODO make the network a parameter
-    print("DELETING VM INSTANCE")
+    logging.debug("DELETING VM INSTANCE")
     cmd = (pkb_location + " --benchmarks=vm_setup" +
            " --gce_network_name=pkb-scheduler" +
            " --cloud=" + self.cloud +
@@ -189,7 +189,7 @@ class VirtualMachine():
            " --ignore_package_requirements=True")
 
     if FLAGS.no_run:
-      print("DELETING INSTANCE: " + cmd)
+      logging.debug("DELETING INSTANCE: " + cmd)
       self.status = "Shutdown"
       self.delete_timestamp = time.time()
       return (True, self.status)

@@ -470,9 +470,9 @@ class BenchmarkGraph():
              node_index < len(node_list)):
         # for index in node_list:
 
-        print("NODE INDEX", str(node_index))
-        print(self.graph.nodes)
-        print(node_list)
+        # print("NODE INDEX", str(node_index))
+        # print(self.graph.nodes)
+        # print(node_list)
         vm = self.graph.nodes[node_list[node_index]]['vm']
 
         vm_proc_container = {}
@@ -499,21 +499,21 @@ class BenchmarkGraph():
         p = container['process']
         new_vm = container['data'].get()
         container['vm'].copy_contents(new_vm)
-        print("VM PROCESS INFO STUFF HERE:")
-        print("IN PROCESS VM:")
-        print(container['vm'].creation_output)
-        print("OUT PROCESS VM:")
-        print(new_vm.creation_output)
+        # print("VM PROCESS INFO STUFF HERE:")
+        # print("IN PROCESS VM:")
+        # print(container['vm'].creation_output)
+        # print("OUT PROCESS VM:")
+        # print(new_vm.creation_output)
         p.join()
         print("Process Done")
 
     for index in created_nodes:
       vm = self.graph.nodes[node_list[index]]['vm']
       self.vm_creation_times.append(vm.creation_time)
-      print("VM INDEX: " + str(index))
-      print(vm.status)
-      print(vm.run_uri)
-      print(vm.creation_output)
+      logging.debug("VM INDEX: " + str(index))
+      logging.debug(vm.status)
+      logging.debug(vm.run_uri)
+      logging.debug(vm.creation_output)
 
   def create_vm_process(self, vm, queue):
     vm.create_instance(self.pkb_location)
@@ -626,7 +626,7 @@ class BenchmarkGraph():
         self.benchmark_run_times.append(results_dict['run_time'])
         bm_data['bm'].status = results_dict['status']
         bm_data['success'] = results_dict['success']
-        print("thread done")
+        logging.debug("thread done")
 
     print("All threads done")
 
@@ -802,11 +802,11 @@ class BenchmarkGraph():
     # join threads
     for t in vm_threads:
       t.join()
-      print("Thread Done")
+      logging.debug("Thread Done")
 
     for key in keys_to_remove:
       vm = self.graph.nodes[key]['vm']
-      print("VM removed: " + str(key))
+      logging.debug("VM removed: " + str(key))
       self.graph.remove_node(key)
       vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
       self.regions[vm_region].remove_virtual_machine(vm)

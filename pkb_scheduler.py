@@ -104,6 +104,7 @@ flags.DEFINE_string('bq_project', 'smu-benchmarking',
 
 logger = None
 
+maximum_sets = []
 
 def main(argv):
 
@@ -121,7 +122,7 @@ def main(argv):
   else:
     benchmark_config_list = parse_config_folder(config_location)
 
-  print(benchmark_config_list)
+  # print(benchmark_config_list)
 
   logger.debug("\nNUMBER OF CONFIGS")
   logger.debug(len(benchmark_config_list))
@@ -171,6 +172,10 @@ def main(argv):
                               len(list(filter(None, full_graph.benchmark_run_times))))
     logging.info("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
+  print("ALL MAXIMUM SETS")
+  for max_set in maximum_sets:
+    print(max_set)
+
   print("ALL BENCHMARK TIMES:")
   print(full_graph.benchmark_run_times)
 
@@ -201,6 +206,7 @@ def setup_logging():
 
 def test_stuff(benchmark_graph):
   maximum_set = benchmark_graph.get_benchmark_set()
+  print("MAXIMUM SET")
   print(maximum_set)
   print(len(maximum_set))
 
@@ -214,6 +220,9 @@ def run_benchmarks(benchmark_graph):
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
+    print("MAXIMUM SET")
+    print(maximum_set)
+    maximum_sets.append(maximum_set)
     benchmarks_run.append(maximum_set)
     benchmark_graph.run_benchmark_set(maximum_set)
     # possibly check
@@ -307,9 +316,9 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                    bigquery_table=bigquery_table,
                    bq_project=bq_project,
                    flags=benchmark_config[1]['flags'])
-    print("FLAGS STUFF HERE")
-    print(benchmark_config[1]['flags'])
-    print(bm.flags)
+    # print("FLAGS STUFF HERE")
+    # print(benchmark_config[1]['flags'])
+    # print(bm.flags)
 
   return bm
 

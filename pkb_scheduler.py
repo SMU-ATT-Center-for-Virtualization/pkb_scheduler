@@ -78,6 +78,10 @@ flags.DEFINE_boolean('allow_duplicate_vms', True,
                      'and run tests in parallel or if it should '
                      'wait for existing vm to become available')
 
+
+flags.DEFINE_integer('max_duplicate_vms', 1000,
+                     'Amount of duplicate vms allowed')
+
 flags.DEFINE_string('config', 'config.yaml',
                     'pass config file or directory')
 

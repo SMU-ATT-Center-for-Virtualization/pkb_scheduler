@@ -252,7 +252,6 @@ class BenchmarkGraph():
         return False, None
 
   def add_or_waitlist_benchmark_and_vms(self, bm):
-    print("here3")
     vms = self.add_vms_for_benchmark_if_possible(bm)
     vms_no_none = list(filter(None, vms))
 
@@ -315,7 +314,8 @@ class BenchmarkGraph():
         # then add the VM
         if (can_add_another 
             and status == "VM Exists. Quota not Exceeded" 
-            and FLAGS.allow_duplicate_vms == True):
+            and FLAGS.allow_duplicate_vms == True
+            and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
           print("here1")
           # checks if there is enough space in a region to add another vm
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)

@@ -51,6 +51,7 @@ class VirtualMachine():
     # self.ip_address = None
     self.vm_spec = vm_spec
     self.vm_spec_id = vm_spec_id
+    self.password = None
 
   def vm_spec_is_equivalent(self, vm):
     """Returns true if the spec of a vm that is
@@ -91,7 +92,14 @@ class VirtualMachine():
     if self.status == "Running":
       return (False, self.status)
 
-    cmd = (pkb_location + " --benchmarks=vm_setup" +
+    cmd = (pkb_location)
+
+    if 'windows' in self.os_type:
+      cmd = cmd + " --benchmarks=vm_setup_windows"
+    else:
+      cmd = cmd + " --benchmarks=vm_setup"
+
+    cmd = (cmd +
            " --gce_network_name=pkb-scheduler" +
            " --ssh_key_file=" + self.ssh_private_key +
            " --ssl_cert_file=" + self.ssl_cert +
@@ -131,6 +139,7 @@ class VirtualMachine():
     ext_ip = ""
     int_ip = ""
     name = ""
+    password = ""
 
     self.creation_output = output
     # info_section_found = False
@@ -149,6 +158,15 @@ class VirtualMachine():
         self.run_uri = line.split()[1]
       elif "UID" in line:
         self.uid = line.split()[1]
+      # only for windows VMs
+      elif "PASSWORD" in line:
+        self.password = line.split()[1]
+
+    if self.password:
+      print("THIS IS THE PASSWORD: " + self.password)
+    else:
+      print("NO PASSWORD FOUND")
+
 
     if self.run_uri is None:
       print("INFO SECTION NOT FOUND")
@@ -180,8 +198,16 @@ class VirtualMachine():
     # --run_stage=cleanup,teardown --run_uri=074af5cd
 
     # TODO make the network a parameter
-    logging.debug("DELETING VM INSTANCE")
-    cmd = (pkb_location + " --benchmarks=vm_setup" +
+    print("DELETING VM INSTANCE")
+
+    cmd = (pkb_location)
+    if 'windows' in self.os_type:
+      cmd = (cmd + " --benchmarks=vm_setup_windows" +
+             " --os_type=" + self.os_type)
+    else:
+      cmd = cmd + " --benchmarks=vm_setup"
+
+    cmd = (cmd +
            " --gce_network_name=pkb-scheduler" +
            " --cloud=" + self.cloud +
            " --run_uri=" + self.run_uri +
@@ -224,6 +250,7 @@ class VirtualMachine():
     self.name = vm.name
     self.run_uri = vm.run_uri
     self.uid = vm.uid
+    self.password = vm.password
     self.creation_output = vm.creation_output
     self.creation_time = vm.creation_time
     self.deletion_time = vm.deletion_time

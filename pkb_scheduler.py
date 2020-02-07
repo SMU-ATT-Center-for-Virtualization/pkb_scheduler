@@ -298,6 +298,10 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'bq_project' in benchmark_config[1]['flags']:
       bq_project = benchmark_config[1]['flags']['bq_project']
 
+    os_type = 'ubuntu1804'
+    if 'os_type' in benchmark_config[1]['flags']:
+      os_type = benchmark_config[1]['flags']['os_type']
+
     uuid_1 = uuid.uuid1().int
     uuid_2 = uuid.uuid1().int
 
@@ -306,13 +310,15 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    zone=benchmark_config[1]['flags']['zones'],
                                    cloud=cloud,
                                    machine_type=machine_type,
-                                   network_tier=network_tier)
+                                   network_tier=network_tier,
+                                   os_type=os_type)
     vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
                                    cpu_count=cpu_count,
                                    zone=benchmark_config[1]['flags']['extra_zones'],
                                    cloud=cloud,
                                    machine_type=machine_type,
-                                   network_tier=network_tier)
+                                   network_tier=network_tier,
+                                   os_type=os_type)
     vm_specs = [vm_spec_1, vm_spec_2]
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],

@@ -663,6 +663,11 @@ class BenchmarkGraph():
            " --bq_project=" + bm.bq_project +
            " --ignore_package_requirements=True")
 
+    # TODO figure out what to do if only one vm is windows
+    if 'windows' in bm.vm_specs[0].os_type:
+      cmd = (cmd + " --os_type=windows" +
+                   " --skip_package_cleanup=True")
+
     # TODO do install_packages if vm has already been used
 
     print(bm_tuple)
@@ -728,6 +733,11 @@ class BenchmarkGraph():
       vm_config_dict['install_packages'] = True
       vm_config_dict['zone'] = vm.zone
       vm_config_dict['machine_type'] = vm.machine_type
+
+      if 'windows' in vm.os_type:
+        vm_config_dict['os_type'] = 'windows'
+        vm_config_dict['password'] = vm.password
+
       temp[vm_num]['static_vms'].append(vm_config_dict)
 
       counter += 1

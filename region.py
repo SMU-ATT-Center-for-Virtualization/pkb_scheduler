@@ -1,5 +1,3 @@
-import graph
-
 
 class Region():
   """[summary]

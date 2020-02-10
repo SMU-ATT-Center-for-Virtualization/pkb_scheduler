@@ -52,7 +52,10 @@ from absl import app
 # TODO get to work with VPNs
 # TODO add defaults all in one place
 
-# TODO add 
+# TODO change algorithm to try to limit egress/ingress per region
+# per test
+
+#
 
 
 # python3

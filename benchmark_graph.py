@@ -408,7 +408,6 @@ class BenchmarkGraph():
   def get_benchmark_set(self):
     # return bm_list: List[Tuple[int, int]]   list of tuples  [(node1, node2)]
 
-
     # convert multigraph to simplified graph with weighted edges
     node_degree_dict = dict(nx.degree(self.graph))
     tmp_graph = nx.Graph()

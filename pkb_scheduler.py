@@ -109,6 +109,11 @@ flags.DEFINE_string('bigquery_table', 'daily_tests.scheduler_test_1',
 flags.DEFINE_string('bq_project', 'smu-benchmarking',
                     'bigquery project to push results to')
 
+flags.DEFINE_boolean('precreate_and_share_vms', True,
+                    'If true, this will precreate and reuse vms. '
+                    'If false, every benchmark will create and destroy '
+                    'its own VMS')
+
 logger = None
 
 maximum_sets = []
@@ -219,7 +224,10 @@ def test_stuff(benchmark_graph):
 
 
 def run_benchmarks(benchmark_graph):
-  benchmark_graph.create_vms()
+  
+  if FLAGS.precreate_and_share_vms:
+    benchmark_graph.create_vms()
+
   benchmarks_run = []
   # benchmark_graph.print_graph()
   vms_removed = []
@@ -242,7 +250,8 @@ def run_benchmarks(benchmark_graph):
     update_region_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
-    benchmark_graph.create_vms()
+    if FLAGS.precreate_and_share_vms:
+      benchmark_graph.create_vms()
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     # benchmark_graph.print_graph()

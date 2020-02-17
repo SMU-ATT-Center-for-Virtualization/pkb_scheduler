@@ -560,7 +560,12 @@ class BenchmarkGraph():
       bm_to_run = self.graph[node_tuple[0]][node_tuple[1]][bm_index_to_run]['bm']
       print(bm_to_run)
       # create config file, get file name 
-      bm_config_file = self.create_benchmark_config_file(bm_to_run, vm_list)
+      bm_config_file = None
+
+      if FLAGS.precreate_and_share_vms:
+        bm_config_file = self.create_benchmark_config_file_static_vm(bm_to_run, vm_list)
+      else:
+        bm_config_file = self.create_benchmark_config_file_traditional(bm_to_run, vm_list)
       # add config file to benchmark object
       bm_to_run.config_file = bm_config_file
       benchmarks_to_run.append(bm_to_run)
@@ -588,15 +593,17 @@ class BenchmarkGraph():
         # TODO try to ssh into it to make sure it is up
         #      or at least ping it
         vms_created = True
-        for vm in bm.vms:
-          if vm.status != "Running":
-            print("Needed VM is ", vm.status)
-            vms_created = False
 
-        if not vms_created:
-          print("DO NOT RUN")
-          bm_index += 1
-          continue
+        if FLAGS.precreate_and_share_vms:
+          for vm in bm.vms:
+            if vm.status != "Running":
+              print("Needed VM is ", vm.status)
+              vms_created = False
+
+          if not vms_created:
+            print("DO NOT RUN")
+            bm_index += 1
+            continue
 
         queue = mp.Queue()
         logger.debug(bm.vm_specs[0].zone + " <-> " + bm.vm_specs[1].zone)
@@ -699,7 +706,7 @@ class BenchmarkGraph():
     return
 
 
-  def create_benchmark_config_file(self, bm, vm_list):
+  def create_benchmark_config_file_static_vm(self, bm, vm_list):
 
     config_yaml = {}
     counter = 1
@@ -739,6 +746,59 @@ class BenchmarkGraph():
         vm_config_dict['password'] = vm.password
 
       temp[vm_num]['static_vms'].append(vm_config_dict)
+
+      counter += 1
+
+    file_name = (self.generated_config_path + "config_" 
+                 + str(bm.benchmark_id) + ".yaml")
+    file = open(file_name, 'w+')
+    yaml.dump(config_yaml, file, default_flow_style=False)
+    file.close()
+
+    return file_name
+
+  def create_benchmark_config_file_traditional(self, bm, vm_list):
+
+    config_yaml = {}
+    counter = 1
+    vm_yaml_list = []
+
+    config_yaml[bm.benchmark_type] = {}
+    config_yaml[bm.benchmark_type]['vm_groups'] = {}
+    config_yaml[bm.benchmark_type]['flags'] = bm.flags
+    config_flags = config_yaml[bm.benchmark_type]['flags']
+
+    config_flags.pop("zones", None)
+    config_flags.pop("extra_zones", None)
+    config_flags.pop("machine_type", None)
+
+    # TODO fix these
+    # config_flags["static_cloud_metadata"] = bm.vm_specs[0].cloud
+    # config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
+
+
+    for vm in vm_list:
+      temp = config_yaml[bm.benchmark_type]['vm_groups']
+      vm_num = 'vm_' + str(counter)
+      temp[vm_num] = {}
+      # temp[vm_num]['static_vms'] = []
+      temp[vm_num]['cloud'] = vm.cloud
+      temp[vm_num]['vm_spec'] = {}
+      temp[vm_num]['vm_spec'][vm.cloud] = {}
+      vm_config_dict = {}
+      # vm_config_dict['user_name'] = 'perfkit'
+      # vm_config_dict['ssh_private_key'] = vm.ssh_private_key
+      # vm_config_dict['ip_address'] = vm.ip_address
+      # vm_config_dict['internal_ip'] = vm.internal_ip
+      vm_config_dict['install_packages'] = True
+      vm_config_dict['zone'] = vm.zone
+      vm_config_dict['machine_type'] = vm.machine_type
+
+      if 'windows' in vm.os_type:
+        vm_config_dict['os_type'] = vm.os_type
+        # vm_config_dict['password'] = vm.password
+
+      temp[vm_num]['vm_spec'][vm.cloud] = vm_config_dict
 
       counter += 1
 
@@ -793,26 +853,34 @@ class BenchmarkGraph():
     keys_to_remove = []
     vm_removed_count = 0
 
-    # start threads to remove vms
-    for key in node_degree_dict.keys():
-      # if a node has no edges
-      if node_degree_dict[key] == 0:
-        vm = self.graph.nodes[key]['vm']
-        if vm.status == "Running":
+    if FLAGS.precreate_and_share_vms:
+      # start threads to remove vms
+      for key in node_degree_dict.keys():
+        # if a node has no edges
+        if node_degree_dict[key] == 0:
+          vm = self.graph.nodes[key]['vm']
+          if vm.status == "Running":
 
-          # TODO check if waitlist needs this node before removal
+            # TODO check if waitlist needs this node before removal
 
-          # vm.delete_instance(self.pkb_location)
+            # vm.delete_instance(self.pkb_location)
+            keys_to_remove.append(key)
+            t = threading.Thread(target=vm.delete_instance,
+                                 args=(self.pkb_location,))
+            vm_threads.append(t)
+            t.start()
+
+      # join threads
+      for t in vm_threads:
+        t.join()
+        logging.debug("Thread Done")
+
+    else:
+      # start threads to remove vms
+      for key in node_degree_dict.keys():
+        # if a node has no edges
+        if node_degree_dict[key] == 0:
           keys_to_remove.append(key)
-          t = threading.Thread(target=vm.delete_instance,
-                               args=(self.pkb_location,))
-          vm_threads.append(t)
-          t.start()
-
-    # join threads
-    for t in vm_threads:
-      t.join()
-      logging.debug("Thread Done")
 
     for key in keys_to_remove:
       vm = self.graph.nodes[key]['vm']

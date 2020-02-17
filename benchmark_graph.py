@@ -11,6 +11,7 @@ import threading
 import logging
 import math
 import cloud_util
+import time
 
 from deprecated import deprecated
 from typing import List, Dict, Tuple, Set
@@ -580,6 +581,7 @@ class BenchmarkGraph():
 
     max_processes = FLAGS.max_processes
 
+    # run benchmarks
     while bm_index < len(benchmarks_to_run):
       bm_threads = []
 
@@ -604,7 +606,11 @@ class BenchmarkGraph():
             print("DO NOT RUN")
             bm_index += 1
             continue
+        else:
+          for vm in bm.vms:
+            vm.create_timestamp = time.time()
 
+        # create
         queue = mp.Queue()
         logger.debug(bm.vm_specs[0].zone + " <-> " + bm.vm_specs[1].zone)
         p = mp.Process(target=self.run_benchmark_process,
@@ -612,7 +618,7 @@ class BenchmarkGraph():
                              benchmarks_to_run_tuples[bm_index],
                              bm_index,
                              queue))
-        
+
         bm_data = {}
         bm_data['bm'] = bm
         bm_data['tuple'] = benchmarks_to_run_tuples[bm_index]
@@ -674,6 +680,10 @@ class BenchmarkGraph():
     if 'windows' in bm.vm_specs[0].os_type:
       cmd = (cmd + " --os_type=windows" +
                    " --skip_package_cleanup=True")
+
+    if not FLAGS.precreate_and_share_vms:
+      cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
+                 + " --skip_firewall_rules=True")
 
     # TODO do install_packages if vm has already been used
 

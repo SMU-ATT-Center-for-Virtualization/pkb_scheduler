@@ -8,12 +8,12 @@
 throughput_latency_jitter:
   flag_matrix: fmatrix
   flag_matrix_filters:
-      fmatrix: "zones < extra_zones"
+    fmatrix: "zones < extra_zones"
   flag_matrix_defs:
-      fmatrix:
-        zones: [us-west2-a,us-west2-b,us-west2-c]
-        extra_zones: [us-west2-a,us-west2-b,us-west2-c]
-        machine_type: [n1-standard-16]
+    fmatrix:
+      zones: [us-west2-a,us-west2-b,us-west2-c]
+      extra_zones: [us-west2-a,us-west2-b,us-west2-c]
+      machine_type: [n1-standard-16]
   flags:
     cloud: GCP
     iperf_runtime_in_seconds: 30

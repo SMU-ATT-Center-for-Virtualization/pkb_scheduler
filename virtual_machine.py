@@ -101,6 +101,7 @@ class VirtualMachine():
 
     cmd = (cmd +
            " --gce_network_name=pkb-scheduler" +
+           " --gcp_min_cpu_platform=skylake" + 
            " --ssh_key_file=" + self.ssh_private_key +
            " --ssl_cert_file=" + self.ssl_cert +
            " --zones=" + self.zone +

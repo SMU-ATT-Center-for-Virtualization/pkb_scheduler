@@ -688,7 +688,8 @@ class BenchmarkGraph():
 
     if not FLAGS.precreate_and_share_vms:
       cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
-                 + " --skip_firewall_rules=True")
+                 + " --skip_firewall_rules=True"
+                 + " --gcp_min_cpu_platform=skylake")
 
     # TODO do install_packages if vm has already been used
 

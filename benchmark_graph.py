@@ -306,34 +306,6 @@ class BenchmarkGraph():
 
       suitable_vm_found = False
 
-      # if not sharing vms
-      if not FLAGS.precreate_and_share_vms:
-        can_add_another, status = self.check_if_can_add_vm(vm)
-
-        add_from_list = True
-
-        # if there is room to add a duplicate vm and if flags allow it 
-        # then add the VM
-        if (can_add_another 
-            and status == "VM Exists. Quota not Exceeded"
-            and FLAGS.allow_duplicate_vms == True
-            and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
-          # checks if there is enough space in a region to add another vm
-          success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-          if success:
-            add_from_list = False
-            self.virtual_machines.append(vm)
-            self.graph.add_node(vm_id, vm=vm)
-            vms.append(vm)
-            vm_ids.append(vm.node_id)
-            self.vm_total_count += 1
-            suitable_vm_found = True
-            continue
-          else:
-            logger.debug("QUOTA EXCEEDED. VM waitlisted")
-            vms.append(None)
-            continue
-
       # if a vm already exists
       if len(tmp_vm_list) > 0:
         can_add_another, status = self.check_if_can_add_vm(vm)

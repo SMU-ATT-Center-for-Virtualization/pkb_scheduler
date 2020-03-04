@@ -27,3 +27,5 @@ throughput_latency_jitter:
     tcp_max_send_buffer: 500000000
     bigquery_table: daily_tests.gartner_all
     bq_project: smu-benchmarking
+    ping_count: 100
+    ping_interval_time_us: 10000

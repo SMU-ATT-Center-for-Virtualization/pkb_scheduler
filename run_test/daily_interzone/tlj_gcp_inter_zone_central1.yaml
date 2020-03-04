@@ -25,3 +25,5 @@ throughput_latency_jitter:
     netperf_tcp_stream_send_size_in_bytes: 131072
     bigquery_table: daily_tests.daily_1
     bq_project: smu-benchmarking
+    ping_count: 100
+    ping_interval_time_us: 10000

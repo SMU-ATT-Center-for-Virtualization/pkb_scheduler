@@ -5,7 +5,7 @@ class Region():
   [description]
   """
 
-  def __init__(self, region_name, cpu_quota=0.0, cpu_usage=0.0):
+  def __init__(self, region_name, cloud, cpu_quota=0.0, cpu_usage=0.0):
     self.cpu_quota = cpu_quota
     self.address_quota = None
     self.address_usage = 0
@@ -13,6 +13,7 @@ class Region():
     self.reserved_usage = 0.0
     self.virtual_machines = []
     self.name = region_name
+    self.cloud = cloud
 
   def get_available_cpus(self):
     return self.cpu_quota - self.cpu_usage

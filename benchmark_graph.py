@@ -46,6 +46,7 @@ class BenchmarkGraph():
 
     self.graph = nx.MultiGraph()
     self.regions = {}
+    self.clouds = {}
     self.virtual_machines = []
     self.benchmarks = []
     self.benchmark_wait_list = []
@@ -69,6 +70,13 @@ class BenchmarkGraph():
     self.vm_creation_times = []
     self.benchmark_run_times = []
     self.deletion_times = []
+
+  def add_cloud_if_not_exists(self, cloud):
+    if cloud.name not in self.clouds:
+      self.clouds[cloud.name] = cloud
+
+  def cloud_exists(self, cloud):
+    return cloud in self.clouds
 
   def add_region_if_not_exists(self, new_region):
     if new_region.name not in self.regions:

@@ -55,7 +55,7 @@ from absl import app
 # TODO change algorithm to try to limit egress/ingress per region
 # per test
 
-#
+# TODO move skylake processor to config file
 
 
 # python3
@@ -112,6 +112,9 @@ flags.DEFINE_boolean('precreate_and_share_vms', True,
                     'If true, this will precreate and reuse vms. '
                     'If false, every benchmark will create and destroy '
                     'its own VMS')
+
+flags.DEFINE_boolean('use_maximum_matching', True,
+                    'If true, this run VMs based on maximum matching')
 
 logger = None
 
@@ -246,7 +249,7 @@ def run_benchmarks(benchmark_graph):
     removed_count = benchmark_graph.remove_orphaned_nodes()
     vms_removed.append(removed_count)
     logging.info("UPDATE REGION QUOTAS")
-    update_region_quota_usage(benchmark_graph)
+    update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
     if FLAGS.precreate_and_share_vms:
@@ -265,7 +268,7 @@ def run_benchmarks(benchmark_graph):
     logging.debug(vm_count)
 
 
-def update_region_quota_usage(benchmark_graph):
+def update_quota_usage(benchmark_graph):
   """update the regional quotas based on data pulled from the cloud provider
 
   Pulls current usage information from the cloud provider and updates
@@ -275,13 +278,15 @@ def update_region_quota_usage(benchmark_graph):
     benchmark_graph: Benchmark/VM Graph to update
   """
 
-  region_dict = cloud_util.get_region_info(cloud='GCP')
-  # print(region_dict)
-  for region_name in benchmark_graph.regions:
-    cpu_usage = region_dict[region_name]['CPUS']['usage']
-    address_usage = region_dict[region_name]['IN_USE_ADDRESSES']['usage']
-    benchmark_graph.regions[region_name].update_cpu_usage(cpu_usage)
-    benchmark_graph.regions[region_name].update_address_usage(address_usage)
+  for cloud in benchmark_graph.clouds:
+    #TODO change this
+    region_dict = cloud_util.get_region_info(cloud='GCP')
+    # print(region_dict)
+    for region_name in benchmark_graph.regions:
+      cpu_usage = region_dict[region_name]['CPUS']['usage']
+      address_usage = region_dict[region_name]['IN_USE_ADDRESSES']['usage']
+      benchmark_graph.regions[region_name].update_cpu_usage(cpu_usage)
+      benchmark_graph.regions[region_name].update_address_usage(address_usage)
 
 
 def create_benchmark_from_config(benchmark_config, benchmark_id):
@@ -367,12 +372,20 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # config[0] is the benchmark_name
   # config[1] is all the flags
 
+  # TODO MAKE CLOUDS
+  # ADD REGIONS TO CLOUDS
+  # IF AWS REGION, GIVE VPC QUOTA OF 5
+  # IF AWS CLOUD, give CPU resource of 1900
+  # USE THIS COMMAND TO GET USAGE
+  # aws ec2 describe-vpcs --region us-east-1
+
   # get all regions from gcloud
   # make regions
   region_dict = cloud_util.get_region_info(cloud='GCP')
   for key in region_dict:
     # if region['description'] in full_graph.regions
     new_region = Region(region_name=key,
+                        cloud='GCP',
                         cpu_quota=region_dict[key]['CPUS']['limit'],
                         cpu_usage=region_dict[key]['CPUS']['usage'])
     new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])

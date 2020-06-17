@@ -18,5 +18,5 @@ windows_throughput_latency_jitter:
     tcp_stream_seconds: 60
     psping_timeout: 360
     os_type: windows2019
-    bigquery_table: daily_tests.daily_1
+    bigquery_table: daily_tests.daily_windows
     bq_project: smu-benchmarking

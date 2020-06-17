@@ -1,0 +1,20 @@
+#import anchors.yaml
+#benchmark windows_throughput_latency_jitter
+
+#Gartner IaaS test
+windows_throughput_latency_jitter:
+  flag_matrix: inter_region
+  flag_matrix_filters:
+    inter_region: "zones != extra_zones"
+  flag_matrix_defs:
+    inter_region:
+      gce_network_tier: [premium]
+      zones: [us-east4-a]
+      extra_zones: [us-west1-b]
+      machine_type: [n1-standard-2]
+      tcp_number_of_streams: [1,32]
+  flags:
+    cloud: GCP
+    tcp_stream_seconds: 60
+    psping_timeout: 360
+    os_type: windows2019

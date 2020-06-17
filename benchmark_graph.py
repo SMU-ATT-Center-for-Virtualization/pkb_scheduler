@@ -691,7 +691,7 @@ class BenchmarkGraph():
 
     # TODO figure out what to do if only one vm is windows
     if 'windows' in bm.vm_specs[0].os_type:
-      cmd = (cmd + " --os_type=windows" +
+      cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
                    " --skip_package_cleanup=True")
 
     if not FLAGS.precreate_and_share_vms:
@@ -766,7 +766,7 @@ class BenchmarkGraph():
       vm_config_dict['machine_type'] = vm.machine_type
 
       if 'windows' in vm.os_type:
-        vm_config_dict['os_type'] = 'windows'
+        vm_config_dict['os_type'] = vm.os_type
         vm_config_dict['password'] = vm.password
 
       temp[vm_num]['static_vms'].append(vm_config_dict)
@@ -807,6 +807,11 @@ class BenchmarkGraph():
       temp[vm_num] = {}
       # temp[vm_num]['static_vms'] = []
       temp[vm_num]['cloud'] = vm.cloud
+
+      if 'windows' in vm.os_type:
+        temp[vm_num]['os_type'] = vm.os_type
+        # vm_config_dict['password'] = vm.password
+
       temp[vm_num]['vm_spec'] = {}
       temp[vm_num]['vm_spec'][vm.cloud] = {}
       vm_config_dict = {}
@@ -817,10 +822,6 @@ class BenchmarkGraph():
       vm_config_dict['install_packages'] = True
       vm_config_dict['zone'] = vm.zone
       vm_config_dict['machine_type'] = vm.machine_type
-
-      if 'windows' in vm.os_type:
-        vm_config_dict['os_type'] = vm.os_type
-        # vm_config_dict['password'] = vm.password
 
       temp[vm_num]['vm_spec'][vm.cloud] = vm_config_dict
 

@@ -28,4 +28,4 @@ throughput_latency_jitter:
     bq_project: smu-benchmarking
     ping_count: 100
     ping_interval_time_us: 10000
-    ip_addresses: internal
+    ip_addresses: INTERNAL

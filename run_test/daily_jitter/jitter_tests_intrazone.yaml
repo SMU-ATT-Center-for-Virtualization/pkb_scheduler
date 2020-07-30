@@ -12,7 +12,7 @@ iperf:
       gce_network_tier: [premium]
       zones: [us-east1-b,us-west1-b]
       extra_zones: [us-east1-b,us-west1-b]
-      machine_type: [n1-standard-8]
+      machine_type: [n1-standard-2]
   flags:
     cloud: GCP
     iperf_runtime_in_seconds: 30
@@ -20,7 +20,7 @@ iperf:
     rmem_max: 500000000
     wmem_max: 500000000
     iperf_udp_per_stream_bandwidth: 70
-    bigquery_table: daily_tests.daily_n1standard8
+    bigquery_table: daily_tests.daily_1
     bq_project: smu-benchmarking
     ip_addresses: INTERNAL
     iperf_tests: UDP

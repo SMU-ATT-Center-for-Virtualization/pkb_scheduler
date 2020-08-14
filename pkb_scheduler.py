@@ -55,10 +55,14 @@ from absl import app
 # TODO change algorithm to try to limit egress/ingress per region
 # per test
 
-# TODO move skylake processor to config file
+# TODO move skylake to config file
 
 
 # python3
+
+#EXAMPLE execution
+
+#python3 pkb_scheduler.py --no_run=True --config=run_test/daily_interzone --precreate_and_share_vms=False --pkb_location=</full/path/to/PerfKitBenchmarker/pkb.py
 
 FLAGS = flags.FLAGS
 

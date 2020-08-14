@@ -304,6 +304,7 @@ class BenchmarkGraph():
                           network_tier=vm_spec.network_tier,
                           machine_type=vm_spec.machine_type,
                           cloud=vm_spec.cloud,
+                          min_cpu_platform=vm_spec.min_cpu_platform,
                           ssh_private_key=self.ssh_private_key_file,
                           ssl_cert=self.ssl_cert_file,
                           vm_spec=vm_spec,
@@ -697,7 +698,7 @@ class BenchmarkGraph():
     if not FLAGS.precreate_and_share_vms:
       cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
                  + " --skip_firewall_rules=True"
-                 + " --gcp_min_cpu_platform=skylake")
+                 + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
 
     # TODO do install_packages if vm has already been used
 

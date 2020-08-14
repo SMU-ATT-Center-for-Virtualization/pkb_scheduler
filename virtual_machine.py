@@ -19,7 +19,7 @@ class VirtualMachine():
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
-               vm_spec=None, vm_spec_id=None):
+               vm_spec=None, vm_spec_id=None, min_cpu_platform=None):
 
     # get logger
     global logger
@@ -36,6 +36,7 @@ class VirtualMachine():
     self.ssh_private_key = ssh_private_key
     self.ssl_cert = ssl_cert
     self.status = 'Not Created'
+    self.min_cpu_platform = min_cpu_platform
     self.internal_ip = None
     self.ip_address = None
     self.name = None
@@ -101,7 +102,7 @@ class VirtualMachine():
 
     cmd = (cmd +
            " --gce_network_name=pkb-scheduler" +
-           " --gcp_min_cpu_platform=skylake" + 
+           " --gcp_min_cpu_platform=" + self.min_cpu_platform +
            " --ssh_key_file=" + self.ssh_private_key +
            " --ssl_cert_file=" + self.ssl_cert +
            " --zones=" + self.zone +

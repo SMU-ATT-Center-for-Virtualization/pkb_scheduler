@@ -109,9 +109,9 @@ flags.DEFINE_string('bq_project', 'smu-benchmarking',
                     'bigquery project to push results to')
 
 flags.DEFINE_boolean('precreate_and_share_vms', True,
-                    'If true, this will precreate and reuse vms. '
-                    'If false, every benchmark will create and destroy '
-                    'its own VMS')
+                     'If true, this will precreate and reuse vms. '
+                     'If false, every benchmark will create and destroy '
+                     'its own VMS')
 
 flags.DEFINE_boolean('use_maximum_matching', True,
                     'If true, this run VMs based on maximum matching')
@@ -318,6 +318,11 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'os_type' in benchmark_config[1]['flags']:
       os_type = benchmark_config[1]['flags']['os_type']
 
+    # TODO change to none and put gcp_min_cpu_platform: skylake in all the configs
+    min_cpu_platform = 'skylake'
+    if 'gcp_min_cpu_platform' in benchmark_config[1]['flags']:
+      min_cpu_platform = benchmark_config[1]['flags']['gcp_min_cpu_platform']
+
     uuid_1 = uuid.uuid1().int
     uuid_2 = uuid.uuid1().int
 
@@ -327,14 +332,16 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    cloud=cloud,
                                    machine_type=machine_type,
                                    network_tier=network_tier,
-                                   os_type=os_type)
+                                   os_type=os_type,
+                                   min_cpu_platform=min_cpu_platform)
     vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
                                    cpu_count=cpu_count,
                                    zone=benchmark_config[1]['flags']['extra_zones'],
                                    cloud=cloud,
                                    machine_type=machine_type,
                                    network_tier=network_tier,
-                                   os_type=os_type)
+                                   os_type=os_type,
+                                   min_cpu_platform=min_cpu_platform)
     vm_specs = [vm_spec_1, vm_spec_2]
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],

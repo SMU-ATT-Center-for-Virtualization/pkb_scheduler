@@ -24,3 +24,4 @@ iperf:
     bq_project: smu-benchmarking
     ip_addresses: INTERNAL
     iperf_tests: UDP
+    gcp_min_cpu_platform: cascadelake

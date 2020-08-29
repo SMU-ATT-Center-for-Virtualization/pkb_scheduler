@@ -43,7 +43,7 @@ def get_region_info(cloud):
     output, error = process.communicate()
 
     # load json and convert to a more useable output
-    region_json = json.loads(output)
+    region_json = json.loads(str(output))
     for region_iter in region_json:
       region_dict[region_iter['description']] = {}
       for quota in region_iter['quotas']:

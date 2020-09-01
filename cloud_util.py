@@ -7,6 +7,7 @@ import re
 
 
 def cpu_count_from_machine_type(cloud, machine_type):
+  print("Cloud is set to: {}".format(cloud))
   if cloud == 'GCP':
     return int(machine_type.split('-')[2])
   elif cloud == 'AWS':
@@ -43,7 +44,7 @@ def get_region_info(cloud):
     output, error = process.communicate()
 
     # load json and convert to a more useable output
-    region_json = json.loads(output)
+    region_json = json.loads(str(output))
     for region_iter in region_json:
       region_dict[region_iter['description']] = {}
       for quota in region_iter['quotas']:

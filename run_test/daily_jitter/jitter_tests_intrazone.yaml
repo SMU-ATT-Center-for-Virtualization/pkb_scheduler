@@ -1,4 +1,4 @@
-#benchmark throughput_latency_jitter
+#benchmark iperf
 
 #Inter region benchmarks
 #Includes iperf, netperf, ping

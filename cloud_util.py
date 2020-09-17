@@ -4,7 +4,7 @@ import json
 import re
 
 # TODO support other clouds
-
+#TESTEST test
 
 def cpu_count_from_machine_type(cloud, machine_type):
 

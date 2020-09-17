@@ -392,6 +392,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # get all regions from gcloud
   # make regions
+  print("pkb_scheduler Cloud Variable is: {}".format(cloud))
   region_dict = cloud_util.get_region_info(cloud='GCP')
   for key in region_dict:
     # if region['description'] in full_graph.regions

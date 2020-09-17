@@ -37,6 +37,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
 
 def get_region_info(cloud):
 
+  print("Cloud Variable is: {}".format(cloud))
   region_dict = {}
   if cloud == 'GCP':
     region_list_command = "gcloud compute regions list --format=json"

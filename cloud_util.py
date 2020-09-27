@@ -53,7 +53,7 @@ def get_region_info(cloud):
         region_dict[region_iter['description']][quota['metric']] = quota
         region_dict[region_iter['description']][quota['metric']].pop('metric', None)
 
-  elif cloud == 'AWS':
+  elif cloud == 'AWS' or cloud == 'aws':
     region_list_command = 'aws ec2 describe-regions'
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)

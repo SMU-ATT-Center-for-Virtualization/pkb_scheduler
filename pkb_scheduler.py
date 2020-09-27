@@ -394,9 +394,15 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # make regions
   #print("pkb_scheduler Cloud Variable is: {}".format(cloud))
   #print("config is : {}".format(benchmark_config_list))
-  print("config[0][2] is : {}".format(benchmark_config_list[0][2]))
-  print("config[1] is : {}".format(benchmark_config_list[1]))
-  region_dict = cloud_util.get_region_info(cloud='GCP')
+  print("\n\nconfig[0] is : {}".format(benchmark_config_list[0]))
+  print("\n\nconfig[0][1] is : {}".format(benchmark_config_list[0][1]))
+  print("\n\nconfig[0][1]['flags'] is : {}".format(benchmark_config_list[0][1]['flags']))
+  print("\n\nconfig[0][1]['flags']['cloud'] is : {}".format(benchmark_config_list[0][1]['flags']['cloud']))
+ # region_dict = cloud_util.get_region_info(cloud='GCP')
+  
+ # region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'].upper())
+  
+  region_dict = cloud_util.get_region_info("AWS")
   for key in region_dict:
     # if region['description'] in full_graph.regions
     new_region = Region(region_name=key,

@@ -12,6 +12,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
   if cloud == 'GCP':
     return int(machine_type.split('-')[2])
   elif cloud == 'AWS':
+    print(f"machine type: {machine_type}")
     machine_array = machine_type.split('.')
     print(f"machine array: {machine_array}")
     machine_category = machine_array[0]

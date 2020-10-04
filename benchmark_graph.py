@@ -45,7 +45,7 @@ class BenchmarkGraph():
     logger = logging.getLogger('pkb_scheduler')
 
     self.graph = nx.MultiGraph()
-    self.regions = {"us-east-2"}
+    self.regions = {}
     self.clouds = {}
     self.virtual_machines = []
     self.benchmarks = []
@@ -377,7 +377,7 @@ class BenchmarkGraph():
         # try to add vm to region
         print("here2")
         print(f"Self: {self} \n Type: {self}")
-        print(f"self.regions is: {self.regions}")
+        print(f"self.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}")
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
 

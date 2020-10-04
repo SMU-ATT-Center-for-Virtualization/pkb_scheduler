@@ -377,6 +377,7 @@ class BenchmarkGraph():
         # try to add vm to region
         print("here2")
         print(f"Self: {self} \n Type: {self}")
+        print(f"self.regions is: {self.regions}")
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
 

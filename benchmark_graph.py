@@ -45,7 +45,7 @@ class BenchmarkGraph():
     logger = logging.getLogger('pkb_scheduler')
 
     self.graph = nx.MultiGraph()
-    self.regions = {}
+    self.regions = {"us-east-2"}
     self.clouds = {}
     self.virtual_machines = []
     self.benchmarks = []

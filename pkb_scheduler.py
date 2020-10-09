@@ -399,10 +399,10 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   print("\n\nconfig[0][1]['flags'] is : {}".format(benchmark_config_list[0][1]['flags']))
   print("\n\nconfig[0][1]['flags']['cloud'] is : {}".format(benchmark_config_list[0][1]['flags']['cloud']))
  # region_dict = cloud_util.get_region_info(cloud='GCP')
-  
+  print(f"FLAGS is {FLAGS}")
  # region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'].upper())
   full_graph.add_region_if_not_exists(new_region=benchmark_config_list[0][1]['flags']['zones'])
-  print(f"FLAGS is {FLAGS}")
+ 
   region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags'])
   for key in region_dict:
     # if region['description'] in full_graph.regions

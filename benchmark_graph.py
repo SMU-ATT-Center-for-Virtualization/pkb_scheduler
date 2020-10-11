@@ -261,6 +261,7 @@ class BenchmarkGraph():
         return False, None
 
   def add_or_waitlist_benchmark_and_vms(self, bm):
+    print(f"bm is {bm}")
     vms = self.add_vms_for_benchmark_if_possible(bm)
     vms_no_none = list(filter(None, vms))
 
@@ -378,6 +379,7 @@ class BenchmarkGraph():
         print("here2")
         print(f"Self: {self} \n Type: {self}")
         print(f"self.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}")
+        
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
 

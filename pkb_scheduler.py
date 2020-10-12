@@ -441,7 +441,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # create virtual machines (node)
   # attach with edges and benchmarks
-  print(f"temp_benchmarks is {temp_benchmarks.__dict__}")
+  print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}")
   for bm in temp_benchmarks:
     logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
     print(f"Early BM is {bm.__dict__}")

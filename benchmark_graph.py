@@ -261,7 +261,7 @@ class BenchmarkGraph():
         return False, None
 
   def add_or_waitlist_benchmark_and_vms(self, bm):
-    print(f"bm is {bm}")
+    print(f"bm is {bm.__dict__}")
     vms = self.add_vms_for_benchmark_if_possible(bm)
     vms_no_none = list(filter(None, vms))
 

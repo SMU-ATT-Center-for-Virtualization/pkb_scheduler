@@ -443,6 +443,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # attach with edges and benchmarks
   for bm in temp_benchmarks:
     logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+    print(f"Early BM is {bm}")
     vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
 
   logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))

@@ -29,6 +29,7 @@ class Region():
       return False
 
   def add_virtual_machine_if_possible(self, vm):
+    print(f"in add_virtual_machine_if_possible: \n\n {vm.__dict__}")
     if (self.get_available_cpus() >= vm.cpu_count 
         and self.address_quota > self.address_usage):
       self.virtual_machines.append(vm)

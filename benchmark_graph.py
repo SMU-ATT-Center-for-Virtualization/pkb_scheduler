@@ -331,6 +331,7 @@ class BenchmarkGraph():
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
           print("here1")
           # checks if there is enough space in a region to add another vm
+          self.add_region_if_not_exists(vm_region)
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
             add_from_list = False

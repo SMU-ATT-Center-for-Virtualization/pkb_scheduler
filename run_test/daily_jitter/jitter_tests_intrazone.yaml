@@ -10,8 +10,8 @@ iperf:
   flag_matrix_defs:
     inter_region:
       gce_network_tier: [premium]
-      zones: [us-east1-b,us-west1-b]
-      extra_zones: [us-east1-b,us-west1-b]
+      zones: [us-east1-b,us-west1-b,us-central1-c]
+      extra_zones: [us-east1-b,us-west1-b,us-central1-c]
       machine_type: [n2-standard-8]
   flags:
     cloud: GCP

@@ -1,9 +1,8 @@
-#import anchors.yaml
 #benchmark throughput_latency_jitter
 
 #Inter zone benchmark
 #Includes iperf, netperf, ping
-#Tests between all zones in region us-central-1
+#Tests between all zones in region us-west-1
 #zones defined in anchors.yaml
 throughput_latency_jitter:
   flag_matrix: fmatrix
@@ -11,8 +10,8 @@ throughput_latency_jitter:
     fmatrix: "zones < extra_zones"
   flag_matrix_defs:
     fmatrix:
-      zones: [asia-east2-a,asia-east2-b,asia-east2-c]
-      extra_zones: [asia-east2-a,asia-east2-b,asia-east2-c]
+      zones: [us-west3-a, us-west3-b]
+      extra_zones: [us-west3-a, us-west3-b]
       machine_type: [n1-standard-16]
   flags:
     cloud: GCP

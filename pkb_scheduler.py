@@ -460,7 +460,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # Second pass, add
   for config in benchmark_config_list:
     pass
-
+  print(f"\n\nExiting from create_graph_from_config_list\n\n")
   return full_graph
 
 

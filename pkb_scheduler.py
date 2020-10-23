@@ -427,7 +427,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # will need more logic for differently formatted configs
   benchmark_counter = 0
   temp_benchmarks = []
-   print(f"\n\nEntering the for loop\n\n")
+  print(f"\n\nEntering the for loop\n\n")
   for config in benchmark_config_list:
     # print(config[1]['flags']['zones'])
     # region_name = config[1]['flags']['zones']

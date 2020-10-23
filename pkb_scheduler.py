@@ -402,8 +402,15 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   print(f"FLAGS is {flags}")
  # region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'].upper())
   # full_graph.add_region_if_not_exists(new_region=benchmark_config_list[0][1]['flags']['zones'])
- 
+  
+
+
+#THIS CRASHES EVERY TIME
   region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags'])
+  print(f"\n\nRegion_Dict has been declared!\n\n")
+  
+  
+  
   for key in region_dict:
     # if region['description'] in full_graph.regions
     print(f"\n\nTrying to make a new region\n\n")

@@ -406,6 +406,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags'])
   for key in region_dict:
     # if region['description'] in full_graph.regions
+    print(f"\n\nTrying to make a new region\n\n")
     new_region = Region(region_name=key,
                         cloud='GCP',
                         cpu_quota=region_dict[key]['CPUS']['limit'],
@@ -413,7 +414,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
     new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
     full_graph.add_region_if_not_exists(new_region=new_region)
-
+  print(f"\n\nThe region has been made\n\n")
   # This takes all the stuff from the config dictionaries
   # and puts them in benchmark objects
   # will need more logic for differently formatted configs

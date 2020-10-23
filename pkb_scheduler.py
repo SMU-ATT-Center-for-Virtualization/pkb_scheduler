@@ -432,9 +432,10 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     # region_name = config[1]['flags']['zones']
     # print(config[1]['flags']['extra_zones'])
     # full_graph.add_region_if_not_exists(region_name)
-
+    print(f"\n\nMaking new benchmark\n\n")
     new_benchmark = create_benchmark_from_config(config,
                                                  benchmark_counter)
+    print(f"\n\nBenchmark has been made!\n\n")
     # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
     #                           benchmark_type=config[0],
     #                           zone1=config[1]['flags']['zones'],

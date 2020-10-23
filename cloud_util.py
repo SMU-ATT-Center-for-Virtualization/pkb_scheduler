@@ -38,7 +38,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
 
 
 def get_region_info(cloud):
-
+  print(f"\n\nEntering Get Region Info:\n\n")
   print("Cloud Variable is: {}".format(cloud))
   region_dict = {}
   if cloud == 'GCP':
@@ -66,7 +66,7 @@ def get_region_info(cloud):
       region_dict[region_iter['RegionName']] = {}
   else:
     pass
-
+  print(f"\n\nLeaving Get Region Info:\n\n")
   return region_dict
 
 

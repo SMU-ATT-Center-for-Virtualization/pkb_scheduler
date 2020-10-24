@@ -263,6 +263,7 @@ class BenchmarkGraph():
   def add_or_waitlist_benchmark_and_vms(self, bm):
     print(f"bm is {bm.__dict__}")
     vms = self.add_vms_for_benchmark_if_possible(bm)
+    print(f"\n\nAdded the vms to benchmark\n\n")
     vms_no_none = list(filter(None, vms))
 
     if len(bm.vm_specs) == len(vms_no_none) == len(vms):

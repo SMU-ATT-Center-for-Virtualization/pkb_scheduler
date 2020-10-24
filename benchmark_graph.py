@@ -380,8 +380,8 @@ class BenchmarkGraph():
       elif (not suitable_vm_found):
         # try to add vm to region
         print("here2")
-        print(f"Self: {self.__dict__} \n Type: {self}")
-        print(f"vm region is: {vm_region}")
+        print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
+        print(f"\n\nvm region is: {vm_region}\n\n")
         print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n")
         self.add_region_if_not_exists(vm_region)
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)

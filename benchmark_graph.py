@@ -386,6 +386,7 @@ class BenchmarkGraph():
         self.add_region_if_not_exists(vm_region)
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
+        print(f"\n\nStatus: {status}\n\n")
 
         # if successful, also add that vm to virtual_machines list
         # and increment total number of vms, return True, and the vm

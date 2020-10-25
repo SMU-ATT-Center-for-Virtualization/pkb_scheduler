@@ -383,7 +383,7 @@ class BenchmarkGraph():
         print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
         print(f"\n\nvm region is: {vm_region}\n\n")
         print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n")
-        myRegion = Region()
+        myRegion = Region(vm_region, "AWS")
         myRegion.name = vm_region
         self.add_region_if_not_exists(myRegion)
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)

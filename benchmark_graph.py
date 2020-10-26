@@ -293,12 +293,14 @@ class BenchmarkGraph():
     vm_ids = []
     vms = []
 
-
+    print(f"\n\nadd_vms_for_benchmark: {bm}\n\n")
     for vm_spec in bm.vm_specs:
 
       print(vm_spec.id)
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       print(f"\n\nVM_Region is: {vm_region}\n\n")
+      print(f"\n\nThe CPU Count is: {vm_spec.cpu_count}\n\n")
+
       vm_id = self.vm_total_count
       vm = VirtualMachine(node_id=vm_id,
                           cpu_count=vm_spec.cpu_count,

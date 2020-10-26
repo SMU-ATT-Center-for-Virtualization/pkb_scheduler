@@ -293,7 +293,7 @@ class BenchmarkGraph():
     vm_ids = []
     vms = []
 
-    print(f"\n\nadd_vms_for_benchmark: {bm}\n\n")
+    print(f"\n\nadd_vms_for_benchmark: {bm.__dict__}\n\n")
     for vm_spec in bm.vm_specs:
 
       print(vm_spec.id)

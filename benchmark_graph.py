@@ -198,7 +198,7 @@ class BenchmarkGraph():
 
     # Need region because quotas are regional
     vm_region = cloud_util.get_region_from_zone(cloud, zone)
-
+    print(f"\n\nThe CPU Count is: {cpu_count}\n\n")
     # create virtual_machine object
     vm_id = self.vm_total_count
     vm = VirtualMachine(node_id=vm_id,

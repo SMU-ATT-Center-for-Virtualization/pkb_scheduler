@@ -9,6 +9,7 @@ import re
 def cpu_count_from_machine_type(cloud, machine_type):
 
   print("Cloud is set to: {}".format(cloud))
+  print(f"\nMachine Type is set to {machine_type}\n")
   if cloud == 'GCP':
     return int(machine_type.split('-')[2])
   elif cloud == 'AWS':

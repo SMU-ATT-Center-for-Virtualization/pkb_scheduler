@@ -295,7 +295,7 @@ class BenchmarkGraph():
 
     print(f"\n\nadd_vms_for_benchmark: {bm.__dict__}\n\n")
     for vm_spec in bm.vm_specs:
-      print(f"\nThe vm_specs are: {vm_spec}\n")
+      print(f"\nThe vm_specs are: {vm_spec.__dict__}\n")
       print(vm_spec.id)
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       print(f"\n\nVM_Region is: {vm_region}\n\n")

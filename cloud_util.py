@@ -28,8 +28,9 @@ def cpu_count_from_machine_type(cloud, machine_type):
         multiplier = int(re.findall(r'\d+', machine_size))
         cpu_count = 4 * multiplier
 
-    elif 't' in machine_category.lower():
-      cpu_count = None
+    elif 't2' in machine_category.lower() and 'micro' in machine_size.lower():
+      print(f"Setting the CPU Count for a t2.micro AWS machine\n")
+      cpu_count = 1
     return cpu_count
 
   elif cloud == 'Azure':

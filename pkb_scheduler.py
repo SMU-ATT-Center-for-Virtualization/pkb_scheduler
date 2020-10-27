@@ -295,7 +295,7 @@ def update_quota_usage(benchmark_graph):
 
 def create_benchmark_from_config(benchmark_config, benchmark_id):
   bm = None
-  print(f"\n\nconfig[1] is: {benchmark_config[1]}\n\n")
+  print(f"\n\nconfig[1] is:  {benchmark_config[1]}\n\n")
   # print(benchmark_config[1]['flags']['extra_zones'])
   # full_graph.add_region_if_not_exists(region_name)
 

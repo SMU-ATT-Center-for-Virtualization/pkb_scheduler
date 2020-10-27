@@ -285,6 +285,7 @@ def update_quota_usage(benchmark_graph):
   for cloud in benchmark_graph.clouds:
     #TODO change this
     region_dict = cloud_util.get_region_info(cloud='GCP')
+    print(f"Region_dict is: {region_dict}\n")
     # print(region_dict)
     for region_name in benchmark_graph.regions:
       cpu_usage = region_dict[region_name]['CPUS']['usage']

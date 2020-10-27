@@ -295,17 +295,18 @@ def update_quota_usage(benchmark_graph):
 
 def create_benchmark_from_config(benchmark_config, benchmark_id):
   bm = None
-  # print(config[1]['flags']['zones'])
+  print(f"\n\nconfig[1] is: {benchmark_config[1]}\n\n")
   # print(benchmark_config[1]['flags']['extra_zones'])
   # full_graph.add_region_if_not_exists(region_name)
 
   if 'vm_groups' in benchmark_config[1]:
     logging.error("Configs with vm groups not supported yet")
+    print(f"\n\nTHE VM FAILED TO MATCH?\n\n")
   else:
     cloud = benchmark_config[1]['flags']['cloud']
     machine_type=benchmark_config[1]['flags']['machine_type']
     cpu_count = cloud_util.cpu_count_from_machine_type(cloud, machine_type)
-
+    print(f"\n\nThis should be setting the cpu_count: {cpu_count}\n\n")
     # TODO, set default somewhere else
     network_tier='premium'
     if 'gce_network_tier' in benchmark_config[1]['flags']:
@@ -451,10 +452,10 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # create virtual machines (node)
   # attach with edges and benchmarks q
-  print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}")
+  print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
   for bm in temp_benchmarks:
     logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
-    print(f"Early BM is {bm.__dict__}")
+    print(f"\nEarly BM is {bm.__dict__}\n")
     vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
     print(f"\n\nVMS declared successfuly.\n\n")
   logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))

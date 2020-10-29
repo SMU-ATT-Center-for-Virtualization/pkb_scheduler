@@ -388,6 +388,7 @@ class BenchmarkGraph():
         myRegion = Region(vm_region, "AWS")
         myRegion.name = vm_region
         self.add_region_if_not_exists(myRegion)
+        #the self here doesn't have any vm_cpu's allocated to it ###################################################################################
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
         print(f"\n\nStatus: {status}\n\n")

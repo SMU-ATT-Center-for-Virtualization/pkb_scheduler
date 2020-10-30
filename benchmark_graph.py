@@ -334,7 +334,9 @@ class BenchmarkGraph():
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
           print("here1")
           # checks if there is enough space in a region to add another vm
+          
           self.add_region_if_not_exists(vm_region)
+          print(f"\n\nself, but the first time it adds a region: {self.__dict__}\n\n")
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
             add_from_list = False
@@ -387,7 +389,7 @@ class BenchmarkGraph():
         print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n")
         myRegion = Region(vm_region, "AWS")
         myRegion.name = vm_region
-        self.add_region_if_not_exists(myRegion)
+        self.add_region_if_not_exists(myRegion) # So the reason the code is breaking later because I add the region here myself, and it never gets populated
         print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
         print(f"\n\nself.regions: {self.regions['us-east-2'].__dict__}\n")
         #the self here doesn't have any vm_cpu's allocated to it ###################################################################################

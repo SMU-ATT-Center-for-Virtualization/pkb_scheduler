@@ -409,7 +409,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
 #THIS CRASHES EVERY TIME
   region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'])
-  print(f"\n\nRegion_Dict is : {region_dict}\n\n")
+  print(f"\n\nRegion_Dict is : {region_dict['us-east-2']}\n\n")
   
   
   

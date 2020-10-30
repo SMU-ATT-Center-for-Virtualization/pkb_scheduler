@@ -388,9 +388,9 @@ class BenchmarkGraph():
         print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
         print(f"\n\nvm region is: {vm_region}\n\n")
         print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n")
-        myRegion = Region(vm_region, "AWS")
-        myRegion.name = vm_region
-        self.add_region_if_not_exists(myRegion) # So the reason the code is breaking later because I add the region here myself, and it never gets populated
+        # myRegion = Region(vm_region, "AWS")
+        # myRegion.name = vm_region
+        # self.add_region_if_not_exists(myRegion) # So the reason the code is breaking later because I add the region here myself, and it never gets populated
         print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
         print(f"\n\nself.regions: {self.regions['us-east-2'].__dict__}\n")
         #the self here doesn't have any vm_cpu's allocated to it ###################################################################################

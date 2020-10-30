@@ -392,7 +392,7 @@ class BenchmarkGraph():
         # myRegion.name = vm_region
         # self.add_region_if_not_exists(myRegion) # So the reason the code is breaking later because I add the region here myself, and it never gets populated
         print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
-        print(f"\n\nself.regions: {self.regions['us-east-2'].__dict__}\n")
+        #print(f"\n\nself.regions: {self.regions['us-east-2'].__dict__}\n")
         #the self here doesn't have any vm_cpu's allocated to it ###################################################################################
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)

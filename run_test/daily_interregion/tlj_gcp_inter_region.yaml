@@ -9,7 +9,7 @@ throughput_latency_jitter:
     inter_region: "zones < extra_zones"
   flag_matrix_defs:
     inter_region:
-      gce_network_tier: [premium, standard]
+      gce_network_tier: [standard]
       zones: [us-central1-c, us-east1-b, us-east4-c, us-west1-b, us-west2-a, us-west3-a, us-west4-a]
       extra_zones: [us-east1-b, us-east4-c, us-west1-b, us-west2-a, us-west2-a, us-west3-a, us-west4-a]
       machine_type: [n1-standard-16]

@@ -64,6 +64,7 @@ def get_region_info(cloud):
     output, error = process.communicate()
     # load json and convert to a more useable output
     region_json = json.loads(output.decode('utf-8'))
+    print(f"region_json is: {region_json}")
     for region_iter in region_json['Regions']:
       region_dict[region_iter['RegionName']] = {}
   else:

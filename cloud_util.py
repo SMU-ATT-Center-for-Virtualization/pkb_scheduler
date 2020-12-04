@@ -65,7 +65,7 @@ def get_region_info(cloud):
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
-    print(f"\n\nget region info OUTPUT of type {type(output)} IS: {output}\n\n")
+    print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")
 
     region_json = json.loads(output.decode('utf-8'))
     print(f"region_json is: {region_json}")

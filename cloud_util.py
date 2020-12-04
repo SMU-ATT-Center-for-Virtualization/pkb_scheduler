@@ -51,11 +51,13 @@ def get_region_info(cloud):
         region_dict[region_iter['description']][quota['metric']].pop('metric', None)
 
   elif cloud == 'AWS':
-    region_list_command = 'aws ec2 describe-regions'
+    #region_list_command = 'aws ec2 describe-regions'
+    region_list_command = 'aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A'
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
+    print(f"\n\noutput of the process is: {output}\n\n")
     region_json = json.loads(output)
     for region_iter in region_json['Regions']:
       region_dict[region_iter['RegionName']] = {}

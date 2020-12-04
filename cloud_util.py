@@ -90,7 +90,8 @@ def get_cloud_quotas(cloud):
         quota_dict['static_address_quota'] = quota_iter['limit']
 
   elif cloud == 'AWS':
-    quota_list_command = 'aws ec2 describe-account-attributes'
+    #quota_list_command = 'aws ec2 describe-account-attributes'
+    quota_list_command = 'aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A'
     process = subprocess.Popen(quota_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()

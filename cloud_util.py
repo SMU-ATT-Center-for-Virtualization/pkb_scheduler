@@ -96,6 +96,7 @@ def get_cloud_quotas(cloud):
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
+    print(f"\n\nOUTPUT IS: {output}\n\n")
     quota_json = json.loads(output)
     for quota_iter in quota_json['AccountAttributes']:
       if quota_iter['AttributeName'] == 'max-instances':

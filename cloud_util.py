@@ -33,6 +33,17 @@ def cpu_count_from_machine_type(cloud, machine_type):
     return None
 
 
+def cpu_type_from_machine_type(cloud, machine_type):
+  if cloud == 'GCP':
+    return machine_type.split('-')[0]
+  elif cloud == 'AWS':
+    return None
+  elif cloud == 'Azure':
+    return None
+  else:
+    return None
+
+
 def get_region_info(cloud):
 
   region_dict = {}
@@ -109,3 +120,27 @@ def get_region_from_zone(cloud, zone):
     return zone
   else:
     return None
+
+
+def get_max_bandwidth_from_machine_type(cloud, machine_type):
+  if cloud == 'GCP':
+    machine_type = machine_type.lower()
+    cpu_type = cpu_type_from_machine_type('GCP', machine_type).upper()
+    cpu_count = cpu_count_from_machine_type('GCP', machine_type)
+    if cpu_type in ['N1', 'N2', 'N2D']:
+      if cpu_count == 1:
+        return 2
+      elif cpu_count <= 5:
+        return 10
+      elif cpu_count < 16:
+        return 2 * cpu_count
+      elif cpu_count >= 16:
+        return 32
+    elif cpu_type in ['E2']:
+      return -1 #TODO
+
+  elif cloud == 'AWS':
+    return -1
+
+  elif cloud == 'Azure':
+    return -1

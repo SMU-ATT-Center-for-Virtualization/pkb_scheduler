@@ -85,8 +85,11 @@ class BenchmarkGraph():
   def region_exists(self, region_name):
     return region_name in self.regions
 
-  def get_available_cpus(self, region_name):
-    return region['region_name'].get_available_cpus()
+  def get_available_cpus(self, cloud, region_name, machine_type):
+    if cloud == 'GCP':
+      return region['region_name'].get_available_cpus(machine_type)
+    else:
+      return region['region_name'].get_available_cpus()
 
   def required_vm_exists(self, vm):
     # print(os_type)
@@ -162,7 +165,7 @@ class BenchmarkGraph():
     """
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
 
-    if self.regions[vm_region].has_enough_resources(vm.cpu_count):
+    if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.machine_type):
       if self.required_vm_exists(vm):
         # returns this is vm exists but there is enough space
         # for another

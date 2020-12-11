@@ -24,7 +24,8 @@ from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from virtual_machine_spec import VirtualMachineSpec
-from region import Region
+from region import Region, GcpRegion
+from cloud import Cloud
 from absl import flags
 from absl import app
 
@@ -119,6 +120,14 @@ flags.DEFINE_boolean('precreate_and_share_vms', True,
 
 flags.DEFINE_boolean('use_maximum_matching', True,
                     'If true, this run VMs based on maximum matching')
+
+flags.DEFINE_integer('regional_bandwidth_limit', None,
+                 'Applies a bandwidth limit per region (Gbps)')
+flags.DEFINE_integer('cloud_bandwidth_limit', None,
+                 'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+
+flags.DEFINE_integer('max_retries', 20,
+                     'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
 
 logger = None
 
@@ -237,10 +246,19 @@ def run_benchmarks(benchmark_graph):
   benchmarks_run = []
   # benchmark_graph.print_graph()
   vms_removed = []
+  max_set_empty_counter = 0
+
   while benchmark_graph.benchmarks_left() > 0:
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
+    if len(maximum_set) == 0:
+      max_set_empty_counter += 1
+    else:
+      max_set_empty_counter = 0
+
+    if FLAGS.max_retries >= 0 and max_set_empty_counter > FLAGS.max_retries:
+      exit()
     print("MAXIMUM SET")
     print(maximum_set)
     maximum_sets.append(maximum_set)
@@ -284,13 +302,17 @@ def update_quota_usage(benchmark_graph):
 
   for cloud in benchmark_graph.clouds:
     #TODO change this
-    region_dict = cloud_util.get_region_info(cloud='GCP')
-    # print(region_dict)
-    for region_name in benchmark_graph.regions:
-      cpu_usage = region_dict[region_name]['CPUS']['usage']
-      address_usage = region_dict[region_name]['IN_USE_ADDRESSES']['usage']
-      benchmark_graph.regions[region_name].update_cpu_usage(cpu_usage)
-      benchmark_graph.regions[region_name].update_address_usage(address_usage)
+    if cloud == 'GCP':
+      region_dict = cloud_util.get_region_info(cloud='GCP')
+      for region_name in benchmark_graph.regions:
+        quotas = region_dict[region_name]
+        benchmark_graph.regions[region_name].update_quotas(quotas)
+    elif cloud == 'AWS':
+      return
+    elif cloud == 'Azure':
+      return
+    else:
+      return
 
 
 def create_benchmark_from_config(benchmark_config, benchmark_id):
@@ -392,16 +414,25 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # get all regions from gcloud
   # make regions
+
+  # CREATE and ADD regions for GCP
   region_dict = cloud_util.get_region_info(cloud='GCP')
+
+  new_cloud = Cloud('GCP', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+  full_graph.add_cloud_if_not_exists(new_cloud)
   for key in region_dict:
     # if region['description'] in full_graph.regions
-    new_region = Region(region_name=key,
-                        cloud='GCP',
-                        cpu_quota=region_dict[key]['CPUS']['limit'],
-                        cpu_usage=region_dict[key]['CPUS']['usage'])
-    new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
-    new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
+    new_region = GcpRegion(region_name=key,
+                           cloud=new_cloud,
+                           quotas=region_dict[key],
+                           bandwidth_limit=FLAGS.regional_bandwidth_limit)
+    # new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
+    # new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
     full_graph.add_region_if_not_exists(new_region=new_region)
+
+
+  # HERE CREATE and ADD regions for AWS
+
 
   # This takes all the stuff from the config dictionaries
   # and puts them in benchmark objects

@@ -60,7 +60,7 @@ def get_region_info(cloud):
   elif cloud == 'AWS' or cloud == 'aws':
     #region_list_command = 'aws ec2 describe-regions'
     region_list_command = 'aws ec2 describe-instances --query "Reservations[].Instances[].InstanceId" --output text'
-    print(f"The amount of running's in region_list_command: {region_list_command.count('running')}")
+    print(f"The amount of running's in region_list_command,[{region_list_command}]: {region_list_command.count('running')}")
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()

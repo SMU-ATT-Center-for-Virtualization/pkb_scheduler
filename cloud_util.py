@@ -64,7 +64,7 @@ def get_region_info(cloud):
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
-    print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
+    #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
     print(f"The amount of running's in region_list_command,[{output}]: {region_list_command.count('running')}")
 
     region_json = json.loads(output.decode('utf-8'))

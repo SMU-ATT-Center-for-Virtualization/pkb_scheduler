@@ -10,10 +10,10 @@ iperf:
   flag_matrix_defs:
     inter_region:
       gce_network_tier: [premium]
-      #zones: [asia-east1-b,asia-east2-a,asia-northeast1-b,asia-northeast2-a,asia-northeast3-a,asia-south1-c,asia-southeast1-b,asia-southeast2-a,australia-southeast1-b,europe-north1-a,europe-west1-b,europe-west2-c,europe-west3-c,europe-west4-a,europe-west6-a,northamerica-northeast1-a,southamerica-east1-b,us-central1-c,us-east1-b,us-east4-c,us-west1-b,us-west2-a,us-west3-a,us-west4-a]
-      #extra_zones: [asia-east1-b,asia-east2-a,asia-northeast1-b,asia-northeast2-a,asia-northeast3-a,asia-south1-c,asia-southeast1-b,asia-southeast2-a,australia-southeast1-b,europe-north1-a,europe-west1-b,europe-west2-c,europe-west3-c,europe-west4-a,europe-west6-a,northamerica-northeast1-a,southamerica-east1-b,us-central1-c,us-east1-b,us-east4-c,us-west1-b,us-west2-a,us-west3-a,us-west4-a]
-      zones: [us-east1-d,us-east4-a,us-central1-f,us-west2-b,us-west4-a]
-      extra_zones: [us-east1-d,us-east4-a,us-central1-f,us-west2-b,us-west4-a]
+      zones: [asia-east1-b,asia-east2-a,asia-northeast1-b,asia-southeast1-b,australia-southeast1-b,europe-north1-a,europe-west1-b,europe-west2-c,europe-west3-c,europe-west4-a,northamerica-northeast1-a,southamerica-east1-b,us-central1-c,us-east1-b,us-east4-c,us-west1-b,us-west4-a]
+      extra_zones: [asia-east1-b,asia-east2-a,asia-northeast1-b,asia-southeast1-b,australia-southeast1-b,europe-north1-a,europe-west1-b,europe-west2-c,europe-west3-c,europe-west4-a,northamerica-northeast1-a,southamerica-east1-b,us-central1-c,us-east1-b,us-east4-c,us-west1-b,us-west4-a]
+      # zones: [us-east1-d,us-east4-a,us-central1-f,us-west2-b,us-west4-a]
+      # extra_zones: [us-east1-d,us-east4-a,us-central1-f,us-west2-b,us-west4-a]
       machine_type: [n2-standard-8]
   flags:
     cloud: GCP

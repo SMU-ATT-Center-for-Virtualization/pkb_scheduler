@@ -59,7 +59,8 @@ def get_region_info(cloud):
 
   elif cloud == 'AWS' or cloud == 'aws':
     #region_list_command = 'aws ec2 describe-regions'
-    region_list_command = "aws ec2 describe-instances --query 'Reservations[].Instances[]'"
+    #region_list_command = "aws ec2 describe-instances --query 'Reservations[].Instances[]'"
+    region_list_command = "date"
     # process = subprocess.Popen(region_list_command.split(),
     #                            stdout=subprocess.PIPE)
     process = subprocess.check_output(region_list_command)

@@ -61,7 +61,7 @@ def get_region_info(cloud):
     #region_list_command = 'aws ec2 describe-regions'
     region_list_command = "aws ec2 describe-instances --query 'Reservations[].Instances[]'"
     #region_list_command ="aws ec2 describe-instances"
-    process = subprocess.Popen(region_list_command.split(),
+    process = subprocess.Popen(region_list_command,
                                 stdout=subprocess.PIPE)
     #process = subprocess.check_output(region_list_command)
     print(f"process: {process}")

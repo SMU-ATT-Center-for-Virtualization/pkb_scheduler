@@ -67,7 +67,7 @@ def get_region_info(cloud):
     #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
     
     region_json = json.loads(output.decode('utf-8'))
-    print(f"The amount of running's in region_list_command,[{output["state"]}]: ")
+    print(f"The amount of running's in region_list_command,[{type(output)}]: ")
 
     print(f"region_json is: {region_json}")
     for region_iter in region_json['Regions']:

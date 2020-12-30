@@ -60,11 +60,12 @@ def get_region_info(cloud):
   elif cloud == 'AWS' or cloud == 'aws':
     #region_list_command = 'aws ec2 describe-regions'
     region_list_command = 'aws ec2 describe-instances --query "Reservations[].Instances[]"'
-    process = subprocess.Popen(region_list_command.split(),
-                               stdout=subprocess.PIPE)
+    # process = subprocess.Popen(region_list_command.split(),
+    #                            stdout=subprocess.PIPE)
+    process = subprocess.check_output(region_list_command)
     print(f"process: {process}")
     output, error = process.communicate()
-    print(f"output: {output}, error: {error}")
+    print(f"output: {output}, error:{error}")
     # load json and convert to a more useable output
     #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
     

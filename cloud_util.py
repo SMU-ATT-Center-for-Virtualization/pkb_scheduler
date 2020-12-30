@@ -59,14 +59,14 @@ def get_region_info(cloud):
 
   elif cloud == 'AWS' or cloud == 'aws':
     #region_list_command = 'aws ec2 describe-regions'
-    region_list_command = 'aws ec2 describe-instances --query "Reservations[].Instances[].InstanceId" --output text'
+    region_list_command = 'aws ec2 describe-instances --query "Reservations[].Instances[]"'
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
     #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
     print(f"The amount of running's in region_list_command,[{output}]: {region_list_command.count('running')}")
-
+    
     region_json = json.loads(output.decode('utf-8'))
     print(f"region_json is: {region_json}")
     for region_iter in region_json['Regions']:

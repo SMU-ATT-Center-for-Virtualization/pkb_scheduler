@@ -63,6 +63,7 @@ def get_region_info(cloud):
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
+    print(f"output: {output}")
     # load json and convert to a more useable output
     #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
     

@@ -62,6 +62,7 @@ def get_region_info(cloud):
     region_list_command = 'aws ec2 describe-instances --query "Reservations[].Instances[]"'
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
+    print(f"process: {process}")
     output, error = process.communicate()
     print(f"output: {output}")
     # load json and convert to a more useable output

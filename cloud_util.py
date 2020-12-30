@@ -63,7 +63,7 @@ def get_region_info(cloud):
     #region_list_command = "date"
     #region_list_command ="aws ec2 describe-instances"
     #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE)
-    process = subprocess.check_output(region_list_command)
+    process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
     print(f"process: {process}")
     output, error = process.communicate()
     print(f"output: {output}, error:{error}")

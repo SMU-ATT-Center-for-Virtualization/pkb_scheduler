@@ -75,8 +75,8 @@ def get_region_info(cloud):
     
     #region_json = json.loads(output.decode('utf-8'))
     region_json = json.loads(output.decode('utf-8'))
-    print(f"The amount of running's in region_list_command,[{type(region_json)}]: len of region_json ")
-    print(f"count of instances: {region_json}")
+    print(f"The amount of running's in region_list_command,[{type(region_json)}]: len of region_json {len(region_json)}")
+    #print(f"count of instances: {region_json}")
     #print(f"region_json is: {region_json}")
     for region_iter in region_json['Regions']:
       region_dict[region_iter['RegionName']] = {}

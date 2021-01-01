@@ -405,69 +405,101 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
  # region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'].upper())
   # full_graph.add_region_if_not_exists(new_region=benchmark_config_list[0][1]['flags']['zones'])
   
-
-
-#THIS CRASHES EVERY TIME
-  region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'])
-  print(f"\n\nRegion_Dict is : {region_dict}\n\n")
-  
-  
-  
-  
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    print(f"\n\nTrying to make a new region : {region_dict[key]}\n\n")
-
-    new_region = Region(region_name=key,
-                        cloud='GCP',
-                        cpu_quota=region_dict[key]['CPUS']['limit'],
-                        cpu_usage=region_dict[key]['CPUS']['usage'])
-    new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
-    new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
+  #in progress 12/30
+  if benchmark_config_list[0][1]['flags']['cloud'].lower == 'aws':
+    new_region = Region(region_name='us-east-2', cloud='aws')
     full_graph.add_region_if_not_exists(new_region=new_region)
-  print(f"\n\nThe region has been made\n\n")
-  # This takes all the stuff from the config dictionaries
-  # and puts them in benchmark objects
-  # will need more logic for differently formatted configs
-  benchmark_counter = 0
-  temp_benchmarks = []
-  print(f"\n\nEntering the for loop\n\n")
-  for config in benchmark_config_list:
-    # print(config[1]['flags']['zones'])
-    # region_name = config[1]['flags']['zones']
-    # print(config[1]['flags']['extra_zones'])
-    # full_graph.add_region_if_not_exists(region_name)
-    print(f"\n\nMaking new benchmark\n\n")
-    new_benchmark = create_benchmark_from_config(config,
-                                                 benchmark_counter)
-    print(f"\n\nBenchmark has been made!\n\n")
-    # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
-    #                           benchmark_type=config[0],
-    #                           zone1=config[1]['flags']['zones'],
-    #                           zone2=config[1]['flags']['extra_zones'],
-    #                           machine_type=config[1]['flags']['machine_type'],
-    #                           cloud=config[1]['flags']['cloud'],
-    #                           flags=config[1]['flags'])
-    temp_benchmarks.append(new_benchmark)
-    benchmark_counter += 1
-  print(f"\n\nLeaving the for loops\n\n")
-  logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
+    benchmark_counter = 0
+    temp_benchmarks = []
+    for config in benchmark_config_list:
+      # print(config[1]['flags']['zones'])
+      # region_name = config[1]['flags']['zones']
+      # print(config[1]['flags']['extra_zones'])
+      # full_graph.add_region_if_not_exists(region_name)
+      print(f"\n\nMaking new benchmark\n\n")
+      new_benchmark = create_benchmark_from_config(config,
+                                                  benchmark_counter)
+      print(f"\n\nBenchmark has been made!\n\n")
+      # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
+      #                           benchmark_type=config[0],
+      #                           zone1=config[1]['flags']['zones'],
+      #                           zone2=config[1]['flags']['extra_zones'],
+      #                           machine_type=config[1]['flags']['machine_type'],
+      #                           cloud=config[1]['flags']['cloud'],
+      #                           flags=config[1]['flags'])
+      temp_benchmarks.append(new_benchmark)
+      benchmark_counter += 1
+      logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
+      print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
+      for bm in temp_benchmarks:
+        logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+        print(f"\nEarly BM is {bm.__dict__}\n")
+        vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
+        print(f"\n\nVMS declared successfuly.\n\n")
+      logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
+  else:
 
-  # create virtual machines (node)
-  # attach with edges and benchmarks q
-  print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
-  for bm in temp_benchmarks:
-    logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
-    print(f"\nEarly BM is {bm.__dict__}\n")
-    vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
-    print(f"\n\nVMS declared successfuly.\n\n")
-  logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
+  #THIS CRASHES EVERY TIME
+    region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'])
+    print(f"\n\nRegion_Dict is : {region_dict}\n\n")
+    
+    
+    
+    
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      print(f"\n\nTrying to make a new region : {region_dict[key]}\n\n")
 
-  # Second pass, add
-  for config in benchmark_config_list:
-    pass
-  print(f"\n\nExiting from create_graph_from_config_list\n\n")
-  return full_graph
+      new_region = Region(region_name=key,
+                          cloud='GCP',
+                          cpu_quota=region_dict[key]['CPUS']['limit'],
+                          cpu_usage=region_dict[key]['CPUS']['usage'])
+      new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
+      new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
+      full_graph.add_region_if_not_exists(new_region=new_region)
+    print(f"\n\nThe region has been made\n\n")
+    # This takes all the stuff from the config dictionaries
+    # and puts them in benchmark objects
+    # will need more logic for differently formatted configs
+    benchmark_counter = 0
+    temp_benchmarks = []
+    print(f"\n\nEntering the for loop\n\n")
+    for config in benchmark_config_list:
+      # print(config[1]['flags']['zones'])
+      # region_name = config[1]['flags']['zones']
+      # print(config[1]['flags']['extra_zones'])
+      # full_graph.add_region_if_not_exists(region_name)
+      print(f"\n\nMaking new benchmark\n\n")
+      new_benchmark = create_benchmark_from_config(config,
+                                                  benchmark_counter)
+      print(f"\n\nBenchmark has been made!\n\n")
+      # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
+      #                           benchmark_type=config[0],
+      #                           zone1=config[1]['flags']['zones'],
+      #                           zone2=config[1]['flags']['extra_zones'],
+      #                           machine_type=config[1]['flags']['machine_type'],
+      #                           cloud=config[1]['flags']['cloud'],
+      #                           flags=config[1]['flags'])
+      temp_benchmarks.append(new_benchmark)
+      benchmark_counter += 1
+    print(f"\n\nLeaving the for loops\n\n")
+    logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
+
+    # create virtual machines (node)
+    # attach with edges and benchmarks q
+    print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
+    for bm in temp_benchmarks:
+      logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+      print(f"\nEarly BM is {bm.__dict__}\n")
+      vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
+      print(f"\n\nVMS declared successfuly.\n\n")
+    logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
+
+    # Second pass, add
+    for config in benchmark_config_list:
+      pass
+    print(f"\n\nExiting from create_graph_from_config_list\n\n")
+    return full_graph
 
 
 def parse_config_folder(path="configs/", ignore_hidden_folders=True):

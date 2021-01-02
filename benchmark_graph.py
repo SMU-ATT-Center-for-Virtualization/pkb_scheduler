@@ -387,7 +387,7 @@ class BenchmarkGraph():
         print("here2")
         print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
         print(f"\n\nvm region is: {vm_region}\n\n")
-        print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: ")
+        print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: {self.regions[vm_region]}")
         # myRegion = Region(vm_region, "AWS")
         # myRegion.name = vm_region
         # self.add_region_if_not_exists(myRegion) # So the reason the code is breaking later because I add the region here myself, and it never gets populated

@@ -75,6 +75,7 @@ class Cloud():
   def add_virtual_machine_if_possible(self, vm, region=None):
     print(f"This tests to see if we have enough CPU's to run the tests: self.get_available_cpus():{self.get_available_cpus()} should be >= vm.cpu_count:{vm.cpu_count}")
     print(f"self in add_virt_machine: {self.__dict__}")
+    print(f"update update update???")
     if (self.get_available_cpus() >= vm.cpu_count 
         and self.address_quota > self.address_usage):
       self.virtual_machines.append(vm)

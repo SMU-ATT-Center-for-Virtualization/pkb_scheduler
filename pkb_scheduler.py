@@ -158,6 +158,7 @@ def main(argv):
                                              pkb_command)
 
   logger.debug("\nVMS TO CREATE:")
+  print(f"fullgraph virt machines: {full_graph.virtual_machines}")
   for vm in full_graph.virtual_machines:
     logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type +
                  " " + vm.os_type + " " + vm.cloud)

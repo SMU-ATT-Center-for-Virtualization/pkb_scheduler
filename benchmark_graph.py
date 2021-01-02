@@ -294,6 +294,7 @@ class BenchmarkGraph():
     vms = []
 
     print(f"\n\nadd_vms_for_benchmark: {bm.__dict__}\n\n")
+    print(f"self in add_vms_for_benchmark_if_possible: {self.__dict__}")
     for vm_spec in bm.vm_specs:
       print(f"\nThe vm_specs are: {vm_spec.__dict__}\n")
       print(vm_spec.id)

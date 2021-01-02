@@ -408,6 +408,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   
   #in progress 12/30
   if benchmark_config_list[0][1]['flags']['cloud'].lower == 'aws' or benchmark_config_list[0][1]['flags']['cloud'] == 'AWS':
+    print(f"\n\nmaking the graph!!!!!!!!\n\n")
     new_region = Region(region_name='us-east-2', cloud='aws')
     full_graph.add_region_if_not_exists(new_region=new_region)
     benchmark_counter = 0

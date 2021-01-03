@@ -46,7 +46,8 @@ class Region():
         print("Quota reached for region: " + self.name)
         return False
     elif vm.cloud == 'aws' or vm.cloud == 'AWS':
-
+      #here we want to see the number of machines we have up
+      return True
   def remove_virtual_machine(self, vm):
     # TODO add safety checks here
     self.virtual_machines.remove(vm)

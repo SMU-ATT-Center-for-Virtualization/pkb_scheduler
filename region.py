@@ -47,7 +47,11 @@ class Region():
         return False
     elif vm.cloud == 'aws' or vm.cloud == 'AWS':
       #here we want to see the number of machines we have up
-      return True
+      if vm.vm_aws_limit > vm.vm_spun_up_machines:
+        return True
+      else:
+        return False
+    return False
   def remove_virtual_machine(self, vm):
     # TODO add safety checks here
     self.virtual_machines.remove(vm)

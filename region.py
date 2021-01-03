@@ -31,6 +31,7 @@ class Region():
   def add_virtual_machine_if_possible(self, vm):
     print(f"\n\n in add_virtual_machine_if_possible: {vm.__dict__}\n\n")
     print(f"This tests to see if we have enough CPU's to run the tests: self.get_available_cpus():{self.get_available_cpus()} should be >= vm.cpu_count:{vm.cpu_count}")
+    print(f"vm cloud is: {vm.cloud}")
     #print(breadk[99])
     if (self.get_available_cpus() >= vm.cpu_count 
         and self.address_quota > self.address_usage):

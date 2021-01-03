@@ -321,7 +321,8 @@ class BenchmarkGraph():
                           ssl_cert=self.ssl_cert_file,
                           vm_spec=vm_spec,
                           vm_spec_id=vm_spec.id,
-                          vm_aws_limit = 1920)
+                          vm_aws_limit = 1920,
+                          vm_spun_up_machines = len(number_of_spun_up_machines))
 
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)

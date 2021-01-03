@@ -13,6 +13,7 @@ import math
 import cloud_util
 import time
 
+import json
 from deprecated import deprecated
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
@@ -301,7 +302,12 @@ class BenchmarkGraph():
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       print(f"\n\nVM_Region is: {vm_region}\n\n")
       print(f"\n\nThe CPU Count is: {vm_spec.cpu_count}\n\n")
-
+      region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
+      process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      number_of_spun_up_machines = json.loads(output.decode('utf-8'))
+      print(f"number_of_spun_up_machines: {number_of_spun_up_machines}")
+      #here we will get the number of computers spun up for aws
       vm_id = self.vm_total_count
       vm = VirtualMachine(node_id=vm_id,
                           cpu_count=vm_spec.cpu_count,
@@ -314,7 +320,8 @@ class BenchmarkGraph():
                           ssh_private_key=self.ssh_private_key_file,
                           ssl_cert=self.ssl_cert_file,
                           vm_spec=vm_spec,
-                          vm_spec_id=vm_spec.id)
+                          vm_spec_id=vm_spec.id,
+                          vm_aws_limit = 1920)
 
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)

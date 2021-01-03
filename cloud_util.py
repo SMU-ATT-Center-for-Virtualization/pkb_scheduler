@@ -128,6 +128,7 @@ def get_region_from_zone(cloud, zone):
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
+    print(f"\n\nthe zone is {zone}\n\n")
     return zone[:len(zone) - 1]
   elif cloud == 'Azure':
     return zone

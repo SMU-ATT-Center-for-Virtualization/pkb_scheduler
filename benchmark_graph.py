@@ -309,6 +309,7 @@ class BenchmarkGraph():
       print(f"\n\nnumber_of_spun_up_machines: {len(number_of_spun_up_machines)}\n\n")
       #here we will get the number of computers spun up for aws
       vm_id = self.vm_total_count
+    
       vm = VirtualMachine(node_id=vm_id,
                           cpu_count=vm_spec.cpu_count,
                           zone=vm_spec.zone,
@@ -323,7 +324,7 @@ class BenchmarkGraph():
                           vm_spec_id=vm_spec.id,
                           vm_aws_limit = 1920,
                           vm_spun_up_machines = len(number_of_spun_up_machines))
-
+      print(f"The VM doesn't print right :( \n {vm.__dict__}")
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)
 

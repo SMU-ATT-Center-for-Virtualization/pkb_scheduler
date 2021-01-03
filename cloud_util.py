@@ -68,6 +68,7 @@ def get_region_info(cloud):
     #This kinda works? vvvvvvvvvvvvv
     #process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
     print(f"process: {process}")
+    
     output, error = process.communicate()
     #print(f"output: {output}, error:{error}")
     # load json and convert to a more useable output

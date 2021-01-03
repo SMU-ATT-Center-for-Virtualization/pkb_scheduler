@@ -19,8 +19,7 @@ class VirtualMachine():
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
-               vm_spec=None, vm_spec_id=None, min_cpu_platform=None,vm_aws_limit = 0,
-                          vm_spun_up_machines = 0:
+               vm_spec=None, vm_spec_id=None, min_cpu_platform=None, vm_aws_limit = 0, vm_spun_up_machines = 0):
 
     # get logger
     global logger

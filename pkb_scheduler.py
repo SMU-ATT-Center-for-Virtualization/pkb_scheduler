@@ -397,6 +397,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # make regions
   #print("pkb_scheduler Cloud Variable is: {}".format(cloud))
   #print("config is : {}".format(benchmark_config_list))
+  print(f"benchmarkconfig: {benchmark_config_list}")
   print("\n\nconfig[0] is : {}".format(benchmark_config_list[0]))
   print("\n\nconfig[0][1] is : {}".format(benchmark_config_list[0][1]))
   print("\n\nconfig[0][1]['flags'] is : {}".format(benchmark_config_list[0][1]['flags']))

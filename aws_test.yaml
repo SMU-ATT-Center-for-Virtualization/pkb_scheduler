@@ -12,7 +12,7 @@ throughput_latency_jitter:
   flag_matrix_defs:
     fmatrix:
       zones: [us-east-2]
-      extra_zones: [us-east-2a]
+      extra_zones: [us-east-2]
       machine_type: [t2.micro]
   flags:
     cloud: AWS

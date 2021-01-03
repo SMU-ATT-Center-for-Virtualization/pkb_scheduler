@@ -306,7 +306,7 @@ class BenchmarkGraph():
       process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       number_of_spun_up_machines = json.loads(output.decode('utf-8'))
-      print(f"\n\nnumber_of_spun_up_machines: {number_of_spun_up_machines}\n\n")
+      print(f"\n\nnumber_of_spun_up_machines: {len(number_of_spun_up_machines)}\n\n")
       #here we will get the number of computers spun up for aws
       vm_id = self.vm_total_count
       vm = VirtualMachine(node_id=vm_id,

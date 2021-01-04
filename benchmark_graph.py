@@ -81,7 +81,7 @@ class BenchmarkGraph():
 
   def add_region_if_not_exists(self, new_region):
     if new_region.name not in self.regions:
-      print(f"\n\n***********adding new region: {new_region.__dict__}******************\n\n")
+      print(f"\n\n***********adding new region: {new1_region.__dict__}******************\n\n")
       self.regions[new_region.name] = new_region
 
   def region_exists(self, region_name):

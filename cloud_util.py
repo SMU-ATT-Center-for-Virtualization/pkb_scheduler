@@ -129,7 +129,7 @@ def get_region_from_zone(cloud, zone):
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
     print(f"\n\nthe zone is {zone}\n\n")
-    return "us-east-2" #this is temporary to get it to work
+    # return "us-east-2" #this is temporary to get it to work
     return zone
   elif cloud == 'Azure':
     return zone

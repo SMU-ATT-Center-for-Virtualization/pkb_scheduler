@@ -48,6 +48,9 @@ class Region():
     elif vm.cloud == 'aws' or vm.cloud == 'AWS':
       #here we want to see the number of machines we have up
       if vm.vm_aws_limit > vm.vm_spun_up_machines:
+        self.virtual_machines.append(vm)
+        self.cpu_usage += vm.cpu_count
+        self.address_usage += 1
         return True
       else:
         return False

@@ -264,7 +264,7 @@ def run_benchmarks(benchmark_graph):
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     # benchmark_graph.print_graph()
-
+  print(f"Left While Loop")
   logging.debug(len(benchmarks_run))
   logging.debug("BMS RUN EACH LOOP")
   for bmset in benchmarks_run:

@@ -239,6 +239,7 @@ def run_benchmarks(benchmark_graph):
   # benchmark_graph.print_graph()
   vms_removed = []
   while benchmark_graph.benchmarks_left() > 0:
+    print(f"while loop going")
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
@@ -251,6 +252,7 @@ def run_benchmarks(benchmark_graph):
     # Completion statuses can be found at: 
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
+    print(f"finished run benchmark set")
     removed_count = benchmark_graph.remove_orphaned_nodes()
     vms_removed.append(removed_count)
     logging.info("UPDATE REGION QUOTAS")

@@ -54,6 +54,7 @@ class Region():
     return False
   def remove_virtual_machine(self, vm):
     # TODO add safety checks here
+    print(f"self is {self.__dict__}")
     print(f"vm is {vm.__dict__}")
     self.virtual_machines.remove(vm)
     self.cpu_usage -= vm.cpu_count

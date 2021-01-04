@@ -944,7 +944,7 @@ class BenchmarkGraph():
       logging.debug("VM removed: " + str(key))
       self.graph.remove_node(key)
       vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
-      print(f"self.regions: {self.regions}")
+      print(f"\n\nself.regions: {self.regions}\n\n")
       self.regions[vm_region].remove_virtual_machine(vm)
       vm_removed_count += 1
 

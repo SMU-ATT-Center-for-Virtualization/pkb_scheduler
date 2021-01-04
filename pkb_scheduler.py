@@ -254,6 +254,7 @@ def run_benchmarks(benchmark_graph):
     # before removal of edges
     print(f"finished run benchmark set")
     removed_count = benchmark_graph.remove_orphaned_nodes()
+    print(f"removed orphaned nodes correctly")
     vms_removed.append(removed_count)
     print(f"pre region Quotas")
     logging.info("UPDATE REGION QUOTAS")

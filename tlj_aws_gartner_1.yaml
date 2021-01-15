@@ -1,7 +1,7 @@
 #import anchors.yaml
-#benchmark throughput_latency_jitter
+#benchmark ping
 
-throughput_latency_jitter:
+ping:
   flag_matrix: fmatrix
   flag_matrix_filters:
     fmatrix: "zones != extra_zones"

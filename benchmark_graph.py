@@ -729,10 +729,12 @@ class BenchmarkGraph():
       cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
                    " --skip_package_cleanup=True")
 
+    #TODO fix this for intercloud
     if not FLAGS.precreate_and_share_vms:
-      cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
-                 + " --skip_firewall_rules=True"
-                 + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
+      if bm.vm_specs[0].cloud == 'GCP':
+        cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh"
+                   + " --skip_firewall_rules=True"
+                   + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
 
     # TODO do install_packages if vm has already been used
 

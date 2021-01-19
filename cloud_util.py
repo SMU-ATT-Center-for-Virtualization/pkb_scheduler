@@ -42,6 +42,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
 def get_region_info(benchmark_graph, cloud):
   print(f"\n\nEntering Get Region Info:\n\n")
   print("Cloud Variable is: {}".format(cloud))
+  print(f"The benchmark_graph in get_region_info is: {benchmark_graph}")
   region_dict = {}
   if cloud == 'GCP':
     region_list_command = "gcloud compute regions list --format=json"

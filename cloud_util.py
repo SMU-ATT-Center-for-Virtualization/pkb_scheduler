@@ -39,7 +39,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
     return None
 
 
-def get_region_info(cloud):
+def get_region_info(benchmark_graph, cloud):
   print(f"\n\nEntering Get Region Info:\n\n")
   print("Cloud Variable is: {}".format(cloud))
   region_dict = {}
@@ -58,6 +58,9 @@ def get_region_info(cloud):
         region_dict[region_iter['description']][quota['metric']].pop('metric', None)
 
   elif cloud == 'AWS' or cloud == 'aws':
+    #So what we need to do here is check the regions that we want to spin up the machines in and check the quotas for that region
+
+
     #region_list_command = 'aws ec2 describe-regions'
     region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
     #region_list_command = "date"

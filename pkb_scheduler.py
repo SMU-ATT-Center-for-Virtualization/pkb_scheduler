@@ -291,7 +291,7 @@ def update_quota_usage(benchmark_graph):
 
   for cloud in benchmark_graph.clouds:
     #TODO change this
-    region_dict = cloud_util.get_region_info(cloud='GCP')
+    region_dict = cloud_util.get_region_info(benchmark_graph, cloud='GCP')
     print(f"Region_dict is: {region_dict}\n")
     # print(region_dict)
     for region_name in benchmark_graph.regions:
@@ -467,7 +467,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   else:
 
   #THIS CRASHES EVERY TIME
-    region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'])
+    region_dict = cloud_util.get_region_info(benchmark_config_list,benchmark_config_list[0][1]['flags']['cloud'])
     print(f"\n\nRegion_Dict is : {region_dict}\n\n")
     
     

@@ -85,7 +85,7 @@ def get_region_info(benchmark_graph, cloud):
     #print(f"count of instances: {region_json}")
     #print(f"region_json is: {region_json}")
     region_list = []
-    for x in benchmark_graph:
+    for x in benchmark_graph[0]:
       print(f"x is {x} and type: {type(x)}")
       for y in x['zones']:
         region_list.append(y)

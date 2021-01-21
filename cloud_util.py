@@ -72,7 +72,7 @@ def get_region_info(benchmark_graph, cloud):
 
     #This kinda works? vvvvvvvvvvvvv
     #process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
-    print(f"process: {process}")
+    #print(f"process: {process}")
     
     #output, error = process.communicate()
     #print(f"output: {output}, error:{error}")

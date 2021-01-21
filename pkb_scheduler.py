@@ -419,12 +419,12 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     #print(f"region_dict is: {region_dict}")
     region_dict = cloud_util.get_region_info(benchmark_config_list,benchmark_config_list[0][1]['flags']['cloud'])
     print(f"\n\nRegion_Dict is : {region_dict}\n\n")
-    
+
     print(f"The Region's zones are: {benchmark_config_list[0][1]['flags']['zones']} and extra_zones are: {benchmark_config_list[0][1]['flags']['extra_zones']}")
-    new_region = Region(region_name=benchmark_config_list[0][1]['flags']['zones'], cloud='aws')
-    full_graph.add_region_if_not_exists(new_region=new_region)
-    new_region = Region(region_name=benchmark_config_list[0][1]['flags']['extra_zones'], cloud='aws')
-    full_graph.add_region_if_not_exists(new_region=new_region)
+    for x in region_dict:
+      new_region = Region(region_name=x, cloud='aws')
+      full_graph.add_region_if_not_exists(new_region=new_region)
+      
 
 
     benchmark_counter = 0

@@ -64,32 +64,40 @@ def get_region_info(benchmark_graph, cloud):
     
 
     #region_list_command = 'aws ec2 describe-regions'
-    region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
+    #region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
     #region_list_command = "date"
     #region_list_command ="aws ec2 describe-instances"
     #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE)
-    process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+    #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
 
     #This kinda works? vvvvvvvvvvvvv
     #process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
     print(f"process: {process}")
     
-    output, error = process.communicate()
+    #output, error = process.communicate()
     #print(f"output: {output}, error:{error}")
     # load json and convert to a more useable output
     #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
     
     #region_json = json.loads(output.decode('utf-8'))
-    region_json = json.loads(output.decode('utf-8'))
-    print(f"The amount of running's in region_list_command,[{type(region_json)}]: len of region_json {len(region_json)}")
+    #region_json = json.loads(output.decode('utf-8'))
+    #print(f"The amount of running's in region_list_command,[{type(region_json)}]: len of region_json {len(region_json)}")
     #print(f"count of instances: {region_json}")
     #print(f"region_json is: {region_json}")
-    for region_iter in region_json['Regions']:
-      region_dict[region_iter['RegionName']] = {}
+    region_list = []
+    for x in benchmark_graph:
+      for y in x['zones']:
+        region_list.append(y)
+      for y in x['extra_zones']:
+        region_list.append(y)
+    print(f"region list: {region_list}")
+    # for region_iter in region_list:
+    #   region_dict[region_iter['RegionName']] = {}
   else:
     pass
   print(f"\n\nLeaving Get Region Info:\n\n")
-  return region_dict
+
+  return region_list
 
 
 def get_cloud_quotas(cloud):

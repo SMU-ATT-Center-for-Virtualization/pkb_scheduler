@@ -418,7 +418,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     print(f"\n\nmaking the graph!!!!!!!!\n\n")
     #print(f"region_dict is: {region_dict}")
 
-    
+    print(f"The Region's zones are: {benchmark_config_list[0][1]['flags']['zones']} and extra_zones are: {benchmark_config_list[0][1]['flags']['extra_zones']}")
     new_region = Region(region_name=benchmark_config_list[0][1]['flags']['zones'], cloud='aws')
     full_graph.add_region_if_not_exists(new_region=new_region)
     new_region = Region(region_name=benchmark_config_list[0][1]['flags']['extra_zones'], cloud='aws')

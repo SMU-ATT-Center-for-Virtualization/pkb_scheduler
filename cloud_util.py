@@ -86,10 +86,10 @@ def get_region_info(benchmark_graph, cloud):
     #print(f"region_json is: {region_json}")
     region_list = []
     print(f"benchmark_graph[0][1]: {benchmark_graph[0][1]}")
-    for y in benchmark_graph[0][1]['flags']['zones']:
-      region_list.append(y)
-    for y in benchmark_graph[0][1]['flags']['extra_zones']:
-      region_list.append(y)
+    #for y in benchmark_graph[0][1]['flags']['zones']:
+    region_list.append(benchmark_graph[0][1]['flags']['zones'])
+    #for y in benchmark_graph[0][1]['flags']['extra_zones']:
+    region_list.append(benchmark_graph[0][1]['flags']['extra_zones'])
     print(f"region list: {region_list}")
     # for region_iter in region_list:
     #   region_dict[region_iter['RegionName']] = {}

@@ -61,7 +61,7 @@ def get_region_info(benchmark_graph, cloud):
 
   elif cloud == 'AWS' or cloud == 'aws':
     #So what we need to do here is check the regions that we want to spin up the machines in and check the quotas for that region
-
+    
 
     #region_list_command = 'aws ec2 describe-regions'
     region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"

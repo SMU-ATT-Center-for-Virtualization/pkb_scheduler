@@ -174,10 +174,12 @@ class BenchmarkGraph():
           if self.required_vm_exists(vm):
             # returns this is vm exists but there is enough space
             # for another
+            print(f"VM exists")
             return True, "VM Exists. Quota not Exceeded"
           else:
             # returns True if the vm doesn't already exist
             # and if region has enough space
+            print(f"VM does not exist")
             return True, "VM does not exist"
     elif vm.cloud.lower() == 'gcp':
       if self.regions[vm_region].has_enough_resources(vm.cpu_count):

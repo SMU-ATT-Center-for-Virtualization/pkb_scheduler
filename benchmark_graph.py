@@ -262,9 +262,9 @@ class BenchmarkGraph():
         logger.debug("QUOTA EXCEEDED")
         return False, None
 
-  def add_or_waitlist_benchmark_and_vms(self, bm):
+  def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
     print(f"bm is {bm.__dict__}")
-    vms = self.add_vms_for_benchmark_if_possible(bm)
+    vms = self.add_vms_for_benchmark_if_possible(bm, region_dict)
     print(f"\n\nAdded the vms to benchmark\n\n")
     vms_no_none = list(filter(None, vms))
 
@@ -280,7 +280,7 @@ class BenchmarkGraph():
       return [], "Waitlisted"
 
 
-  def add_vms_for_benchmark_if_possible(self, bm):
+  def add_vms_for_benchmark_if_possible(self, bm, region_dict=0):
     """[summary]
     
     [description]
@@ -303,28 +303,42 @@ class BenchmarkGraph():
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       print(f"\n\nVM_Region is: {vm_region}\n\n")
       print(f"\n\nThe CPU Count is: {vm_spec.cpu_count}\n\n")
-      region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
-      process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      output, error = process.communicate()
-      number_of_spun_up_machines = json.loads(output.decode('utf-8'))
-      print(f"\n\nnumber_of_spun_up_machines: {len(number_of_spun_up_machines)}\n\n")
+      if vm_spec.cloud.lower() == "aws" :
+        region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
+        process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+        output, error = process.communicate()
+        number_of_spun_up_machines = json.loads(output.decode('utf-8'))
+        print(f"\n\nnumber_of_spun_up_machines: {len(number_of_spun_up_machines)}\n\n")
       #here we will get the number of computers spun up for aws
       vm_id = self.vm_total_count
-    
-      vm = VirtualMachine(node_id=vm_id,
-                          cpu_count=vm_spec.cpu_count,
-                          zone=vm_spec.zone,
-                          os_type=vm_spec.os_type,
-                          network_tier=vm_spec.network_tier,
-                          machine_type=vm_spec.machine_type,
-                          cloud=vm_spec.cloud,
-                          min_cpu_platform=vm_spec.min_cpu_platform,
-                          ssh_private_key=self.ssh_private_key_file,
-                          ssl_cert=self.ssl_cert_file,
-                          vm_spec=vm_spec,
-                          vm_spec_id=vm_spec.id,
-                          temp_vm_aws_limit = 1920,
-                          temp_vm_spun_up_machines = len(number_of_spun_up_machines))
+      if vm_spec.cloud.lower() == "aws":
+        vm = VirtualMachine(node_id=vm_id,
+                            cpu_count=vm_spec.cpu_count,
+                            zone=vm_spec.zone,
+                            os_type=vm_spec.os_type,
+                            network_tier=vm_spec.network_tier,
+                            machine_type=vm_spec.machine_type,
+                            cloud=vm_spec.cloud,
+                            min_cpu_platform=vm_spec.min_cpu_platform,
+                            ssh_private_key=self.ssh_private_key_file,
+                            ssl_cert=self.ssl_cert_file,
+                            vm_spec=vm_spec,
+                            vm_spec_id=vm_spec.id,
+                            temp_vm_aws_limit = 1920,
+                            temp_vm_spun_up_machines = len(number_of_spun_up_machines))
+      else:
+        vm = VirtualMachine(node_id=vm_id,
+                            cpu_count=vm_spec.cpu_count,
+                            zone=vm_spec.zone,
+                            os_type=vm_spec.os_type,
+                            network_tier=vm_spec.network_tier,
+                            machine_type=vm_spec.machine_type,
+                            cloud=vm_spec.cloud,
+                            min_cpu_platform=vm_spec.min_cpu_platform,
+                            ssh_private_key=self.ssh_private_key_file,
+                            ssl_cert=self.ssl_cert_file,
+                            vm_spec=vm_spec,
+                            vm_spec_id=vm_spec.id)
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)
 

@@ -57,6 +57,7 @@ class Cloud():
     print(f"has_enough_resources self is: {self}\n")
     print(f"has_enough_resources cpu_count is {cpu_count}\n")
     print(f"has_enough_resources region is : {region}\n")
+    print(f"$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     has_enough = False
     if region:
       has_enough = self.regions['region'].has_enough_resources(cpu_count)

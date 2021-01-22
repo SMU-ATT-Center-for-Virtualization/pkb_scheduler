@@ -163,6 +163,7 @@ class BenchmarkGraph():
       bool, String
     """
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
+    print(f"vm is: {vm.__dict__}")
     print(f"self.regions: {self.regions}")
     print(f"vm_region: {vm_region}")
     quota_not_exceeded = True

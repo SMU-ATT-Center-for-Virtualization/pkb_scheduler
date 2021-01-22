@@ -171,7 +171,7 @@ class BenchmarkGraph():
     print(f"vm.cloud.lower() is: {vm.cloud.lower()}")
     if vm.cloud.lower() == "aws":
       print(f"inside the aws add portion")
-      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower()):
+      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
           # for another
@@ -184,7 +184,7 @@ class BenchmarkGraph():
           return True, "VM does not exist"
     elif vm.cloud.lower() == 'gcp':
       print(f"inside the gcp add portion")
-      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower()):
+      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
           # for another

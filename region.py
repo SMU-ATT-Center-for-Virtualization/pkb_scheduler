@@ -21,7 +21,7 @@ class Region():
   def has_enough_cpus(self, cpu_count):
     return self.get_available_cpus() >= cpu_count 
 
-  def has_enough_resources(self, cpu_count, cloud=0):
+  def has_enough_resources(self, cpu_count, cloud=0, region = 0):
     if cloud == 'gcp':
       if (self.get_available_cpus() >= cpu_count 
           and self.address_quota > self.address_usage):
@@ -29,6 +29,9 @@ class Region():
       else:
         return False
     elif cloud == 'aws':
+      region_list_command = f"aws configure set region {region}"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
       region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()

@@ -167,11 +167,11 @@ class BenchmarkGraph():
     print(f"vm_region: {vm_region}")
     quota_not_exceeded = True
     print(f"\n\n You are in the check if can add method \n\n")
-    if self.cloud.lower() == "aws":
+    if vm.cloud.lower() == "aws":
       for specific_region in self.regions:
         if not specific_region.has_enough_resources(vm.cpu_count):
           quota_not_exceeded = True
-    elif self.cloud.lower() == 'gcp':
+    elif vm.cloud.lower() == 'gcp':
       if self.regions[vm_region].has_enough_resources(vm.cpu_count):
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space

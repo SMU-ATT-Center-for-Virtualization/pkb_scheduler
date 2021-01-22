@@ -347,6 +347,7 @@ class BenchmarkGraph():
       # if a vm already exists
       print(f"\n\ntmp_vm_list: {tmp_vm_list}\n\n")
       if len(tmp_vm_list) > 0:
+        print(f"made it into tmp_vm_list if")
         can_add_another, status = self.check_if_can_add_vm(vm)
 
         add_from_list = True

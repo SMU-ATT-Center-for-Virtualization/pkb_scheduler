@@ -164,6 +164,7 @@ class BenchmarkGraph():
     """
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
     print(f"self.regions: {self.regions}")
+    print(f"vm_region: {vm_region}")
     if self.regions[vm_region].has_enough_resources(vm.cpu_count):
       if self.required_vm_exists(vm):
         # returns this is vm exists but there is enough space

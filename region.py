@@ -30,7 +30,7 @@ class Region():
         return False
     elif cloud == 'aws':
       region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
-      process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       print(f" output is {output} and error is {error} in has_enough_resources")
       

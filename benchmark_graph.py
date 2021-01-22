@@ -168,9 +168,15 @@ class BenchmarkGraph():
     quota_not_exceeded = True
     print(f"\n\n You are in the check if can add method \n\n")
     if vm.cloud.lower() == "aws":
-      for specific_region in self.regions:
-        if not specific_region.has_enough_resources(vm.cpu_count):
-          quota_not_exceeded = True
+        if self.regions[vm_region].has_enough_resources(vm.cpu_count):
+          if self.required_vm_exists(vm):
+            # returns this is vm exists but there is enough space
+            # for another
+            return True, "VM Exists. Quota not Exceeded"
+          else:
+            # returns True if the vm doesn't already exist
+            # and if region has enough space
+            return True, "VM does not exist"
     elif vm.cloud.lower() == 'gcp':
       if self.regions[vm_region].has_enough_resources(vm.cpu_count):
         if self.required_vm_exists(vm):
@@ -181,8 +187,8 @@ class BenchmarkGraph():
           # returns True if the vm doesn't already exist
           # and if region has enough space
           return True, "VM does not exist"
-    if quota_not_exceeded:
-      return True
+    # if quota_not_exceeded:
+    #   return True
     return False, "Quota Exceeded"
 
   @deprecated(reason="Use add_vms_for_benchmark_if_possible instead")

@@ -1,4 +1,4 @@
-
+import subprocess
 class Region():
   """[summary]
 
@@ -21,12 +21,19 @@ class Region():
   def has_enough_cpus(self, cpu_count):
     return self.get_available_cpus() >= cpu_count 
 
-  def has_enough_resources(self, cpu_count):
-    if (self.get_available_cpus() >= cpu_count 
-        and self.address_quota > self.address_usage):
-      return True
-    else:
-      return False
+  def has_enough_resources(self, cpu_count, cloud=0):
+    if cloud == 'gcp':
+      if (self.get_available_cpus() >= cpu_count 
+          and self.address_quota > self.address_usage):
+        return True
+      else:
+        return False
+    elif cloud == 'aws':
+      region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
+      process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
+      output, error = process.communicate()
+      print(f" output is {output} and error is {error} in has_enough_resources")
+      
 
   def add_virtual_machine_if_possible(self, vm):
     print(f"\n\n in add_virtual_machine_if_possible: {vm.__dict__}\n\n")

@@ -141,7 +141,7 @@ def main(argv):
   setup_logging()
   logger.debug("DEBUG LOGGING MODE")
   config_location = FLAGS.config
-  pkb_command = "python " + FLAGS.pkb_location
+  pkb_command = "python3 " + FLAGS.pkb_location
 
   benchmark_config_list = []
   if(config_location.endswith(".yaml")):

@@ -39,6 +39,11 @@ class Region():
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
       print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
+      aws_quota_for_machines =1920
+      if len(output) < aws_quota_for_machines:
+        return True
+      else:
+        return False
       
 
   def add_virtual_machine_if_possible(self, vm):

@@ -469,7 +469,7 @@ class BenchmarkGraph():
           logger.debug("QUOTA EXCEEDED. VM waitlisted")
           vms.append(None)
 
-    print(vms)
+    print(f"the vms are: {vms}")
     return vms
 
   def add_same_zone_vms(self, vm1, vm2):

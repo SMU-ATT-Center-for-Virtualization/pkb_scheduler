@@ -40,10 +40,17 @@ class Region():
       output = json.loads(output.decode('utf-8'))
       print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
       aws_quota_for_machines =1920
-      if len(output) < aws_quota_for_machines:
-        return True
-      else:
+      if len(output) >= aws_quota_for_machines:
         return False
+      region_list_command = "aws ec2 describe-vpcs"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+      aws_quota_for_vpcs = 5
+      if len(output) >= aws_quota_for_vpcs:
+        return False
+      return True
+
       
 
   def add_virtual_machine_if_possible(self, vm):

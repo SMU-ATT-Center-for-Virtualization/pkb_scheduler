@@ -384,6 +384,7 @@ class BenchmarkGraph():
           print("here1")
           # checks if there is enough space in a region to add another vm
           new_region = Region(region_name=vm_region, cloud=vm_spec.cloud.lower())
+          print(f"&&&&&&&&&&&&&&&&&&ADDING A NEW REGION!!!!&&&&&&&&&&&&&&&&&&&&")
           self.add_region_if_not_exists(new_region)
           print(f"\n\nself, but the first time it adds a region: {self.__dict__}\n\n")
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)

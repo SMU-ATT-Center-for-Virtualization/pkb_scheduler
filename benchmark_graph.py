@@ -449,6 +449,7 @@ class BenchmarkGraph():
         #the self here doesn't have any vm_cpu's allocated to it ###################################################################################
         print(f" vm is: {vm.__dict__}")
         print(f"regions is: {self.regions}")
+        self.add_region_if_not_exists(vm_region)
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
         print(f"\n\nStatus: {status}\n\n")

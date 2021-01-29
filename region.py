@@ -1,4 +1,5 @@
 import subprocess
+import json
 class Region():
   """[summary]
 
@@ -35,7 +36,8 @@ class Region():
       region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
-      print(f" output is {output} and error is {error} in has_enough_resources")
+      output = json.loads(output.decode('utf-8'))
+      print(f" output is, type: {type(output)}, and is {output} and error is {error} in has_enough_resources")
       
 
   def add_virtual_machine_if_possible(self, vm):

@@ -80,6 +80,7 @@ class BenchmarkGraph():
     return cloud in self.clouds
 
   def add_region_if_not_exists(self, new_region):
+    print(f"new_region is: {new_region}")
     if new_region.name not in self.regions:
       print(f"\n\n***********adding new region: {new_region.__dict__}******************\n\n")
       self.regions[new_region.name] = new_region

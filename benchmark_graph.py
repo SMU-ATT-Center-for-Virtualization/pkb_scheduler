@@ -288,6 +288,7 @@ class BenchmarkGraph():
   def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
     print(f"bm is {bm.__dict__}")
     vms = self.add_vms_for_benchmark_if_possible(bm, region_dict)
+    print(f"\n\n\nDO WE EVER GET HERE\n\n\n")
     print(f"\n\nAdded the vms to benchmark\n\n")
     vms_no_none = list(filter(None, vms))
 

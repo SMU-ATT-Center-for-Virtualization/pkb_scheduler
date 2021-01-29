@@ -457,13 +457,13 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
       # create virtual machines (node)
     # attach with edges and benchmarks q
-    print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
-    for bm in temp_benchmarks:
-      logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
-      print(f"\nEarly BM is {bm.__dict__}\n")
-      vms = full_graph.add_or_waitlist_benchmark_and_vms(bm, region_dict)
-      print(f"\n\nVMS declared successfuly.\n\n")
-    logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
+    # print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
+    # for bm in temp_benchmarks:
+    #   logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+    #   print(f"\nEarly BM is {bm.__dict__}\n")
+    #   vms = full_graph.add_or_waitlist_benchmark_and_vms(bm, region_dict)
+    #   print(f"\n\nVMS declared successfuly.\n\n")
+    # logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 
     # Second pass, add
     for config in benchmark_config_list:

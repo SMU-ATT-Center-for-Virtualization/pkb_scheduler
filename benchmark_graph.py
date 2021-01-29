@@ -438,7 +438,7 @@ class BenchmarkGraph():
         print(f"\n\nvm region is: {vm_region}\n\n")
         print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: ")
 
-        print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: {self.regions[vm_region]}")
+       #print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: {self.regions[vm_region]}")
        
         # myRegion = Region(vm_region, "AWS")
         # myRegion.name = vm_region

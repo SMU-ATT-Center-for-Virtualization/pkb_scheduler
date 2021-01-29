@@ -30,6 +30,7 @@ class Region():
       else:
         return False
     elif cloud == 'aws':
+      print(f"region is: {region}")
       region_list_command = f"aws configure set region {region}"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()

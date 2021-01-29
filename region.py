@@ -37,7 +37,7 @@ class Region():
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
-      print(f" output is, type: {type(output)}, and is {output} and error is {error} in has_enough_resources")
+      print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
       
 
   def add_virtual_machine_if_possible(self, vm):

@@ -23,5 +23,5 @@ iperf:
     bigquery_table: daily_tests.daily_1
     bq_project: smu-benchmarking
     ip_addresses: INTERNAL
-    iperf_tests: UDP
+    iperf_benchmarks: UDP
     gcp_min_cpu_platform: cascadelake

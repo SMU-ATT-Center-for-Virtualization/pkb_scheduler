@@ -14,7 +14,7 @@ throughput_latency_jitter:
       extra_zones: [asia-east1-a,asia-east2-a,asia-northeast1-a,asia-northeast2-a,asia-south1-a,asia-southeast1-a,australia-southeast1-a,europe-north1-a,europe-west1-c,europe-west2-a,europe-west3-a,europe-west4-a,europe-west6-a,northamerica-northeast1-a,southamerica-east1-a,us-central1-a,us-east1-b,us-east4-a,us-west1-a,us-west2-a]
       machine_type: [n1-standard-2]
   flags:
-    cloud: GCP
+    cloud: AWS
     iperf_runtime_in_seconds: 60
     netperf_histogram_buckets: 1000
     netperf_benchmarks: TCP_RR,TCP_STREAM,UDP_RR,UDP_STREAM

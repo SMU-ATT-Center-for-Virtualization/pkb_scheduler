@@ -212,6 +212,8 @@ def main(argv):
     total_time = total_time + vm.uptime()
   print(total_time)
 
+  exit(0)
+
 
 def setup_logging():
 

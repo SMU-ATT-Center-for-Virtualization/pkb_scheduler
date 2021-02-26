@@ -328,6 +328,9 @@ class BenchmarkGraph():
       print(f"\n\nVM_Region is: {vm_region}\n\n")
       print(f"\n\nThe CPU Count is: {vm_spec.cpu_count}\n\n")
       if vm_spec.cloud.lower() == "aws" :
+        region_list_command = f"aws configure set region {vm_region}"
+        process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+        output, error = process.communicate()
         region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
         process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()

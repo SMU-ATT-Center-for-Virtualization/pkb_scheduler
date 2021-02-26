@@ -46,8 +46,10 @@ class Region():
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
-      aws_quota_for_vpcs = 5
+      print(f"The output is: {output}")
+      aws_quota_for_vpcs = 4
       if len(output) >= aws_quota_for_vpcs:
+        print(f"\n\n\n VPC LIMIT REACHED\n\n\n")
         return False
       return True
 

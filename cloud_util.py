@@ -134,7 +134,7 @@ def get_cloud_quotas(cloud):
   else:
     pass
 
-  return region_dict
+  return quota_dict
 
 
 def get_region_from_zone(cloud, zone):

@@ -288,7 +288,7 @@ class BenchmarkGraph():
         return False, None
 
   def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0, aws_quota_tracker=0):
-    print(f"\n\naws_quota_tracker: {aws_quota_tracker}\n\n")
+    print(f"\n\naws_quota_tracker in add_or_waitlist_benchmark_and_vms: {aws_quota_tracker}\n\n")
     print(f"bm is {bm.__dict__}")
     print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
     print(f"Here7\n")

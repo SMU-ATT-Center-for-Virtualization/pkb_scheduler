@@ -198,7 +198,7 @@ class BenchmarkGraph():
     # if quota_not_exceeded:
     #   return True
     print(f"Missed both portions, or quota was exceeded")
-    return False, "Quota Exceeded"
+    return False, "Quota Exceeded", aws_quota_tracker
 
   @deprecated(reason="Use add_vms_for_benchmark_if_possible instead")
   def add_vm_if_possible(self, cpu_count, zone,

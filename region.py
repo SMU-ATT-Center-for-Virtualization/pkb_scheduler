@@ -43,18 +43,18 @@ class Region():
       print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
       #used to compare to the len(output) but because VM's are not created between this instance of the method and the next, it just gives the same results
       print(f"\naws_quota_tracker: {aws_quota_tracker}\n")
-      if aws_quota_tracker["numOfVms"] >= aws_quota_tracker["quotaOfVms"]:
+      if aws_quota_tracker[region+"-numOfVms"] >= aws_quota_tracker[region+"-quotaOfVms"]:
         return False, aws_quota_tracker
       region_list_command = "aws ec2 describe-vpcs"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
       print(f"The output is: {output}")
-      if aws_quota_tracker["numOfVPCs"] >= aws_quota_tracker["quotaOfVPCs"]:
+      if aws_quota_tracker[region+"-numOfVPCs"] >= aws_quota_tracker[region+"-quotaOfVPCs"]:
         print(f"\n\n\n VPC LIMIT REACHED\n\n\n")
         return False, aws_quota_tracker
-      aws_quota_tracker["numOfVms"] = (aws_quota_tracker["numOfVms"] + 1 )
-      aws_quota_tracker["numOfVPCs"] = (aws_quota_tracker["numOfVPCs"] + 1)
+      aws_quota_tracker[region+"-numOfVms"] = (aws_quota_tracker[region+"-numOfVms"] + 1 )
+      aws_quota_tracker[region+"-numOfVPCs"] = (aws_quota_tracker[region+"-numOfVPCs"] + 1)
       return True, aws_quota_tracker
 
       

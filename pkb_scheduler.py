@@ -461,6 +461,8 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       for x in region_dict:
         aws_quota_tracker[x+"-numOfVms"] = 0
         aws_quota_tracker[x+"-numOfVPCs"] = 0
+        aws_quota_tracker[x+"-quotaOfVms"] = 0
+        aws_quota_tracker[x+"-quotaOfVPCs"] = 0
       for bm in temp_benchmarks:
         logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
         print(f"\nEarly BM is {bm.__dict__}\n")

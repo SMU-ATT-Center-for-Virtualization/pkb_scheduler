@@ -292,6 +292,7 @@ class BenchmarkGraph():
     print(f"bm is {bm.__dict__}")
     print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
     print(f"Here7\n")
+    aws_quota_tracker = 0
     vms = self.add_vms_for_benchmark_if_possible(bm, region_dict, aws_quota_tracker)
     
     print(f"\n\nAdded the vms to benchmark: {vms}\n\n")

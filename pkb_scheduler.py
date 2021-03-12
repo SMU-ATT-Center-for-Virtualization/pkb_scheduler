@@ -462,7 +462,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
         logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
         print(f"\nEarly BM is {bm.__dict__}\n")
         print(f"\n\naws_quota_tracker in pkb_scheduler:464 : {aws_quota_tracker}\n\n")
-        vms, aws_quota_tracker = full_graph.add_or_waitlist_benchmark_and_vms(bm,0, aws_quota_tracker)
+        vms, aws_quota_tracker = full_graph.add_or_waitlist_benchmark_and_vms(bm)
         print(f"\n\nVMS declared successfuly.\n\n")
       logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
       # create virtual machines (node)

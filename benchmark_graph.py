@@ -294,7 +294,7 @@ class BenchmarkGraph():
     print(f"Here7\n")
     vms = self.add_vms_for_benchmark_if_possible(bm, region_dict, aws_quota_tracker)
     
-    print(f"\n\nAdded the vms to benchmark: {vms.__dict__}\n\n")
+    print(f"\n\nAdded the vms to benchmark: {vms}\n\n")
     vms_no_none = list(filter(None, vms))
 
     if len(bm.vm_specs) == len(vms_no_none) == len(vms):

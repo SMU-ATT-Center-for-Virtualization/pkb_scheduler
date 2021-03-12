@@ -398,7 +398,7 @@ class BenchmarkGraph():
           print(f"&&&&&&&&&&&&&&&&&&ADDING A NEW REGION!!!!&&&&&&&&&&&&&&&&&&&&")
           self.add_region_if_not_exists(new_region)
           print(f"\n\nself, but the first time it adds a region: {self.__dict__}\n\n")
-          success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+          success, aws_quota_tracker = self.regions[vm_region].add_virtual_machine_if_possible(vm,aws_quota_tracker)
           if success:
             add_from_list = False
             self.virtual_machines.append(vm)

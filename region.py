@@ -32,6 +32,13 @@ class Region():
       else:
         return False
     elif cloud == 'aws':
+      aws_quota_tracker = {
+      "numOfVms":0,
+      "quotaOfVms":1920,
+      "numOfVPCs":0,
+      "quotaOfVPCs":5
+
+    }
       print(f"region is: {region}")
       region_list_command = f"aws configure set region {region}"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)

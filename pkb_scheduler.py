@@ -451,10 +451,17 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       print(f"Number of benchmarks: {str(len(temp_benchmarks))}")
       #print(f"the temp benchmarks are: {temp_benchmarks.__dict__}")
       print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
+      aws_quota_tracker = {
+      "numOfVms":0,
+      "quotaOfVms":1920,
+      "numOfVPCs":0,
+      "quotaOfVPCs":5
+
+    }
       for bm in temp_benchmarks:
         logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
         print(f"\nEarly BM is {bm.__dict__}\n")
-        vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
+        vms = full_graph.add_or_waitlist_benchmark_and_vms(bm, aws_quota_tracker)
         print(f"\n\nVMS declared successfuly.\n\n")
       logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
       # create virtual machines (node)
@@ -523,10 +530,17 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     # create virtual machines (node)
     # attach with edges and benchmarks q
     print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
+    aws_quota_tracker = {
+      "numOfVms":0,
+      "quotaOfVms":1920,
+      "numOfVPCs":0,
+      "quotaOfVPCs":5
+
+    }
     for bm in temp_benchmarks:
       logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
       print(f"\nEarly BM is {bm.__dict__}\n")
-      vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
+      vms = full_graph.add_or_waitlist_benchmark_and_vms(bm, aws_quota_tracker)
       print(f"\n\nVMS declared successfuly.\n\n")
     logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 

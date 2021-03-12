@@ -286,11 +286,11 @@ class BenchmarkGraph():
         logger.debug("QUOTA EXCEEDED")
         return False, None
 
-  def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
+  def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0, aws_quota_tracker=0):
     print(f"bm is {bm.__dict__}")
     print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
     print(f"Here7\n")
-    vms = self.add_vms_for_benchmark_if_possible(bm, region_dict)
+    vms = self.add_vms_for_benchmark_if_possible(bm, region_dict, aws_quota_tracker)
     
     print(f"\n\nAdded the vms to benchmark\n\n")
     vms_no_none = list(filter(None, vms))
@@ -926,7 +926,7 @@ class BenchmarkGraph():
     pass
 
   # TODO improve this
-  def add_benchmarks_from_waitlist(self):
+  def add_benchmarks_from_waitlist(self, aws_quota_tracker=0):
 
     if len(self.benchmark_wait_list) == 0:
       logging.info("No benchmarks on waitlist")
@@ -935,13 +935,13 @@ class BenchmarkGraph():
     logging.info("Adding benchmarks from waitlist")
 
     bms_added = []
-    aws_quota_tracker = {
-      "numOfVms":0,
-      "quotaOfVms":1920,
-      "numOfVPCs":0,
-      "quotaOfVPCs":5
+    # aws_quota_tracker = {
+    #   "numOfVms":0,
+    #   "quotaOfVms":1920,
+    #   "numOfVPCs":0,
+    #   "quotaOfVPCs":5
 
-    }
+    # }
     print(f"Here5\n")
     for bm in self.benchmark_wait_list:
       print("here4, ", str(len(self.benchmark_wait_list)))

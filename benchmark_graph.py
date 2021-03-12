@@ -173,7 +173,7 @@ class BenchmarkGraph():
     if vm.cloud.lower() == "aws":
       print(f"inside the aws add portion")
       null, aws_quota_tracker = self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region, aws_quota_tracker)
-      if aws_quota_tracker["numOfVMs"] >= aws_quota_tracker["quotaOfVMs"] and aws_quota_tracker["numOfVPCs"] >= aws_quota_tracker["quotaOfVPCs"]:
+      if aws_quota_tracker["numOfVms"] >= aws_quota_tracker["quotaOfVms"] and aws_quota_tracker["numOfVPCs"] >= aws_quota_tracker["quotaOfVPCs"]:
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
           # for another

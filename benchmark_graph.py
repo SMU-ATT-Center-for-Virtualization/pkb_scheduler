@@ -292,7 +292,7 @@ class BenchmarkGraph():
     print(f"bm is {bm.__dict__}")
     print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
     print(f"Here7\n")
-    vms = self.add_vms_for_benchmark_if_possible(bm, region_dict, aws_quota_tracker)
+    vms, aws_quota_tracker = self.add_vms_for_benchmark_if_possible(bm, region_dict, aws_quota_tracker)
     
     print(f"\n\nAdded the vms to benchmark: vm0: \n {vms[0]} \n vm1\n{vms[1]}\n\n")
     vms_no_none = list(filter(None, vms))
@@ -301,12 +301,12 @@ class BenchmarkGraph():
       bm.vms = vms
       self.benchmarks.append(bm)
       self.add_benchmark_as_edge(bm, vms[0].node_id, vms[1].node_id)
-      return bm.vms, "Added"
+      return bm.vms, "Added", aws_quota_tracker
     else:
       logger.debug("BM WAITLISTED")
       bm.status = "Waitlist"
       self.benchmark_wait_list.append(bm)
-      return [], "Waitlisted"
+      return [], "Waitlisted", aws_quota_tracker
 
 
   def add_vms_for_benchmark_if_possible(self, bm, region_dict=0, aws_quota_tracker=0):
@@ -462,7 +462,10 @@ class BenchmarkGraph():
         print(f"regions is: {self.regions}")
         new_region = Region(region_name=vm_region, cloud='aws')
         self.add_region_if_not_exists(new_region)
-        status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+        if vm_spec.cloud.lower() == "aws":
+          status, aws_quota_tracker = self.regions[vm_region].has_enough_resources(0, vm_spec.cloud.lower(),"us-east-1", aws_quota_tracker)
+        elif vm_spec.cloud.lower() == "gcp":
+          status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)
         print(f"\n\nStatus: {status}\n\n")
 

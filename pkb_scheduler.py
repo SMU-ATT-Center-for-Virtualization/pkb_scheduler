@@ -154,8 +154,9 @@ def main(argv):
     print(tmpbm)
 
   # Create the initial graph from the config directory or file
-  full_graph = create_graph_from_config_list(benchmark_config_list,
-                                             pkb_command)
+  aws_quota_tracker = 0
+  full_graph, aws_quota_tracker = create_graph_from_config_list(benchmark_config_list,
+                                             pkb_command, aws_quota_tracker)
 
   logger.debug("\nVMS TO CREATE:")
   print(f"fullgraph virt machines: {full_graph}")
@@ -173,7 +174,7 @@ def main(argv):
   logger.debug("\n\n")
 
   # This method does almost everything
-  run_benchmarks(full_graph)
+  run_benchmarks(full_graph, aws_quota_tracker)
   # test_stuff(full_graph)
 
   end_time = time.time()
@@ -230,7 +231,7 @@ def test_stuff(benchmark_graph):
   print(len(maximum_set))
 
 
-def run_benchmarks(benchmark_graph):
+def run_benchmarks(benchmark_graph,aws_quota_tracker=0):
   
   if FLAGS.precreate_and_share_vms:
     benchmark_graph.create_vms()
@@ -262,7 +263,7 @@ def run_benchmarks(benchmark_graph):
     print(f"post region Quotas")
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
-    benchmark_graph.add_benchmarks_from_waitlist()
+    benchmark_graph.add_benchmarks_from_waitlist(aws_quota_tracker)
     if FLAGS.precreate_and_share_vms:
       benchmark_graph.create_vms()
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
@@ -368,7 +369,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
 
   return bm
 
-def create_graph_from_config_list(benchmark_config_list, pkb_command):
+def create_graph_from_config_list(benchmark_config_list, pkb_command, aws_quota_tracker=0):
   """[summary]
 
   [description]

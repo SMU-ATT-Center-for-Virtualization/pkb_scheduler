@@ -458,7 +458,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       "quotaOfVPCs":5
 
       }
-      for x in benchmark_config_list[0][1]['flags']['zones']:
+      for x in region_dict:
         aws_quota_tracker[x+"-numOfVms"] = 0
         aws_quota_tracker[x+"-numOfVPCs"] = 0
       for bm in temp_benchmarks:

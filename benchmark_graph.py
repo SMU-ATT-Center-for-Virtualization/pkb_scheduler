@@ -221,7 +221,7 @@ class BenchmarkGraph():
       [description]
       [type]
     """
-
+    print(f"Here6\n")
     # Need region because quotas are regional
     vm_region = cloud_util.get_region_from_zone(cloud, zone)
     print(f"\n\nThe CPU Count is: {cpu_count}\n\n")
@@ -289,6 +289,7 @@ class BenchmarkGraph():
   def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
     print(f"bm is {bm.__dict__}")
     print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
+    print(f"Here7\n")
     vms = self.add_vms_for_benchmark_if_possible(bm, region_dict)
     
     print(f"\n\nAdded the vms to benchmark\n\n")
@@ -941,6 +942,7 @@ class BenchmarkGraph():
       "quotaOfVPCs":5
 
     }
+    print(f"Here5\n")
     for bm in self.benchmark_wait_list:
       print("here4, ", str(len(self.benchmark_wait_list)))
       vms, aws_quota_tracker= self.add_vms_for_benchmark_if_possible(bm, aws_quota_tracker)

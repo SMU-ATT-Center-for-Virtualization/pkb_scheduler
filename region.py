@@ -22,7 +22,9 @@ class Region():
   def has_enough_cpus(self, cpu_count):
     return self.get_available_cpus() >= cpu_count 
 
-  def has_enough_resources(self, cpu_count, cloud=0, region = 0):
+  def has_enough_resources(self, cpu_count, cloud=0, region = 0, aws_quota_tracker=0):
+    #add a variable that updates each time thi method is run.
+    # for every unique region a machine is in, a vpc is spun up.  
     if cloud == 'gcp':
       if (self.get_available_cpus() >= cpu_count 
           and self.address_quota > self.address_usage):
@@ -39,19 +41,20 @@ class Region():
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
       print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
-      aws_quota_for_machines =1920
-      if len(output) >= aws_quota_for_machines:
-        return False
+      #used to compare to the len(output) but because VM's are not created between this instance of the method and the next, it just gives the same results
+      if aws_quota_tracker["numForVMs"] >= aws_quota_tracker["quotaForVMs"]:
+        return False, aws_quota_tracker
       region_list_command = "aws ec2 describe-vpcs"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
       print(f"The output is: {output}")
-      aws_quota_for_vpcs = 4
-      if len(output) >= aws_quota_for_vpcs:
+      if aws_quota_tracker["numForVPCs"] >= aws_quota_tracker["quotaForVPCs"]:
         print(f"\n\n\n VPC LIMIT REACHED\n\n\n")
-        return False
-      return True
+        return False, aws_quota_tracker
+      aws_quota_tracker["numOfVMs"] = (aws_quota_tracker["numOfVMs"] + 1 )
+      aws_quota_tracker["numOfVPCs"] = (aws_quota_tracker["numOfVPCs"] + 1)
+      return True, aws_quota_tracker
 
       
 

@@ -151,7 +151,7 @@ class BenchmarkGraph():
         continue
     return vm_list
 
-  def check_if_can_add_vm(self, vm):
+  def check_if_can_add_vm(self, vm, aws_quota_tracker=0):
     """Checks if there is enough space in the region to add VM
 
     Checks region quotas to see if it can add VM
@@ -172,28 +172,29 @@ class BenchmarkGraph():
     print(f"vm.cloud.lower() is: {vm.cloud.lower()}")
     if vm.cloud.lower() == "aws":
       print(f"inside the aws add portion")
-      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
+      null, aws_quota_tracker = self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region, aws_quota_tracker)
+      if aws_quota_tracker["numOfVMs"] >= aws_quota_tracker["quotaOfVMs"] and aws_quota_tracker["numOfVPCs"] >= aws_quota_tracker["quotaOfVPCs"]:
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
           # for another
           print(f"VM exists")
-          return True, "VM Exists. Quota not Exceeded"
+          return True, "VM Exists. Quota not Exceeded", aws_quota_tracker
         else:
           # returns True if the vm doesn't already exist
           # and if region has enough space
           print(f"VM does not exist")
-          return True, "VM does not exist"
+          return True, "VM does not exist", aws_quota_tracker
     elif vm.cloud.lower() == 'gcp':
       print(f"inside the gcp add portion")
       if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
           # for another
-          return True, "VM Exists. Quota not Exceeded"
+          return True, "VM Exists. Quota not Exceeded", aws_quota_tracker
         else:
           # returns True if the vm doesn't already exist
           # and if region has enough space
-          return True, "VM does not exist"
+          return True, "VM does not exist", aws_quota_tracker
     # if quota_not_exceeded:
     #   return True
     print(f"Missed both portions, or quota was exceeded")
@@ -321,6 +322,13 @@ class BenchmarkGraph():
 
     print(f"\n\nadd_vms_for_benchmark: {bm.__dict__}\n\n")
     print(f"self in add_vms_for_benchmark_if_possible: {self.__dict__}")
+    aws_quota_tracker = {
+      "numOfVms":0,
+      "quotaOfVms":1920,
+      "numOfVPCs":0,
+      "quotaOfVPCs":5
+
+    }
     for vm_spec in bm.vm_specs:
       print(f"\nThe vm_specs are: {vm_spec.__dict__}\n")
       print(vm_spec.id)
@@ -375,7 +383,7 @@ class BenchmarkGraph():
       print(f"\n\ntmp_vm_list: {tmp_vm_list}\n\n")
       if len(tmp_vm_list) > 0:
         print(f"made it into tmp_vm_list if")
-        can_add_another, status = self.check_if_can_add_vm(vm)
+        can_add_another, status, aws_quota_tracker = self.check_if_can_add_vm(vm,aws_quota_tracker)
 
         add_from_list = True
 

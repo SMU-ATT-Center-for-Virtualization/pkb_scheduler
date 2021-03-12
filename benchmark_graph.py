@@ -163,6 +163,7 @@ class BenchmarkGraph():
       Boolean and description of if it can/cannot add and why
       bool, String
     """
+    print(f"\n\naws_quota_tracker: {aws_quota_tracker}\n\n")
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
     print(f"vm is: {vm.__dict__}")
     print(f"self.regions: {self.regions}")
@@ -287,6 +288,7 @@ class BenchmarkGraph():
         return False, None
 
   def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0, aws_quota_tracker=0):
+    print(f"\n\naws_quota_tracker: {aws_quota_tracker}\n\n")
     print(f"bm is {bm.__dict__}")
     print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
     print(f"Here7\n")
@@ -319,6 +321,7 @@ class BenchmarkGraph():
       [description]
       bool
     """
+    print(f"\n\naws_quota_tracker: {aws_quota_tracker}\n\n")
     vm_ids = []
     vms = []
 
@@ -933,7 +936,7 @@ class BenchmarkGraph():
       return
 
     logging.info("Adding benchmarks from waitlist")
-
+    print(f"\n\naws_quota_tracker: {aws_quota_tracker}\n\n")
     bms_added = []
     # aws_quota_tracker = {
     #   "numOfVms":0,

@@ -289,7 +289,7 @@ class BenchmarkGraph():
   def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
     print(f"bm is {bm.__dict__}")
     vms = self.add_vms_for_benchmark_if_possible(bm, region_dict)
-    print(f"\n\n\nDO WE EVER GET HERE\n\n\n")
+    print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
     print(f"\n\nAdded the vms to benchmark\n\n")
     vms_no_none = list(filter(None, vms))
 
@@ -305,7 +305,7 @@ class BenchmarkGraph():
       return [], "Waitlisted"
 
 
-  def add_vms_for_benchmark_if_possible(self, bm, region_dict=0):
+  def add_vms_for_benchmark_if_possible(self, bm, region_dict=0, aws_quota_tracker=0):
     """[summary]
     
     [description]
@@ -322,13 +322,7 @@ class BenchmarkGraph():
 
     print(f"\n\nadd_vms_for_benchmark: {bm.__dict__}\n\n")
     print(f"self in add_vms_for_benchmark_if_possible: {self.__dict__}")
-    aws_quota_tracker = {
-      "numOfVms":0,
-      "quotaOfVms":1920,
-      "numOfVPCs":0,
-      "quotaOfVPCs":5
-
-    }
+    
     for vm_spec in bm.vm_specs:
       print(f"\nThe vm_specs are: {vm_spec.__dict__}\n")
       print(vm_spec.id)
@@ -482,7 +476,7 @@ class BenchmarkGraph():
           vms.append(None)
 
     print(f"the vms are: {vms}")
-    return vms
+    return vms, aws_quota_tracker
 
   def add_same_zone_vms(self, vm1, vm2):
     vm1_list = get_list_if_vm_exists(vm1)
@@ -939,9 +933,16 @@ class BenchmarkGraph():
     logging.info("Adding benchmarks from waitlist")
 
     bms_added = []
+    aws_quota_tracker = {
+      "numOfVms":0,
+      "quotaOfVms":1920,
+      "numOfVPCs":0,
+      "quotaOfVPCs":5
+
+    }
     for bm in self.benchmark_wait_list:
       print("here4, ", str(len(self.benchmark_wait_list)))
-      vms = self.add_vms_for_benchmark_if_possible(bm)
+      vms, aws_quota_tracker= self.add_vms_for_benchmark_if_possible(bm, aws_quota_tracker)
       vms_no_none = list(filter(None, vms))
 
       if len(bm.vm_specs) == len(vms_no_none) == len(vms):

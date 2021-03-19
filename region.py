@@ -107,7 +107,8 @@ class Region():
     # TODO add safety checks here
     print(f"self is {self.__dict__}")
     print(f"\n\nvm is {vm.__dict__}")
-    self.virtual_machines.remove(vm)
+    if len(self.virtual_machines) > 0 :
+      self.virtual_machines.remove(vm)
     self.cpu_usage -= vm.cpu_count
     self.address_usage -= 1
 

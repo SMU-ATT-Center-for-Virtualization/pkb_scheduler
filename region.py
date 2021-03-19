@@ -16,13 +16,30 @@ class Region():
     self.name = region_name
     self.cloud = cloud
 
+    if(cloud.lower() == "aws"):
+      region_list_command = f"aws configure set region {region_name}"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+      self.aws_vm_count = output
+      self.aws_vm_quota = 1920
+      region_list_command = "aws ec2 describe-vpcs"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+      self.aws_vpc_count = output
+      self.aws_vpc_quota = 5
+
   def get_available_cpus(self):
     return self.cpu_quota - self.cpu_usage
 
   def has_enough_cpus(self, cpu_count):
     return self.get_available_cpus() >= cpu_count 
 
-  def has_enough_resources(self, cpu_count, cloud=0, region = 0, aws_quota_tracker=0):
+  def has_enough_resources(self, cpu_count, cloud=0):
     #add a variable that updates each time thi method is run.
     # for every unique region a machine is in, a vpc is spun up.  
     if cloud == 'gcp':
@@ -32,30 +49,30 @@ class Region():
       else:
         return False
     elif cloud == 'aws':
-      print(f"region is: {region}")
-      region_list_command = f"aws configure set region {region}"
-      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      output, error = process.communicate()
-      region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
-      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      output, error = process.communicate()
-      output = json.loads(output.decode('utf-8'))
-      print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
+      print(f"region is: {self.name}")
+      # region_list_command = f"aws configure set region {self.name}"
+      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      # output, error = process.communicate()
+      # region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
+      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      # output, error = process.communicate()
+      # output = json.loads(output.decode('utf-8'))
+      # print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
       #used to compare to the len(output) but because VM's are not created between this instance of the method and the next, it just gives the same results
-      print(f"\naws_quota_tracker: {aws_quota_tracker}\n")
-      if aws_quota_tracker[region+"-numOfVms"] >= aws_quota_tracker[region+"-quotaOfVms"]:
-        return False, aws_quota_tracker
-      region_list_command = "aws ec2 describe-vpcs"
-      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      output, error = process.communicate()
-      output = json.loads(output.decode('utf-8'))
-      print(f"The output is: {output}")
-      if aws_quota_tracker[region+"-numOfVPCs"] >= aws_quota_tracker[region+"-quotaOfVPCs"]:
+      #print(f"\naws_quota_tracker: {aws_quota_tracker}\n")
+      if self.aws_vm_count >= self.aws_vm_quota :
+        return False
+      # region_list_command = "aws ec2 describe-vpcs"
+      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      # output, error = process.communicate()
+      # output = json.loads(output.decode('utf-8'))
+      # print(f"The output is: {output}")
+      if self.aws_vpc_count >= self.aws_vpc_quota :
         print(f"\n\n\n VPC LIMIT REACHED\n\n\n")
-        return False, aws_quota_tracker
-      aws_quota_tracker[region+"-numOfVms"] = (aws_quota_tracker[region+"-numOfVms"] + 1 )
-      aws_quota_tracker[region+"-numOfVPCs"] = (aws_quota_tracker[region+"-numOfVPCs"] + 1)
-      return True, aws_quota_tracker
+        return False
+      self.aws_vm_count = self.aws_vm_count + 1
+      self.aws_vpc_count = self.aws_vpc_count + 1
+      return True
 
       
 

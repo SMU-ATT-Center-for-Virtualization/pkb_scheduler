@@ -154,9 +154,8 @@ def main(argv):
     print(tmpbm)
 
   # Create the initial graph from the config directory or file
-  aws_quota_tracker = 0
-  full_graph, aws_quota_tracker = create_graph_from_config_list(benchmark_config_list,
-                                             pkb_command, aws_quota_tracker)
+  full_graph = create_graph_from_config_list(benchmark_config_list,
+                                             pkb_command)
 
   logger.debug("\nVMS TO CREATE:")
   print(f"fullgraph virt machines: {full_graph}")
@@ -174,7 +173,7 @@ def main(argv):
   logger.debug("\n\n")
 
   # This method does almost everything
-  run_benchmarks(full_graph, aws_quota_tracker)
+  run_benchmarks(full_graph)
   # test_stuff(full_graph)
 
   end_time = time.time()
@@ -231,7 +230,7 @@ def test_stuff(benchmark_graph):
   print(len(maximum_set))
 
 
-def run_benchmarks(benchmark_graph,aws_quota_tracker=0):
+def run_benchmarks(benchmark_graph):
   
   if FLAGS.precreate_and_share_vms:
     benchmark_graph.create_vms()
@@ -263,7 +262,7 @@ def run_benchmarks(benchmark_graph,aws_quota_tracker=0):
     print(f"post region Quotas")
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
-    benchmark_graph.add_benchmarks_from_waitlist(aws_quota_tracker)
+    benchmark_graph.add_benchmarks_from_waitlist()
     if FLAGS.precreate_and_share_vms:
       benchmark_graph.create_vms()
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
@@ -369,7 +368,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
 
   return bm
 
-def create_graph_from_config_list(benchmark_config_list, pkb_command, aws_quota_tracker=0):
+def create_graph_from_config_list(benchmark_config_list, pkb_command):
   """[summary]
 
   [description]
@@ -452,23 +451,11 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command, aws_quota_
       print(f"Number of benchmarks: {str(len(temp_benchmarks))}")
       #print(f"the temp benchmarks are: {temp_benchmarks.__dict__}")
       print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
-      aws_quota_tracker = {
-      "numOfVms":0,
-      "quotaOfVms":1920,
-      "numOfVPCs":0,
-      "quotaOfVPCs":5
-
-      }
-      for x in region_dict:
-        aws_quota_tracker[x+"-numOfVms"] = 0
-        aws_quota_tracker[x+"-numOfVPCs"] = 0
-        aws_quota_tracker[x+"-quotaOfVms"] = 0
-        aws_quota_tracker[x+"-quotaOfVPCs"] = 0
+     
       for bm in temp_benchmarks:
         logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
         print(f"\nEarly BM is {bm.__dict__}\n")
-        print(f"\n\naws_quota_tracker in pkb_scheduler:464 : {aws_quota_tracker}\n\n")
-        vms, test, aws_quota_tracker = full_graph.add_or_waitlist_benchmark_and_vms(bm,0, aws_quota_tracker)
+        vms, test = full_graph.add_or_waitlist_benchmark_and_vms(bm)
         print(f"\n\nVMS declared successfuly.\n\n")
       logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
       # create virtual machines (node)
@@ -494,7 +481,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command, aws_quota_
     
     
     
-    
+    #This for loop is making all the regions for GCP, and updates their quotas
     for key in region_dict:
       # if region['description'] in full_graph.regions
       print(f"\n\nTrying to make a new region : {region_dict[key]}\n\n")
@@ -537,17 +524,11 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command, aws_quota_
     # create virtual machines (node)
     # attach with edges and benchmarks q
     print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
-    aws_quota_tracker = {
-      "numOfVms":0,
-      "quotaOfVms":1920,
-      "numOfVPCs":0,
-      "quotaOfVPCs":5
-
-    }
+   
     for bm in temp_benchmarks:
       logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
       print(f"\nEarly BM is {bm.__dict__}\n")
-      vms,test, aws_quota_tracker = full_graph.add_or_waitlist_benchmark_and_vms(bm, aws_quota_tracker)
+      vms,test = full_graph.add_or_waitlist_benchmark_and_vms(bm)
       print(f"\n\nVMS declared successfuly.\n\n")
     logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 

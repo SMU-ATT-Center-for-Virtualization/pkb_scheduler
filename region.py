@@ -24,13 +24,13 @@ class Region():
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
-      self.aws_vm_count = output
+      self.aws_vm_count = len(output)
       self.aws_vm_quota = 1920
       region_list_command = "aws ec2 describe-vpcs"
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
-      self.aws_vpc_count = output
+      self.aws_vpc_count = len(output)
       self.aws_vpc_quota = 5
 
   def get_available_cpus(self):

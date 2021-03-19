@@ -288,7 +288,7 @@ def update_quota_usage(benchmark_graph):
   Args:
     benchmark_graph: Benchmark/VM Graph to update
   """
-
+  print(f"\n\n\n************************************************************************\n\n\n UPDATE QUOTA USAGE\n\n benchmark_graph: {benchmark_graph}\n\n************************************************************************\n\n")
   for cloud in benchmark_graph.clouds:
     #TODO change this
     region_dict = cloud_util.get_region_info(benchmark_graph, cloud='GCP')

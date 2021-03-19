@@ -39,7 +39,7 @@ class Region():
   def has_enough_cpus(self, cpu_count):
     return self.get_available_cpus() >= cpu_count 
 
-  def has_enough_resources(self, cpu_count, cloud=0):
+  def has_enough_resources(self, cpu_count, cloud=0, region=0):
     #add a variable that updates each time thi method is run.
     # for every unique region a machine is in, a vpc is spun up.  
     if cloud == 'gcp':

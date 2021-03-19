@@ -460,7 +460,7 @@ class BenchmarkGraph():
         new_region = Region(region_name=vm_region, cloud='aws')
         self.add_region_if_not_exists(new_region)
         if vm_spec.cloud.lower() == "aws":
-          status= self.regions[vm_region].has_enough_resources(0, vm_spec.cloud.lower(),"us-east-1")
+          status= self.regions[vm_region].has_enough_resources(0, vm_spec.cloud.lower())
         elif vm_spec.cloud.lower() == "gcp":
           status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
         print("Status ", status)

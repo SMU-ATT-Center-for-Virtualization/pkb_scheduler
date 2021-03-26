@@ -40,7 +40,6 @@ def cpu_count_from_machine_type(cloud, machine_type):
 
 
 def get_region_info(benchmark_graph, cloud):
-  print(f"\n\nEntering Get Region Info:\n\n")
   print("Cloud Variable is: {}".format(cloud))
   print(f"\n\n********************************************************************\n\n")
   print(f"\n\nThe benchmark_graph in get_region_info is: {benchmark_graph}\n\n")

@@ -158,7 +158,6 @@ def main(argv):
                                              pkb_command)
 
   logger.debug("\nVMS TO CREATE:")
-  print(f"fullgraph virt machines: {full_graph}")
   for vm in full_graph.virtual_machines:
     logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type +
                  " " + vm.os_type + " " + vm.cloud)
@@ -196,7 +195,6 @@ def main(argv):
     print(max_set)
 
   print("ALL BENCHMARK TIMES:")
-  print(full_graph.benchmark_run_times)
 
   print("TOTAL VM UPTIME: ")
   total_time = 0
@@ -239,7 +237,6 @@ def run_benchmarks(benchmark_graph):
   # benchmark_graph.print_graph()
   vms_removed = []
   while benchmark_graph.benchmarks_left() > 0:
-    print(f"while loop going")
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
@@ -252,14 +249,10 @@ def run_benchmarks(benchmark_graph):
     # Completion statuses can be found at: 
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
-    print(f"finished run benchmark set")
     
     removed_count = benchmark_graph.remove_orphaned_nodes()
-    print(f"removed orphaned nodes correctly")
     vms_removed.append(removed_count)
-    print(f"pre region Quotas")
     logging.info("UPDATE REGION QUOTAS")
-    print(f"post region Quotas")
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
@@ -268,7 +261,6 @@ def run_benchmarks(benchmark_graph):
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     # benchmark_graph.print_graph()
-  print(f"Left While Loop")
   logging.debug(len(benchmarks_run))
   logging.debug("BMS RUN EACH LOOP")
   for bmset in benchmarks_run:
@@ -288,11 +280,9 @@ def update_quota_usage(benchmark_graph):
   Args:
     benchmark_graph: Benchmark/VM Graph to update
   """
-  print(f"\n\n\n************************************************************************\n\n\n UPDATE QUOTA USAGE\n\n benchmark_graph: {benchmark_graph}\n\n************************************************************************\n\n")
   for cloud in benchmark_graph.clouds:
     #TODO change this
     region_dict = cloud_util.get_region_info(benchmark_graph, cloud='GCP')
-    print(f"Region_dict is: {region_dict}\n")
     # print(region_dict)
     for region_name in benchmark_graph.regions:
       cpu_usage = region_dict[region_name]['CPUS']['usage']
@@ -303,18 +293,14 @@ def update_quota_usage(benchmark_graph):
 
 def create_benchmark_from_config(benchmark_config, benchmark_id):
   bm = None
-  print(f"\n\nconfig[1] is:  {benchmark_config[1]}\n\n")
-  # print(benchmark_config[1]['flags']['extra_zones'])
-  # full_graph.add_region_if_not_exists(region_name)
+  
 
   if 'vm_groups' in benchmark_config[1]:
     logging.error("Configs with vm groups not supported yet")
-    print(f"\n\nTHE VM FAILED TO MATCH?\n\n")
   else:
     cloud = benchmark_config[1]['flags']['cloud']
     machine_type=benchmark_config[1]['flags']['machine_type']
     cpu_count = cloud_util.cpu_count_from_machine_type(cloud, machine_type)
-    print(f"\n\nThis should be setting the cpu_count: {cpu_count}\n\n")
     # TODO, set default somewhere else
     network_tier='premium'
     if 'gce_network_tier' in benchmark_config[1]['flags']:
@@ -401,26 +387,15 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # get all regions from gcloud
   # make regions
-  #print("pkb_scheduler Cloud Variable is: {}".format(cloud))
-  #print("config is : {}".format(benchmark_config_list))
-  print(f"benchmarkconfig: {benchmark_config_list}")
-  print("\n\nconfig[0] is : {}".format(benchmark_config_list[0]))
-  print("\n\nconfig[0][1] is : {}".format(benchmark_config_list[0][1]))
-  print("\n\nconfig[0][1]['flags'] is : {}".format(benchmark_config_list[0][1]['flags']))
-  print("\n\nconfig[0][1]['flags']['cloud'] is : {}".format(benchmark_config_list[0][1]['flags']['cloud']))
- # region_dict = cloud_util.get_region_info(cloud='GCP')
-  print(f"FLAGS is {flags}")
- # region_dict = cloud_util.get_region_info(benchmark_config_list[0][1]['flags']['cloud'].upper())
-  # full_graph.add_region_if_not_exists(new_region=benchmark_config_list[0][1]['flags']['zones'])
   
+ 
+  #print("\n\nconfig[0][1]['flags']['cloud'] is : {}".format(benchmark_config_list[0][1]['flags']['cloud']))
+ 
   #in progress 12/30
   if benchmark_config_list[0][1]['flags']['cloud'].lower == 'aws' or benchmark_config_list[0][1]['flags']['cloud'] == 'AWS':
-    print(f"\n\nmaking the graph!!!!!!!!\n\n")
     #print(f"region_dict is: {region_dict}")
     region_dict = cloud_util.get_region_info(benchmark_config_list,benchmark_config_list[0][1]['flags']['cloud'])
-    print(f"\n\nRegion_Dict is : {region_dict}\n\n")
 
-    print(f"The Region's zones are: {benchmark_config_list[0][1]['flags']['zones']} and extra_zones are: {benchmark_config_list[0][1]['flags']['extra_zones']}")
     for x in region_dict:
       new_region = Region(region_name=x, cloud='aws')
       full_graph.add_region_if_not_exists(new_region=new_region)
@@ -434,10 +409,8 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       # region_name = config[1]['flags']['zones']
       # print(config[1]['flags']['extra_zones'])
       # full_graph.add_region_if_not_exists(region_name)
-      print(f"\n\nMaking new benchmark\n\n")
       new_benchmark = create_benchmark_from_config(config,
                                                   benchmark_counter)
-      print(f"\n\nBenchmark has been made!\n\n")
       # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
       #                           benchmark_type=config[0],
       #                           zone1=config[1]['flags']['zones'],
@@ -448,15 +421,10 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       temp_benchmarks.append(new_benchmark)
       benchmark_counter += 1
       logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
-      print(f"Number of benchmarks: {str(len(temp_benchmarks))}")
-      #print(f"the temp benchmarks are: {temp_benchmarks.__dict__}")
-      print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
      
       for bm in temp_benchmarks:
         logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
-        print(f"\nEarly BM is {bm.__dict__}\n")
         vms, test = full_graph.add_or_waitlist_benchmark_and_vms(bm)
-        print(f"\n\nVMS declared successfuly.\n\n")
       logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
       # create virtual machines (node)
     # attach with edges and benchmarks q
@@ -471,20 +439,17 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     # Second pass, add
     for config in benchmark_config_list:
       pass
-    print(f"\n\nExiting from create_graph_from_config_list\n\n")
     return full_graph
   else:
 
   #This is currently being skipped for AWS
     region_dict = cloud_util.get_region_info(benchmark_config_list,benchmark_config_list[0][1]['flags']['cloud'])
-    print(f"\n\nRegion_Dict is : {region_dict}\n\n")
     
     
     
     #This for loop is making all the regions for GCP, and updates their quotas
     for key in region_dict:
       # if region['description'] in full_graph.regions
-      print(f"\n\nTrying to make a new region : {region_dict[key]}\n\n")
 
       new_region = Region(region_name=key,
                           cloud='GCP',
@@ -493,22 +458,18 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
       new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
       full_graph.add_region_if_not_exists(new_region=new_region)
-    print(f"\n\nThe region has been made\n\n")
     # This takes all the stuff from the config dictionaries
     # and puts them in benchmark objects
     # will need more logic for differently formatted configs
     benchmark_counter = 0
     temp_benchmarks = []
-    print(f"\n\nEntering the for loop\n\n")
     for config in benchmark_config_list:
       # print(config[1]['flags']['zones'])
       # region_name = config[1]['flags']['zones']
       # print(config[1]['flags']['extra_zones'])
       # full_graph.add_region_if_not_exists(region_name)
-      print(f"\n\nMaking new benchmark\n\n")
       new_benchmark = create_benchmark_from_config(config,
                                                   benchmark_counter)
-      print(f"\n\nBenchmark has been made!\n\n")
       # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
       #                           benchmark_type=config[0],
       #                           zone1=config[1]['flags']['zones'],
@@ -518,24 +479,19 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       #                           flags=config[1]['flags'])
       temp_benchmarks.append(new_benchmark)
       benchmark_counter += 1
-    print(f"\n\nLeaving the for loops\n\n")
     logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
 
     # create virtual machines (node)
     # attach with edges and benchmarks q
-    print(f"temp_benchmarks is {temp_benchmarks[0].__dict__}\n")
    
     for bm in temp_benchmarks:
       logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
-      print(f"\nEarly BM is {bm.__dict__}\n")
       vms,test = full_graph.add_or_waitlist_benchmark_and_vms(bm)
-      print(f"\n\nVMS declared successfuly.\n\n")
     logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
 
     # Second pass, add
     for config in benchmark_config_list:
       pass
-    print(f"\n\nExiting from create_graph_from_config_list\n\n")
     return full_graph
 
 

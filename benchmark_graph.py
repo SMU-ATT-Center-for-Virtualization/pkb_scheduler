@@ -80,9 +80,7 @@ class BenchmarkGraph():
     return cloud in self.clouds
 
   def add_region_if_not_exists(self, new_region):
-    print(f"new_region is: {new_region}")
     if new_region.name not in self.regions:
-      print(f"\n\n***********adding new region: {new_region.__dict__}******************\n\n")
       self.regions[new_region.name] = new_region
 
   def region_exists(self, region_name):
@@ -164,28 +162,19 @@ class BenchmarkGraph():
       bool, String
     """
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
-    print(f"vm is: {vm.__dict__}")
-    print(f"self.regions: {self.regions}")
-    print(f"vm_region: {vm_region}")
     quota_not_exceeded = True
-    print(f"\n\n You are in the check if can add method \n\n")
-    print(f"vm.cloud.lower() is: {vm.cloud.lower()}")
     if vm.cloud.lower() == "aws":
-      print(f"inside the aws add portion")
       
       if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
           # for another
-          print(f"VM exists")
           return True, "VM Exists. Quota not Exceeded"
         else:
           # returns True if the vm doesn't already exist
           # and if region has enough space
-          print(f"VM does not exist")
           return True, "VM does not exist"
     elif vm.cloud.lower() == 'gcp':
-      print(f"inside the gcp add portion")
       if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
         if self.required_vm_exists(vm):
           # returns this is vm exists but there is enough space
@@ -197,7 +186,6 @@ class BenchmarkGraph():
           return True, "VM does not exist"
     # if quota_not_exceeded:
     #   return True
-    print(f"Missed both portions, or quota was exceeded")
     return False, "Quota Exceeded"
 
   @deprecated(reason="Use add_vms_for_benchmark_if_possible instead")
@@ -221,10 +209,8 @@ class BenchmarkGraph():
       [description]
       [type]
     """
-    print(f"Here6\n")
     # Need region because quotas are regional
     vm_region = cloud_util.get_region_from_zone(cloud, zone)
-    print(f"\n\nThe CPU Count is: {cpu_count}\n\n")
     # create virtual_machine object
     vm_id = self.vm_total_count
     vm = VirtualMachine(node_id=vm_id,
@@ -276,7 +262,6 @@ class BenchmarkGraph():
       # if successful, also add that vm to virtual_machines list
       # and increment total number of vms, return True, and the vm
       if status is True:
-        print("adding vm in zone " + vm.zone)
         self.virtual_machines.append(vm)
         self.graph.add_node(vm_id, vm=vm)
         self.vm_total_count += 1
@@ -287,12 +272,8 @@ class BenchmarkGraph():
         return False, None
 
   def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
-    print(f"bm is {bm.__dict__}")
-    print(f"\n\n\nDO WE EVER GET HERE benchmark_graph:add_or_waitlist_benchmark_and_vms:292\n\n\n")
-    print(f"Here7\n")
     vms= self.add_vms_for_benchmark_if_possible(bm, region_dict)
     
-    print(f"\n\nAdded the vms to benchmark: vm0: \n {vms[0]} \n vm1\n{vms[1]}\n\n")
     vms_no_none = list(filter(None, vms))
 
     if len(bm.vm_specs) == len(vms_no_none) == len(vms):
@@ -322,15 +303,14 @@ class BenchmarkGraph():
     vm_ids = []
     vms = []
 
-    print(f"\n\nadd_vms_for_benchmark: {bm.__dict__}\n\n")
-    print(f"self in add_vms_for_benchmark_if_possible: {self.__dict__}")
+    
     
     for vm_spec in bm.vm_specs:
-      print(f"\nThe vm_specs are: {vm_spec.__dict__}\n")
-      print(vm_spec.id)
+      
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
-      print(f"\n\nVM_Region is: {vm_region}\n\n")
-      print(f"\n\nThe CPU Count is: {vm_spec.cpu_count}\n\n")
+      
+      #This will create the VM Specs we need to add to the benchmark
+
       if vm_spec.cloud.lower() == "aws" :
         region_list_command = f"aws configure set region {vm_region}"
         process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
@@ -339,7 +319,6 @@ class BenchmarkGraph():
         process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
         number_of_spun_up_machines = json.loads(output.decode('utf-8'))
-        print(f"\n\nnumber_of_spun_up_machines: {len(number_of_spun_up_machines)}\n\n")
       #here we will get the number of computers spun up for aws
       vm_id = self.vm_total_count
       if vm_spec.cloud.lower() == "aws":
@@ -376,9 +355,7 @@ class BenchmarkGraph():
       suitable_vm_found = False
 
       # if a vm already exists
-      print(f"\n\ntmp_vm_list: {tmp_vm_list}\n\n")
       if len(tmp_vm_list) > 0:
-        print(f"made it into tmp_vm_list if")
         can_add_another, status= self.check_if_can_add_vm(vm)
 
         add_from_list = True
@@ -389,12 +366,9 @@ class BenchmarkGraph():
             and status == "VM Exists. Quota not Exceeded"
             and FLAGS.allow_duplicate_vms == True
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
-          print("here1")
           # checks if there is enough space in a region to add another vm
           new_region = Region(region_name=vm_region, cloud=vm_spec.cloud.lower())
-          print(f"&&&&&&&&&&&&&&&&&&ADDING A NEW REGION!!!!&&&&&&&&&&&&&&&&&&&&")
           self.add_region_if_not_exists(new_region)
-          print(f"\n\nself, but the first time it adds a region: {self.__dict__}\n\n")
           success= self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
             add_from_list = False
@@ -441,35 +415,18 @@ class BenchmarkGraph():
       # if vm does not exist yet
       elif (not suitable_vm_found):
         # try to add vm to region
-        print("here2")
-        #vm_region = "us-east-2"
-        print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
-        print(f"\n\nvm region is: {vm_region}\n\n")
-        print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: ")
-
-       #print(f"\n\nself.regions is: {self.regions} : the type of (regions) is: {type(self.regions)}\n\n region: {self.regions[vm_region]}")
-       
-        # myRegion = Region(vm_region, "AWS")
-        # myRegion.name = vm_region
-        # self.add_region_if_not_exists(myRegion) # So the reason the code is breaking later because I add the region here myself, and it never gets populated
-        print(f"\n\nSelf: {self.__dict__} \n Type: {self}\n\n")
-        #print(f"\n\nself.regions: {self.regions['us-east-2'].__dict__}\n")
-        #the self here doesn't have any vm_cpu's allocated to it ###################################################################################
-        print(f" vm is: {vm.__dict__}")
-        print(f"regions is: {self.regions}")
+        
         new_region = Region(region_name=vm_region, cloud='aws')
         self.add_region_if_not_exists(new_region)
         if vm_spec.cloud.lower() == "aws":
           status= self.regions[vm_region].has_enough_resources(0, vm_spec.cloud.lower())
         elif vm_spec.cloud.lower() == "gcp":
           status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        print("Status ", status)
-        print(f"\n\nStatus: {status}\n\n")
+        
 
         # if successful, also add that vm to virtual_machines list
         # and increment total number of vms, return True, and the vm
         if status is True:
-          print("adding vm in zone " + vm.zone)
           self.virtual_machines.append(vm)
           self.graph.add_node(vm_id, vm=vm)
           vms.append(vm)
@@ -480,7 +437,6 @@ class BenchmarkGraph():
           logger.debug("QUOTA EXCEEDED. VM waitlisted")
           vms.append(None)
 
-    print(f"the vms are: {vms}")
     return vms
 
   def add_same_zone_vms(self, vm1, vm2):
@@ -1003,8 +959,6 @@ class BenchmarkGraph():
       logging.debug("VM removed: " + str(key))
       self.graph.remove_node(key)
       vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
-      print(f"\n\nself.regions: {self.regions}\n\n")
-      print(f"vm_region: {vm_region}")
       self.regions[vm_region].remove_virtual_machine(vm)
       vm_removed_count += 1
 

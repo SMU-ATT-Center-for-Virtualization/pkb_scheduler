@@ -64,10 +64,8 @@ def get_region_info(benchmark_graph, cloud):
 
    
     region_list = []
-    print(f"benchmark_graph[0][1]: {benchmark_graph[0][1]}")
     region_list.append(benchmark_graph[0][1]['flags']['zones'])
     region_list.append(benchmark_graph[0][1]['flags']['extra_zones'])
-    print(f"region list: {region_list}")
     
   else:
     pass

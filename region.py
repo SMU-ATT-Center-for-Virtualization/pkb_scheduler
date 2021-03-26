@@ -50,23 +50,10 @@ class Region():
         return False
     elif cloud == 'aws':
       print(f"region is: {self.name}")
-      # region_list_command = f"aws configure set region {self.name}"
-      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      # output, error = process.communicate()
-      # region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
-      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      # output, error = process.communicate()
-      # output = json.loads(output.decode('utf-8'))
-      # print(f" output is, type: {type(output)}, length is: {len(output)}, and is {output} and error is {error} in has_enough_resources")
-      #used to compare to the len(output) but because VM's are not created between this instance of the method and the next, it just gives the same results
-      #print(f"\naws_quota_tracker: {aws_quota_tracker}\n")
+      
       if self.aws_vm_count >= self.aws_vm_quota :
         return False
-      # region_list_command = "aws ec2 describe-vpcs"
-      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-      # output, error = process.communicate()
-      # output = json.loads(output.decode('utf-8'))
-      # print(f"The output is: {output}")
+      
       if self.aws_vpc_count >= self.aws_vpc_quota :
         print(f"\n\n\n VPC LIMIT REACHED\n\n\n")
         return False
@@ -77,10 +64,7 @@ class Region():
       
 
   def add_virtual_machine_if_possible(self, vm):
-    print(f"\n\n in add_virtual_machine_if_possible: {vm.__dict__}\n\n")
-    print(f"This tests to see if we have enough CPU's to run the tests: self.get_available_cpus():{self.get_available_cpus()} should be >= vm.cpu_count:{vm.cpu_count}")
-    print(f"vm cloud is: {vm.cloud}")
-    #print(breadk[99])
+    
     if vm.cloud == 'gcp' or vm.cloud == 'GCP':
       if (self.get_available_cpus() >= vm.cpu_count 
           and self.address_quota > self.address_usage):

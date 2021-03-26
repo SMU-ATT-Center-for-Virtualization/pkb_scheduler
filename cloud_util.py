@@ -8,14 +8,11 @@ import re
 
 def cpu_count_from_machine_type(cloud, machine_type):
 
-  print("Cloud is set to: {}".format(cloud))
-  print(f"\nMachine Type is set to {machine_type}\n")
+
   if cloud == 'GCP':
     return int(machine_type.split('-')[2])
   elif cloud == 'AWS':
-    print(f"machine type: {machine_type}")
     machine_array = machine_type.split('.')
-    print(f"machine array: {machine_array}")
     machine_category = machine_array[0]
     machine_size = machine_array[1].lower()
     cpu_count = None
@@ -29,7 +26,6 @@ def cpu_count_from_machine_type(cloud, machine_type):
         cpu_count = 4 * multiplier
 
     elif 't2' in machine_category.lower() and 'micro' in machine_size.lower():
-      print(f"Setting the CPU Count for a t2.micro AWS machine\n")
       cpu_count = 1
     return cpu_count
 
@@ -40,16 +36,13 @@ def cpu_count_from_machine_type(cloud, machine_type):
 
 
 def get_region_info(benchmark_graph, cloud):
-  print("Cloud Variable is: {}".format(cloud))
-  print(f"\n\n********************************************************************\n\n")
-  print(f"\n\nThe benchmark_graph in get_region_info is: {benchmark_graph}\n\n")
+ 
   region_dict = {}
   if cloud == 'GCP':
     region_list_command = "gcloud compute regions list --format=json"
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
-    #print("output: {}".format(str(output)))
     # load json and convert to a more useable output
     region_json = json.loads(output.decode('utf-8'))
     for region_iter in region_json:
@@ -69,32 +62,15 @@ def get_region_info(benchmark_graph, cloud):
     #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE)
     #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
 
-    #This kinda works? vvvvvvvvvvvvv
-    #process = subprocess.check_output(region_list_command,stderr=subprocess.STDOUT,shell=True)
-    #print(f"process: {process}")
-    
-    #output, error = process.communicate()
-    #print(f"output: {output}, error:{error}")
-    # load json and convert to a more useable output
-    #print(f"\n\nget region info OUTPUT of type {type(output)} IS: {json.loads(output.decode('utf-8'))}\n\n")# so this line is 
-    
-    #region_json = json.loads(output.decode('utf-8'))
-    #region_json = json.loads(output.decode('utf-8'))
-    #print(f"The amount of running's in region_list_command,[{type(region_json)}]: len of region_json {len(region_json)}")
-    #print(f"count of instances: {region_json}")
-    #print(f"region_json is: {region_json}")
+   
     region_list = []
     print(f"benchmark_graph[0][1]: {benchmark_graph[0][1]}")
-    #for y in benchmark_graph[0][1]['flags']['zones']:
     region_list.append(benchmark_graph[0][1]['flags']['zones'])
-    #for y in benchmark_graph[0][1]['flags']['extra_zones']:
     region_list.append(benchmark_graph[0][1]['flags']['extra_zones'])
     print(f"region list: {region_list}")
-    # for region_iter in region_list:
-    #   region_dict[region_iter['RegionName']] = {}
+    
   else:
     pass
-  print(f"\n\nLeaving Get Region Info:\n\n")
 
   return region_list
 
@@ -122,7 +98,6 @@ def get_cloud_quotas(cloud):
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
-    print(f"\n\nget cloud quotas: OUTPUT IS: {output}\n\n")
     quota_json = json.loads(output)
     for quota_iter in quota_json['AccountAttributes']:
       if quota_iter['AttributeName'] == 'max-instances':
@@ -140,7 +115,6 @@ def get_region_from_zone(cloud, zone):
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
-    print(f"\n\nthe zone is {zone}\n\n")
     # return "us-east-2" #this is temporary to get it to work
     return zone
   elif cloud == 'Azure':

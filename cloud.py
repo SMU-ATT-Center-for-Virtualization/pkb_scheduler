@@ -55,29 +55,24 @@ class Cloud():
     return has_enough
 
   def has_enough_resources(self, cpu_count, region=None):
-    
     has_enough = False
     if region:
       has_enough = self.regions['region'].has_enough_resources(cpu_count)
-      return has_enough
-
 
     elif (self.get_available_cpus() >= cpu_count 
         and self.address_quota > self.address_usage):
       return True
-    else:
-      # has_enough =
-      print(f"CLOUD.PY LINE 62: THIS LINE WAS NOT COMPLETE SO I HAVE NO IDEA WHAT HAPPENS IF YOU HIT THIS LINE.") 
     
-    
+    return has_enough
 
   def add_virtual_machine_if_possible(self, vm, region=None):
-    
     if (self.get_available_cpus() >= vm.cpu_count 
         and self.address_quota > self.address_usage):
       self.virtual_machines.append(vm)
       self.cpu_usage += vm.cpu_count
       self.address_usage += 1
+      print("CPU USAGE: " + str(self.cpu_usage) + " QUOTA: " + str(self.cpu_quota))
+      print("ADDR USAGE: " + str(self.address_usage) + " QUOTA: " + str(self.address_quota))
       return True
     else:
       print("Quota reached for region: " + self.name)

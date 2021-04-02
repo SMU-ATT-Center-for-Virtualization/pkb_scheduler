@@ -13,7 +13,6 @@ import math
 import cloud_util
 import time
 
-import json
 from deprecated import deprecated
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
@@ -165,30 +164,18 @@ class BenchmarkGraph():
       bool, String
     """
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
-    quota_not_exceeded = True
-    if vm.cloud.lower() == "aws":
-      
-      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
-        if self.required_vm_exists(vm):
-          # returns this is vm exists but there is enough space
-          # for another
-          return True, "VM Exists. Quota not Exceeded"
-        else:
-          # returns True if the vm doesn't already exist
-          # and if region has enough space
-          return True, "VM does not exist"
-    elif vm.cloud.lower() == 'gcp':
-      if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.cloud.lower(), vm_region):
-        if self.required_vm_exists(vm):
-          # returns this is vm exists but there is enough space
-          # for another
-          return True, "VM Exists. Quota not Exceeded"
-        else:
-          # returns True if the vm doesn't already exist
-          # and if region has enough space
-          return True, "VM does not exist"
-    # if quota_not_exceeded:
-    #   return True
+
+    #TODO change implementation to just take vm.machine_type
+    if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.machine_type):
+      if self.required_vm_exists(vm):
+        # returns this is vm exists but there is enough space
+        # for another
+        return True, "VM Exists. Quota not Exceeded"
+      else:
+        # returns True if the vm doesn't already exist
+        # and if region has enough space
+        return True, "VM does not exist"
+
     return False, "Quota Exceeded"
 
   @deprecated(reason="Use add_vms_for_benchmark_if_possible instead")
@@ -212,8 +199,10 @@ class BenchmarkGraph():
       [description]
       [type]
     """
+
     # Need region because quotas are regional
     vm_region = cloud_util.get_region_from_zone(cloud, zone)
+
     # create virtual_machine object
     vm_id = self.vm_total_count
     vm = VirtualMachine(node_id=vm_id,
@@ -265,6 +254,7 @@ class BenchmarkGraph():
       # if successful, also add that vm to virtual_machines list
       # and increment total number of vms, return True, and the vm
       if status is True:
+        print("adding vm in zone " + vm.zone)
         self.virtual_machines.append(vm)
         self.graph.add_node(vm_id, vm=vm)
         self.vm_total_count += 1
@@ -274,9 +264,8 @@ class BenchmarkGraph():
         logger.debug("QUOTA EXCEEDED")
         return False, None
 
-  def add_or_waitlist_benchmark_and_vms(self, bm, region_dict=0):
-    vms= self.add_vms_for_benchmark_if_possible(bm, region_dict)
-    
+  def add_or_waitlist_benchmark_and_vms(self, bm):
+    vms = self.add_vms_for_benchmark_if_possible(bm)
     vms_no_none = list(filter(None, vms))
 
     if len(bm.vm_specs) == len(vms_no_none) == len(vms):
@@ -291,7 +280,7 @@ class BenchmarkGraph():
       return [], "Waitlisted"
 
 
-  def add_vms_for_benchmark_if_possible(self, bm, region_dict=0):
+  def add_vms_for_benchmark_if_possible(self, bm):
     """[summary]
     
     [description]
@@ -306,52 +295,25 @@ class BenchmarkGraph():
     vm_ids = []
     vms = []
 
-    
-    
-    for vm_spec in bm.vm_specs:
-      
-      vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
-      
-      #This will create the VM Specs we need to add to the benchmark
 
-      if vm_spec.cloud.lower() == "aws" :
-        region_list_command = f"aws configure set region {vm_region}"
-        process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-        output, error = process.communicate()
-        region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
-        process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
-        output, error = process.communicate()
-        number_of_spun_up_machines = json.loads(output.decode('utf-8'))
-      #here we will get the number of computers spun up for aws
+    for vm_spec in bm.vm_specs:
+
+      print(vm_spec.id)
+      vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       vm_id = self.vm_total_count
-      if vm_spec.cloud.lower() == "aws":
-        vm = VirtualMachine(node_id=vm_id,
-                            cpu_count=vm_spec.cpu_count,
-                            zone=vm_spec.zone,
-                            os_type=vm_spec.os_type,
-                            network_tier=vm_spec.network_tier,
-                            machine_type=vm_spec.machine_type,
-                            cloud=vm_spec.cloud,
-                            min_cpu_platform=vm_spec.min_cpu_platform,
-                            ssh_private_key=self.ssh_private_key_file,
-                            ssl_cert=self.ssl_cert_file,
-                            vm_spec=vm_spec,
-                            vm_spec_id=vm_spec.id,
-                            temp_vm_aws_limit = 1920,
-                            temp_vm_spun_up_machines = len(number_of_spun_up_machines))
-      else:
-        vm = VirtualMachine(node_id=vm_id,
-                            cpu_count=vm_spec.cpu_count,
-                            zone=vm_spec.zone,
-                            os_type=vm_spec.os_type,
-                            network_tier=vm_spec.network_tier,
-                            machine_type=vm_spec.machine_type,
-                            cloud=vm_spec.cloud,
-                            min_cpu_platform=vm_spec.min_cpu_platform,
-                            ssh_private_key=self.ssh_private_key_file,
-                            ssl_cert=self.ssl_cert_file,
-                            vm_spec=vm_spec,
-                            vm_spec_id=vm_spec.id)
+      vm = VirtualMachine(node_id=vm_id,
+                          cpu_count=vm_spec.cpu_count,
+                          zone=vm_spec.zone,
+                          os_type=vm_spec.os_type,
+                          network_tier=vm_spec.network_tier,
+                          machine_type=vm_spec.machine_type,
+                          cloud=vm_spec.cloud,
+                          min_cpu_platform=vm_spec.min_cpu_platform,
+                          ssh_private_key=self.ssh_private_key_file,
+                          ssl_cert=self.ssl_cert_file,
+                          vm_spec=vm_spec,
+                          vm_spec_id=vm_spec.id)
+
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)
 
@@ -359,7 +321,7 @@ class BenchmarkGraph():
 
       # if a vm already exists
       if len(tmp_vm_list) > 0:
-        can_add_another, status= self.check_if_can_add_vm(vm)
+        can_add_another, status = self.check_if_can_add_vm(vm)
 
         add_from_list = True
 
@@ -369,10 +331,9 @@ class BenchmarkGraph():
             and status == "VM Exists. Quota not Exceeded"
             and FLAGS.allow_duplicate_vms == True
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
+          print("here1")
           # checks if there is enough space in a region to add another vm
-          new_region = Region(region_name=vm_region, cloud=vm_spec.cloud.lower())
-          self.add_region_if_not_exists(new_region)
-          success= self.regions[vm_region].add_virtual_machine_if_possible(vm)
+          success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
             add_from_list = False
             self.virtual_machines.append(vm)
@@ -418,18 +379,14 @@ class BenchmarkGraph():
       # if vm does not exist yet
       elif (not suitable_vm_found):
         # try to add vm to region
-        
-        new_region = Region(region_name=vm_region, cloud='aws')
-        self.add_region_if_not_exists(new_region)
-        if vm_spec.cloud.lower() == "aws":
-          status= self.regions[vm_region].has_enough_resources(0, vm_spec.cloud.lower())
-        elif vm_spec.cloud.lower() == "gcp":
-          status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        
+        print("here2")
+        status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
+        print("Status ", status)
 
         # if successful, also add that vm to virtual_machines list
         # and increment total number of vms, return True, and the vm
         if status is True:
+          print("adding vm in zone " + vm.zone)
           self.virtual_machines.append(vm)
           self.graph.add_node(vm_id, vm=vm)
           vms.append(vm)
@@ -440,6 +397,7 @@ class BenchmarkGraph():
           logger.debug("QUOTA EXCEEDED. VM waitlisted")
           vms.append(None)
 
+    print(vms)
     return vms
 
   def add_same_zone_vms(self, vm1, vm2):
@@ -741,12 +699,10 @@ class BenchmarkGraph():
       cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
                    " --skip_package_cleanup=True")
 
-    #TODO fix this for intercloud
     if not FLAGS.precreate_and_share_vms:
-      if bm.vm_specs[0].cloud == 'GCP':
-        cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh"
-                   + " --skip_firewall_rules=True"
-                   + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
+      cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
+                 + " --skip_firewall_rules=True"
+                 + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
 
     # TODO do install_packages if vm has already been used
 
@@ -895,12 +851,11 @@ class BenchmarkGraph():
       return
 
     logging.info("Adding benchmarks from waitlist")
+
     bms_added = []
-    
-    print(f"Here5\n")
     for bm in self.benchmark_wait_list:
       print("here4, ", str(len(self.benchmark_wait_list)))
-      vms= self.add_vms_for_benchmark_if_possible(bm)
+      vms = self.add_vms_for_benchmark_if_possible(bm)
       vms_no_none = list(filter(None, vms))
 
       if len(bm.vm_specs) == len(vms_no_none) == len(vms):

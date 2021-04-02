@@ -2,13 +2,12 @@
 import subprocess
 import json
 import re
+import logging
 
 # TODO support other clouds
-#TESTEST test
+
 
 def cpu_count_from_machine_type(cloud, machine_type):
-
-
   if cloud == 'GCP':
     return int(machine_type.split('-')[2])
   elif cloud == 'AWS':
@@ -24,9 +23,10 @@ def cpu_count_from_machine_type(cloud, machine_type):
       elif 'xlarge' in machine_size:
         multiplier = int(re.findall(r'\d+', machine_size))
         cpu_count = 4 * multiplier
+    elif 't2' in machine_category.lower():
+      if 'micro' in machine_size.lower():
+        cpu_count = 1
 
-    elif 't2' in machine_category.lower() and 'micro' in machine_size.lower():
-      cpu_count = 1
     return cpu_count
 
   elif cloud == 'Azure':
@@ -35,45 +35,114 @@ def cpu_count_from_machine_type(cloud, machine_type):
     return None
 
 
-def get_region_info(benchmark_graph, cloud):
- 
+def cpu_type_from_machine_type(cloud, machine_type):
+  if cloud == 'GCP':
+    return machine_type.split('-')[0]
+  elif cloud == 'AWS':
+    return machine_type.split('.')[0]
+  elif cloud == 'Azure':
+    return None
+  else:
+    return None
+
+
+def get_region_info(cloud):
+  """get quota info for all regions in a specified cloud
+  
+  [description]
+  
+  Args:
+    cloud: string in ['AWS','GCP','AZURE']
+  
+  Returns:
+    region_dict: dictionary containing quota info about each region in a cloud
+                 key: region-name, value: dictionary with quota info
+  """
   region_dict = {}
   if cloud == 'GCP':
+    logging.info("Querying data from gcloud")
     region_list_command = "gcloud compute regions list --format=json"
     process = subprocess.Popen(region_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
+
     # load json and convert to a more useable output
-    region_json = json.loads(output.decode('utf-8'))
+    region_json = json.loads(output)
     for region_iter in region_json:
       region_dict[region_iter['description']] = {}
       for quota in region_iter['quotas']:
         region_dict[region_iter['description']][quota['metric']] = quota
         region_dict[region_iter['description']][quota['metric']].pop('metric', None)
 
-  elif cloud == 'AWS' or cloud == 'aws':
-    #So what we need to do here is check the regions that we want to spin up the machines in and check the quotas for that region
-    
+    return region_dict
+  elif cloud == 'AWS':
+    logging.info("Querying data from AWS")
+    # Get list of all AWS regions
+    region_list_command = 'aws ec2 describe-regions'
+    process = subprocess.Popen(region_list_command.split(),
+                               stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    # load json and convert to a more useable output
+    region_json = json.loads((output.decode('utf-8')))
 
-    #region_list_command = 'aws ec2 describe-regions'
-    #region_list_command = "aws ec2 describe-instances --query Reservations[].Instances[]"
-    #region_list_command = "date"
-    #region_list_command ="aws ec2 describe-instances"
-    #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE)
-    #process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+    # Get current VPC and VM usage info for each AWS region
+    for region_iter in region_json['Regions']:
+      region_name = region_iter['RegionName']
+      region_dict[region_name] = {}
 
-   
-    region_list = []
-    region_list.append(benchmark_graph[0][1]['flags']['zones'])
-    region_list.append(benchmark_graph[0][1]['flags']['extra_zones'])
-    
+      # region_list_command = f"aws configure set region {region_name}"
+      # process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      # output, error = process.communicate()
+
+      region_list_command = f"aws ec2 describe-instances --query Reservations[].Instances[] --region={region_name}"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+
+      region_dict[region_name]['vm'] ={}
+      region_dict[region_name]['vm']['limit'] = 1920
+      region_dict[region_name]['vm']['usage'] = len(output)
+
+      region_list_command = f"aws ec2 describe-vpcs --region={region_name}"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+
+      region_dict[region_name]['vpc'] ={}
+      region_dict[region_name]['vpc']['limit'] = 5
+      region_dict[region_name]['vpc']['usage'] = len(output['Vpcs'])
+
+      region_list_command = f"aws ec2 describe-addresses --region={region_name}"
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+
+      region_dict[region_name]['elastic_ip'] ={}
+      region_dict[region_name]['elastic_ip']['limit'] = 5
+      region_dict[region_name]['elastic_ip']['usage'] = len(output['Addresses'])
+
+    return region_dict
+  elif cloud == "Azure":
+    # TROY PUT CODE HERE
+    return region_dict
   else:
     pass
 
-  return region_list
+  return region_dict
 
 
 def get_cloud_quotas(cloud):
+  """Get cloud-wide quotas for each cloud service
+  
+  NOT CURRENTLY USED
+  
+  Args:
+    cloud: [description]
+  
+  Returns:
+    [description]
+    [type]
+  """
   quota_dict = {}
   if cloud == 'GCP':
     quota_list_command = "gcloud compute project-info describe --format=json"
@@ -90,13 +159,12 @@ def get_cloud_quotas(cloud):
         quota_dict['static_address_quota'] = quota_iter['limit']
 
   elif cloud == 'AWS':
-    #quota_list_command = 'aws ec2 describe-account-attributes'
-    quota_list_command = 'aws service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A'
+    quota_list_command = 'aws ec2 describe-account-attributes'
     process = subprocess.Popen(quota_list_command.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
     # load json and convert to a more useable output
-    quota_json = json.loads(output)
+    quota_json = json.loads(output.decode('utf-8'))
     for quota_iter in quota_json['AccountAttributes']:
       if quota_iter['AttributeName'] == 'max-instances':
         quota_dict['instance_quota'] = quota_iter['AttributeValues'][0]['AttributeValue']
@@ -113,8 +181,18 @@ def get_region_from_zone(cloud, zone):
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
-    # return "us-east-2" #this is temporary to get it to work
-    return zone
+    zone_split = zone.split('-')
+    if len(zone_split) != 3:
+      logging.warn('Improperly formatted AWS zone:' + zone + ' This may cause errors.')
+      return zone
+    else:
+      # TODO change to regex to look for number followed by a letter
+      if len(zone_split[2]) > 1:
+        # strip off zone letter  us-east-1a -> us-east-1
+        return zone[:len(zone) - 1]
+      else:
+        # return zone as it is. us-east-1
+        return zone
   elif cloud == 'Azure':
     return zone
   else:

@@ -24,7 +24,7 @@ from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from virtual_machine_spec import VirtualMachineSpec
-from region import Region, GcpRegion, AwsRegion
+from region import Region, GcpRegion, AwsRegion, AzureRegion
 from cloud import Cloud
 from absl import flags
 from absl import app
@@ -456,6 +456,8 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     full_graph.add_region_if_not_exists(new_region=new_region)
 
   # CREATE and ADD regions for Azure
+  # Troy if there are any cloud wide quotas, we should deal with them here
+  # Also let me know, because I'll need to add better support for cloud-wide quotas (currently there is ~None)
   new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
   full_graph.add_cloud_if_not_exists(new_cloud)
   region_dict = cloud_util.get_region_info(cloud='Azure')

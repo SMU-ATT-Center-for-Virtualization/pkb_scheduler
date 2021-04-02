@@ -288,6 +288,10 @@ class AwsRegion(Region):
     self.quotas = quotas
 
 
+# Troy, I've split region into subclasses for each cloud
+# so put all the azure stuff in this class
+# the only absolutely necessary functions are has_enough_resources, add_virtual_machine_if_possible and remove_virtual_machine
+# What is currently in this class is just a duplicate of AwsRegion.
 class AzureRegion(Region):
 
   machine_type_bandwidth_dict = {}
@@ -299,6 +303,7 @@ class AzureRegion(Region):
 
   def has_enough_resources(self, cpu_count, machine_type):
     estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', machine_type)
+    # Troy, change this depending on the relevant quotas. Leave the bandwidth stuff alone
     if (self.quotas['vm']['usage'] < self.quotas['vm']['limit']
       and self.quotas['elastic_ip']['usage'] < self.quotas['elastic_ip']['limit']
       and self.quotas['vpc']['usage'] < self.quotas['vpc']['limit']):
@@ -311,7 +316,6 @@ class AzureRegion(Region):
 
   def add_virtual_machine_if_possible(self, vm):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):
-      # cpu_type = self._get_cpu_type(vm.machine_type)
       estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', vm.machine_type)
       self.virtual_machines.append(vm)
       self.quotas['vm']['usage'] += 1
@@ -344,18 +348,6 @@ class AzureRegion(Region):
     if self.quotas['elastic_ip']['usage'] < 0:
       self.quotas['vm']['usage'] = 0
 
-  # def update_cpu_quota(self, quota, machine_type):
-  #   cpu_type = self._get_cpu_type(machine_type)
-  #   self.quotas[cpu_type]['limit'] = quota
-
-  # def update_cpu_usage(self, usage, machine_type):
-  #   cpu_type = self._get_cpu_type(machine_type)
-  #   if usage <= self.quotas[cpu_type]['limit']:
-  #     self.quotas[cpu_type]['limit'] = quota
-  #     return True
-  #   else:
-  #     return False
-
   def update_address_quota(self, quota):
     self.quotas['elastic_ip']['limit'] = quota
 
@@ -365,13 +357,6 @@ class AzureRegion(Region):
       return True
     else:
       return False
-
-  # def update_quota_usage(self, usages):
-  #   if usage <= self.cpu_quota:
-  #     self.cpu_usage = usage
-  #     return True
-  #   else:
-  #     return False
 
   def update_quotas(self, quotas):
     self.quotas = quotas

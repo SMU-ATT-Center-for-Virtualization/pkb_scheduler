@@ -29,6 +29,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
 
     return cpu_count
 
+  # Troy. Only bother editing this if Azure has CPU quotas we need to track
   elif cloud == 'Azure':
     return None
   else:
@@ -41,6 +42,7 @@ def cpu_type_from_machine_type(cloud, machine_type):
   elif cloud == 'AWS':
     return machine_type.split('.')[0]
   elif cloud == 'Azure':
+    # Troy. Only bother editing this if Azure has CPU quotas we need to track
     return None
   else:
     return None
@@ -123,7 +125,25 @@ def get_region_info(cloud):
 
     return region_dict
   elif cloud == "Azure":
-    # TROY PUT CODE HERE
+    # Troy PUT CODE HERE
+    # fetch quota data from az cli (NOTE: there are two versions of azure cli. Use the newer version that uses the command 'az')
+    # figure out important quota data per region, if quotas are for the whole cloud instead of each region, we'll need to
+    # do something else
+
+    # region_dict should have the following structure (or something similar):
+    #
+    # region_dict = {'region1': {'quota1': {'limit': 10, 
+    #                                        'usage': 3}, 
+    #                             'quota2': {'limit': 50,
+    #                                        'usage': 30}
+    #                            }
+    #                'region2': {'quota1': {'limit': 10, 
+    #                                       'usage': 3}, 
+    #                            'quota2': {'limit': 50,
+    #                                       'usage': 30}
+    #                           }
+    #               }
+    # basically its dictionaries all the way down
     return region_dict
   else:
     pass
@@ -171,7 +191,8 @@ def get_cloud_quotas(cloud):
       elif quota_iter['AttributeName'] == 'max-elastic-ips':
         quota_dict['static_address_quota'] = quota_iter['AttributeValues'][0]['AttributeValue']
 
-  else:
+  elif cloud = 'Azure':
+    # Troy, if quotas are cloud-wide, get the info here and put it in quota_dict
     pass
 
   return quota_dict
@@ -194,6 +215,7 @@ def get_region_from_zone(cloud, zone):
         # return zone as it is. us-east-1
         return zone
   elif cloud == 'Azure':
+    # Troy, this may be all thats needed. Regions and zones have less distinction in azure, but i forget the specifics
     return zone
   else:
     return None
@@ -216,6 +238,7 @@ def get_max_bandwidth_from_machine_type(cloud, machine_type):
     elif cpu_type in ['E2']:
       return -1 #TODO
 
+  # Troy, I'll take care of this later
   elif cloud == 'AWS':
     return -1
 

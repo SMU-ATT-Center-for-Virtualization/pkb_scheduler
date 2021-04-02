@@ -24,7 +24,7 @@ from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from virtual_machine_spec import VirtualMachineSpec
-from region import Region, GcpRegion
+from region import Region, GcpRegion, AwsRegion
 from cloud import Cloud
 from absl import flags
 from absl import app
@@ -305,14 +305,26 @@ def update_quota_usage(benchmark_graph):
   for cloud in benchmark_graph.clouds:
     #TODO change this
     if cloud == 'GCP':
+      print(benchmark_graph.regions)
       region_dict = cloud_util.get_region_info(cloud='GCP')
       for region_name in benchmark_graph.regions:
-        quotas = region_dict[region_name]
-        benchmark_graph.regions[region_name].update_quotas(quotas)
+        if benchmark_graph.regions[region_name].cloud == 'GCP':
+          quotas = region_dict[region_name]
+          benchmark_graph.regions[region_name].update_quotas(quotas)
     elif cloud == 'AWS':
-      return
+      region_dict = cloud_util.get_region_info(cloud='AWS')
+      print(benchmark_graph.regions)
+      print(region_dict)
+      for region_name in benchmark_graph.regions:
+        if benchmark_graph.regions[region_name].cloud == 'AWS':
+          quotas = region_dict[region_name]
+          benchmark_graph.regions[region_name].update_quotas(quotas)
     elif cloud == 'Azure':
-      return
+      region_dict = cloud_util.get_region_info(cloud='Azure')
+      for region_name in benchmark_graph.regions:
+        if benchmark_graph.regions[region_name].cloud == 'Azure':
+          quotas = region_dict[region_name]
+          benchmark_graph.regions[region_name].update_quotas(quotas)
     else:
       return
 
@@ -428,12 +440,32 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
                            cloud=new_cloud,
                            quotas=region_dict[key],
                            bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    # new_region.update_address_quota(region_dict[key]['IN_USE_ADDRESSES']['limit'])
-    # new_region.update_address_usage(region_dict[key]['IN_USE_ADDRESSES']['usage'])
     full_graph.add_region_if_not_exists(new_region=new_region)
 
 
-  # HERE CREATE and ADD regions for AWS
+  # CREATE and ADD regions for AWS
+  new_cloud = Cloud('AWS', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+  full_graph.add_cloud_if_not_exists(new_cloud)
+  region_dict = cloud_util.get_region_info(cloud='AWS')
+  for key in region_dict:
+    # if region['description'] in full_graph.regions
+    new_region = AwsRegion(region_name=key,
+                           cloud=new_cloud,
+                           quotas=region_dict[key],
+                           bandwidth_limit=FLAGS.regional_bandwidth_limit)
+    full_graph.add_region_if_not_exists(new_region=new_region)
+
+  # CREATE and ADD regions for Azure
+  new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+  full_graph.add_cloud_if_not_exists(new_cloud)
+  region_dict = cloud_util.get_region_info(cloud='Azure')
+  for key in region_dict:
+    # if region['description'] in full_graph.regions
+    new_region = AzureRegion(region_name=key,
+                             cloud=new_cloud,
+                             quotas=region_dict[key],
+                             bandwidth_limit=FLAGS.regional_bandwidth_limit)
+    full_graph.add_region_if_not_exists(new_region=new_region)
 
 
   # This takes all the stuff from the config dictionaries
@@ -449,13 +481,6 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
     new_benchmark = create_benchmark_from_config(config,
                                                  benchmark_counter)
-    # new_benchmark = Benchmark(benchmark_id=benchmark_counter,
-    #                           benchmark_type=config[0],
-    #                           zone1=config[1]['flags']['zones'],
-    #                           zone2=config[1]['flags']['extra_zones'],
-    #                           machine_type=config[1]['flags']['machine_type'],
-    #                           cloud=config[1]['flags']['cloud'],
-    #                           flags=config[1]['flags'])
     temp_benchmarks.append(new_benchmark)
     benchmark_counter += 1
 

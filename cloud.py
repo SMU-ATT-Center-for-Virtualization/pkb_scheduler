@@ -5,7 +5,7 @@ class Cloud():
   [description]
   """
 
-  def __init__(self, cloud_name, instance_quota=None, cpu_quota=None, address_quota=None):
+  def __init__(self, cloud_name, instance_quota=None, cpu_quota=None, cpu_usage=None, address_quota=None, bandwidth_limit=None):
     self.instance_quota = instance_quota
     self.instance_usage = 0
     self.cpu_quota = cpu_quota
@@ -16,6 +16,8 @@ class Cloud():
     self.virtual_machines = []
     self.name = cloud_name
     self.regions = {}
+    self.bandwidth_limit = bandwidth_limit
+    self.bandwidth_usage = 0
 
     # project_quotas['cpu'] = {'quota':15, 'usage':0} 
     self.project_quotas = {}
@@ -44,7 +46,6 @@ class Cloud():
     has_enough = True
     if self.cpu_quota:
       has_enough = self.has_enough_cpus(cpu_count)
-
     for quota_type in self.project_quotas:
       quota = self.project_quotas[quota_type]
       has_enough = (quota['usage'] < quota['quota'])

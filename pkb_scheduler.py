@@ -24,7 +24,8 @@ from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from virtual_machine_spec import VirtualMachineSpec
-from region import Region
+from region import Region, GcpRegion
+from cloud import Cloud
 from absl import flags
 from absl import app
 
@@ -120,6 +121,14 @@ flags.DEFINE_boolean('precreate_and_share_vms', True,
 flags.DEFINE_boolean('use_maximum_matching', True,
                     'If true, this run VMs based on maximum matching')
 
+flags.DEFINE_integer('regional_bandwidth_limit', None,
+                 'Applies a bandwidth limit per region (Gbps)')
+flags.DEFINE_integer('cloud_bandwidth_limit', None,
+                 'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+
+flags.DEFINE_integer('max_retries', 20,
+                     'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
+
 logger = None
 
 maximum_sets = []
@@ -132,7 +141,7 @@ def main(argv):
   setup_logging()
   logger.debug("DEBUG LOGGING MODE")
   config_location = FLAGS.config
-  pkb_command = "python " + FLAGS.pkb_location
+  pkb_command = "python3 " + FLAGS.pkb_location
 
   benchmark_config_list = []
   if(config_location.endswith(".yaml")):
@@ -202,6 +211,8 @@ def main(argv):
     total_time = total_time + vm.uptime()
   print(total_time)
 
+  exit(0)
+
 
 def setup_logging():
 
@@ -236,10 +247,19 @@ def run_benchmarks(benchmark_graph):
   benchmarks_run = []
   # benchmark_graph.print_graph()
   vms_removed = []
+  max_set_empty_counter = 0
+
   while benchmark_graph.benchmarks_left() > 0:
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
+    if len(maximum_set) == 0:
+      max_set_empty_counter += 1
+    else:
+      max_set_empty_counter = 0
+
+    if FLAGS.max_retries >= 0 and max_set_empty_counter > FLAGS.max_retries:
+      exit()
     print("MAXIMUM SET")
     print(maximum_set)
     maximum_sets.append(maximum_set)

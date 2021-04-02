@@ -6,15 +6,17 @@ class Region():
   [description]
   """
 
-  def __init__(self, region_name, cloud, cpu_quota=0.0, cpu_usage=0.0):
+  def __init__(self, region_name, cloud, cpu_quota=0, cpu_usage=0, bandwidth_limit=None):
     self.cpu_quota = cpu_quota
     self.address_quota = None
     self.address_usage = 0
     self.cpu_usage = cpu_usage
-    self.reserved_usage = 0.0
+    self.reserved_usage = 0
     self.virtual_machines = []
     self.name = region_name
     self.cloud = cloud
+    self.bandwidth_limit = bandwidth_limit
+    self.bandwidth_usage = 0
 
     if(cloud.lower() == "aws"):
       region_list_command = f"aws configure set region {region_name}"

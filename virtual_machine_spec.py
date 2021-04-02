@@ -14,7 +14,7 @@ class VirtualMachineSpec():
 
   def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu1804', machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
-               vpn_tunnel_count=0):
+               vpn_tunnel_count=0, min_cpu_platform=None):
 
     # get logger
     global logger
@@ -27,6 +27,7 @@ class VirtualMachineSpec():
     self.cloud = cloud
     self.network_tier = network_tier
     self.vpn = vpn
+    self.min_cpu_platform = min_cpu_platform
     # TODO use this instead of static network name
     self.network_name = None
     # self.ip_address = None
@@ -40,7 +41,8 @@ class VirtualMachineSpec():
         self.machine_type == vm_spec.machine_type and
         self.network_tier == vm_spec.network_tier and
         self.vpn == vm_spec.vpn and
-        self.os_type == vm_spec.os_type):
+        self.os_type == vm_spec.os_type and
+        self.min_cpu_platform == vm.min_cpu_platform):
       return True
 
     return False
@@ -54,6 +56,7 @@ class VirtualMachineSpec():
     self.network_tier = vm.network_tier
     self.vpn = vm.vpn
     self.network_name = vm.network_name
+    self.min_cpu_platform = vm.min_cpu_platform
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()

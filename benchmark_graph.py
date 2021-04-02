@@ -11,6 +11,7 @@ import threading
 import logging
 import math
 import cloud_util
+import time
 
 from deprecated import deprecated
 from typing import List, Dict, Tuple, Set
@@ -45,6 +46,7 @@ class BenchmarkGraph():
 
     self.graph = nx.MultiGraph()
     self.regions = {}
+    self.clouds = {}
     self.virtual_machines = []
     self.benchmarks = []
     self.benchmark_wait_list = []
@@ -69,6 +71,13 @@ class BenchmarkGraph():
     self.benchmark_run_times = []
     self.deletion_times = []
 
+  def add_cloud_if_not_exists(self, cloud):
+    if cloud.name not in self.clouds:
+      self.clouds[cloud.name] = cloud
+
+  def cloud_exists(self, cloud):
+    return cloud in self.clouds
+
   def add_region_if_not_exists(self, new_region):
     if new_region.name not in self.regions:
       self.regions[new_region.name] = new_region
@@ -76,8 +85,11 @@ class BenchmarkGraph():
   def region_exists(self, region_name):
     return region_name in self.regions
 
-  def get_available_cpus(self, region_name):
-    return region['region_name'].get_available_cpus()
+  def get_available_cpus(self, cloud, region_name, machine_type):
+    if cloud == 'GCP':
+      return region['region_name'].get_available_cpus(machine_type)
+    else:
+      return region['region_name'].get_available_cpus()
 
   def required_vm_exists(self, vm):
     # print(os_type)
@@ -153,7 +165,8 @@ class BenchmarkGraph():
     """
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
 
-    if self.regions[vm_region].has_enough_resources(vm.cpu_count):
+    #TODO change implementation to just take vm.machine_type
+    if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.machine_type):
       if self.required_vm_exists(vm):
         # returns this is vm exists but there is enough space
         # for another
@@ -281,7 +294,8 @@ class BenchmarkGraph():
     """
     vm_ids = []
     vms = []
-    print("here0")
+
+
     for vm_spec in bm.vm_specs:
 
       print(vm_spec.id)
@@ -294,6 +308,7 @@ class BenchmarkGraph():
                           network_tier=vm_spec.network_tier,
                           machine_type=vm_spec.machine_type,
                           cloud=vm_spec.cloud,
+                          min_cpu_platform=vm_spec.min_cpu_platform,
                           ssh_private_key=self.ssh_private_key_file,
                           ssl_cert=self.ssl_cert_file,
                           vm_spec=vm_spec,
@@ -313,7 +328,7 @@ class BenchmarkGraph():
         # if there is room to add a duplicate vm and if flags allow it 
         # then add the VM
         if (can_add_another 
-            and status == "VM Exists. Quota not Exceeded" 
+            and status == "VM Exists. Quota not Exceeded"
             and FLAGS.allow_duplicate_vms == True
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
           print("here1")
@@ -560,7 +575,12 @@ class BenchmarkGraph():
       bm_to_run = self.graph[node_tuple[0]][node_tuple[1]][bm_index_to_run]['bm']
       print(bm_to_run)
       # create config file, get file name 
-      bm_config_file = self.create_benchmark_config_file(bm_to_run, vm_list)
+      bm_config_file = None
+
+      if FLAGS.precreate_and_share_vms:
+        bm_config_file = self.create_benchmark_config_file_static_vm(bm_to_run, vm_list)
+      else:
+        bm_config_file = self.create_benchmark_config_file_traditional(bm_to_run, vm_list)
       # add config file to benchmark object
       bm_to_run.config_file = bm_config_file
       benchmarks_to_run.append(bm_to_run)
@@ -575,6 +595,7 @@ class BenchmarkGraph():
 
     max_processes = FLAGS.max_processes
 
+    # run benchmarks
     while bm_index < len(benchmarks_to_run):
       bm_threads = []
 
@@ -588,16 +609,22 @@ class BenchmarkGraph():
         # TODO try to ssh into it to make sure it is up
         #      or at least ping it
         vms_created = True
-        for vm in bm.vms:
-          if vm.status != "Running":
-            print("Needed VM is ", vm.status)
-            vms_created = False
 
-        if not vms_created:
-          print("DO NOT RUN")
-          bm_index += 1
-          continue
+        if FLAGS.precreate_and_share_vms:
+          for vm in bm.vms:
+            if vm.status != "Running":
+              print("Needed VM is ", vm.status)
+              vms_created = False
 
+          if not vms_created:
+            print("DO NOT RUN")
+            bm_index += 1
+            continue
+        else:
+          for vm in bm.vms:
+            vm.create_timestamp = time.time()
+
+        # create
         queue = mp.Queue()
         logger.debug(bm.vm_specs[0].zone + " <-> " + bm.vm_specs[1].zone)
         p = mp.Process(target=self.run_benchmark_process,
@@ -605,7 +632,7 @@ class BenchmarkGraph():
                              benchmarks_to_run_tuples[bm_index],
                              bm_index,
                              queue))
-        
+
         bm_data = {}
         bm_data['bm'] = bm
         bm_data['tuple'] = benchmarks_to_run_tuples[bm_index]
@@ -625,6 +652,10 @@ class BenchmarkGraph():
         results_dict = bm_data['queue'].get()
         self.benchmark_run_times.append(results_dict['run_time'])
         bm_data['bm'].status = results_dict['status']
+        # TODO make sure this works
+        if not FLAGS.precreate_and_share_vms:
+          for vm in bm_data['bm'].vms:
+            vm.deletion_timestamp = time.time()
         bm_data['success'] = results_dict['success']
         logging.debug("thread done")
 
@@ -665,8 +696,13 @@ class BenchmarkGraph():
 
     # TODO figure out what to do if only one vm is windows
     if 'windows' in bm.vm_specs[0].os_type:
-      cmd = (cmd + " --os_type=windows" +
+      cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
                    " --skip_package_cleanup=True")
+
+    if not FLAGS.precreate_and_share_vms:
+      cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
+                 + " --skip_firewall_rules=True"
+                 + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
 
     # TODO do install_packages if vm has already been used
 
@@ -699,7 +735,7 @@ class BenchmarkGraph():
     return
 
 
-  def create_benchmark_config_file(self, bm, vm_list):
+  def create_benchmark_config_file_static_vm(self, bm, vm_list):
 
     config_yaml = {}
     counter = 1
@@ -735,10 +771,64 @@ class BenchmarkGraph():
       vm_config_dict['machine_type'] = vm.machine_type
 
       if 'windows' in vm.os_type:
-        vm_config_dict['os_type'] = 'windows'
+        vm_config_dict['os_type'] = vm.os_type
         vm_config_dict['password'] = vm.password
 
       temp[vm_num]['static_vms'].append(vm_config_dict)
+
+      counter += 1
+
+    file_name = (self.generated_config_path + "config_" 
+                 + str(bm.benchmark_id) + ".yaml")
+    file = open(file_name, 'w+')
+    yaml.dump(config_yaml, file, default_flow_style=False)
+    file.close()
+
+    return file_name
+
+  def create_benchmark_config_file_traditional(self, bm, vm_list):
+
+    config_yaml = {}
+    counter = 1
+    vm_yaml_list = []
+
+    config_yaml[bm.benchmark_type] = {}
+    config_yaml[bm.benchmark_type]['vm_groups'] = {}
+    config_yaml[bm.benchmark_type]['flags'] = bm.flags
+    config_flags = config_yaml[bm.benchmark_type]['flags']
+
+    config_flags.pop("zones", None)
+    config_flags.pop("extra_zones", None)
+    config_flags.pop("machine_type", None)
+
+    # TODO fix these
+    # config_flags["static_cloud_metadata"] = bm.vm_specs[0].cloud
+    # config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
+
+
+    for vm in vm_list:
+      temp = config_yaml[bm.benchmark_type]['vm_groups']
+      vm_num = 'vm_' + str(counter)
+      temp[vm_num] = {}
+      # temp[vm_num]['static_vms'] = []
+      temp[vm_num]['cloud'] = vm.cloud
+
+      if 'windows' in vm.os_type:
+        temp[vm_num]['os_type'] = vm.os_type
+        # vm_config_dict['password'] = vm.password
+
+      temp[vm_num]['vm_spec'] = {}
+      temp[vm_num]['vm_spec'][vm.cloud] = {}
+      vm_config_dict = {}
+      # vm_config_dict['user_name'] = 'perfkit'
+      # vm_config_dict['ssh_private_key'] = vm.ssh_private_key
+      # vm_config_dict['ip_address'] = vm.ip_address
+      # vm_config_dict['internal_ip'] = vm.internal_ip
+      vm_config_dict['install_packages'] = True
+      vm_config_dict['zone'] = vm.zone
+      vm_config_dict['machine_type'] = vm.machine_type
+
+      temp[vm_num]['vm_spec'][vm.cloud] = vm_config_dict
 
       counter += 1
 
@@ -793,26 +883,34 @@ class BenchmarkGraph():
     keys_to_remove = []
     vm_removed_count = 0
 
-    # start threads to remove vms
-    for key in node_degree_dict.keys():
-      # if a node has no edges
-      if node_degree_dict[key] == 0:
-        vm = self.graph.nodes[key]['vm']
-        if vm.status == "Running":
+    if FLAGS.precreate_and_share_vms:
+      # start threads to remove vms
+      for key in node_degree_dict.keys():
+        # if a node has no edges
+        if node_degree_dict[key] == 0:
+          vm = self.graph.nodes[key]['vm']
+          if vm.status == "Running":
 
-          # TODO check if waitlist needs this node before removal
+            # TODO check if waitlist needs this node before removal
 
-          # vm.delete_instance(self.pkb_location)
+            # vm.delete_instance(self.pkb_location)
+            keys_to_remove.append(key)
+            t = threading.Thread(target=vm.delete_instance,
+                                 args=(self.pkb_location,))
+            vm_threads.append(t)
+            t.start()
+
+      # join threads
+      for t in vm_threads:
+        t.join()
+        logging.debug("Thread Done")
+
+    else:
+      # start threads to remove vms
+      for key in node_degree_dict.keys():
+        # if a node has no edges
+        if node_degree_dict[key] == 0:
           keys_to_remove.append(key)
-          t = threading.Thread(target=vm.delete_instance,
-                               args=(self.pkb_location,))
-          vm_threads.append(t)
-          t.start()
-
-    # join threads
-    for t in vm_threads:
-      t.join()
-      logging.debug("Thread Done")
 
     for key in keys_to_remove:
       vm = self.graph.nodes[key]['vm']

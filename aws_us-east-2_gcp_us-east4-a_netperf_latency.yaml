@@ -1,0 +1,29 @@
+#import anchors.yaml
+#benchmark netperf
+
+netperf:
+  flag_matrix: inter_region
+  flag_matrix_defs:
+    inter_region:
+      gce_network_tier: [premium]
+      # aws_global_accelerator: [True,False]
+  vm_groups:
+    vm_1:
+      cloud: AWS
+      vm_spec:
+        AWS:
+          machine_type: m5.large
+          zone: us-east-2
+    vm_2:
+      cloud: GCP
+      vm_spec:
+        GCP:
+          machine_type: n1-standard-2
+          zone: us-east4-a
+  flags:
+    netperf_benchmarks: TCP_RR
+    netperf_rr_test_length: 10000
+    netperf_test_length: 30
+    tcp_max_receive_buffer: 500000000
+    tcp_max_send_buffer: 500000000
+    ip_addresses: EXTERNAL

@@ -19,7 +19,7 @@ class VirtualMachine():
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
-               vm_spec=None, vm_spec_id=None, min_cpu_platform=None, temp_vm_aws_limit = 0, temp_vm_spun_up_machines = 0):
+               vm_spec=None, vm_spec_id=None, min_cpu_platform=None):
 
     # get logger
     global logger
@@ -53,8 +53,6 @@ class VirtualMachine():
     self.vm_spec = vm_spec
     self.vm_spec_id = vm_spec_id
     self.password = None
-    self.vm_aws_limit = temp_vm_aws_limit 
-    self.vm_spun_up_machines = temp_vm_spun_up_machines
 
   def vm_spec_is_equivalent(self, vm):
     """Returns true if the spec of a vm that is

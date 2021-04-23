@@ -157,7 +157,18 @@ def get_region_info(cloud):
 
     for region_iter in region_json:
       region_name = region_iter['displayName']
-      region_dict[region_name] = {}
+      region_dict[region_name] = {"region_name" : region_name}
+      region_list_command = f'az vm list-usage --location "{region_name}"'
+      process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+      output, error = process.communicate()
+      output = json.loads(output.decode('utf-8'))
+      print(f"region_list_command is: {region_list_command}")
+      region_dict[region_name]['Total Regional vCPUs'] ={}
+      region_dict[region_name]['Total Regional vCPUs']['limit'] = region_list_command
+      region_dict[region_name]['elastic_ip']['usage'] = len(output['Addresses'])
+
+
+    
     print(f"\n\nThe Region Dict is {region_dict}\n\n")
     quit()
     return region_dict

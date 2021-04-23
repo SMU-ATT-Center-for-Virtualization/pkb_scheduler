@@ -47,6 +47,7 @@ def cpu_type_from_machine_type(cloud, machine_type):
   elif cloud == 'Azure':
     # Troy. Only bother editing this if Azure has CPU quotas we need to track
     #Troy Update: I'm not sure what this does? 
+    #Answer: GCP has specific CPU quotas, n1 and n2. That's why this exists
     return None
   else:
     return None

@@ -159,7 +159,7 @@ def get_region_info(cloud):
       region_name = region_iter['displayName']
       region_dict[region_name] = {}
     print(f"\n\nThe Region Dict is {region_dict}\n\n")
-    print(f""""""()
+    print(f""""""(){}
     return region_dict
   else:
     pass

@@ -162,10 +162,10 @@ def get_region_info(cloud):
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
       output = json.loads(output.decode('utf-8'))
-      print(f"region_list_command is: {region_list_command}")
+      print(f"region_list_command is: {output}")
       region_dict[region_name]['Total Regional vCPUs'] ={}
       region_dict[region_name]['Total Regional vCPUs']['limit'] = region_list_command
-      region_dict[region_name]['elastic_ip']['usage'] = len(output['Addresses'])
+      region_dict[region_name]['Total Regional vCPUs']['usage'] = len(output['Addresses'])
 
 
     

@@ -30,7 +30,10 @@ def cpu_count_from_machine_type(cloud, machine_type):
     return cpu_count
 
   # Troy. Only bother editing this if Azure has CPU quotas we need to track
+  #Troy Update: We need to keep track of vCPU's. Additionally, we need to track total regional vCPU's
   elif cloud == 'Azure':
+    if machine_type == 'D2s_v3':
+        cpu_count = 2
     return None
   else:
     return None
@@ -43,6 +46,7 @@ def cpu_type_from_machine_type(cloud, machine_type):
     return machine_type.split('.')[0]
   elif cloud == 'Azure':
     # Troy. Only bother editing this if Azure has CPU quotas we need to track
+    #Troy Update: I'm not sure what this does? 
     return None
   else:
     return None
@@ -144,6 +148,18 @@ def get_region_info(cloud):
     #                           }
     #               }
     # basically its dictionaries all the way down
+    region_list_command = 'az account list-locations'
+    process = subprocess.Popen(region_list_command.split(),
+                               stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    # load json and convert to a more useable output
+    region_json = json.loads((output.decode('utf-8')))
+
+    for region_iter in region_json:
+      region_name = region_iter['displayName']
+      region_dict[region_name] = {}
+    print(f"\n\nThe Region Dict is {region_dict}\n\n")
+    print(f""""""()
     return region_dict
   else:
     pass

@@ -207,7 +207,7 @@ def get_cloud_quotas(cloud):
       elif quota_iter['AttributeName'] == 'max-elastic-ips':
         quota_dict['static_address_quota'] = quota_iter['AttributeValues'][0]['AttributeValue']
 
-  elif cloud = 'Azure':
+  elif cloud == 'Azure':
     # Troy, if quotas are cloud-wide, get the info here and put it in quota_dict
     pass
 

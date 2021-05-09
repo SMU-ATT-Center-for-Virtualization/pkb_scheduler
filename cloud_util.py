@@ -164,7 +164,7 @@ def get_region_info(cloud):
       output, error = process.communicate()
       
       output = json.loads(output.decode('utf-8'))
-      print(f"region_list_command is: {region_iter}")
+      print(f"region_list_command is: {output}")
       region_dict[region_name]['Total Regional vCPUs'] ={}
       region_dict[region_name]['Total Regional vCPUs']['limit'] = region_list_command
       region_dict[region_name]['Total Regional vCPUs']['usage'] = len(output['Addresses'])

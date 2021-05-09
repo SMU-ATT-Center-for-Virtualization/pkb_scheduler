@@ -162,9 +162,9 @@ def get_region_info(cloud):
       region_list_command = f'az vm list-usage --location "{region_name}"'
       process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
       output, error = process.communicate()
-      print(f"region_list_command is: {output}")
-      output = json.loads(output.decode('utf-8'))
       
+      output = json.loads(output.decode('utf-8'))
+      print(f"region_list_command is: {region_iter}")
       region_dict[region_name]['Total Regional vCPUs'] ={}
       region_dict[region_name]['Total Regional vCPUs']['limit'] = region_list_command
       region_dict[region_name]['Total Regional vCPUs']['usage'] = len(output['Addresses'])

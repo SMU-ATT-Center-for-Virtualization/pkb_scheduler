@@ -305,8 +305,12 @@ class AzureRegion(Region):
     estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AZURE', machine_type)
     # Troy, change this depending on the relevant quotas. Leave the bandwidth stuff alone
     print(f"self.quotas: {self.quotas}")
-    if (self.quotas['vm']['usage'] < self.quotas['vm']['limit']
-      and self.quotas['elastic_ip']['usage'] < self.quotas['elastic_ip']['limit']
+    passingQuotas = 1
+    for quotaCheck in quotas:
+      print(f"quotaCheck: {quotaCheck}")
+    if (self.quotas['Total Regional vCPUs'][0] < self.quotas['Total Regional vCPUs'][1]
+      and self.quotas['Virtual Machines'][0] < self.quotas['Virtual Machines'][1]
+      and self.quotas['elastic_ip']['limit']
       and self.quotas['vpc']['usage'] < self.quotas['vpc']['limit']):
       # If we are checking bandwidth limits, and if this exceeds limit
       if not self.bandwidth_limit or estimated_bandwidth + self.bandwidth_usage <= self.bandwidth_limit:

@@ -34,6 +34,11 @@ def cpu_count_from_machine_type(cloud, machine_type):
   elif cloud == 'Azure':
     if machine_type == 'D2s_v3':
         cpu_count = 2
+    else:
+      try:
+        cpu_count = int(machine_type[1])
+      except:
+        print(f"Error when trying to get cpu_count of virtual machine.")
     return None
   else:
     return None
@@ -169,13 +174,12 @@ def get_region_info(cloud):
         for quota_iter in output:
           region_dict[region_name][quota_iter["localName"]] = (quota_iter["currentValue"], quota_iter["limit"])
       except:
-        print(f"Error occurred when reading in quotas. region was {region_name}")
+        print(f"Error occurred when reading in quotas. Region was {region_name}")
     print(f"Region Dict: {region_dict}")
-    quit
+    
 
     
-    print(f"\n\nThe Region Dict is {region_dict}\n\n")
-    quit()
+
     return region_dict
   else:
     pass

@@ -302,8 +302,9 @@ class AzureRegion(Region):
     Region.__init__(self, region_name, cloud, bandwidth_limit=bandwidth_limit)
 
   def has_enough_resources(self, cpu_count, machine_type):
-    estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', machine_type)
+    estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AZURE', machine_type)
     # Troy, change this depending on the relevant quotas. Leave the bandwidth stuff alone
+    print(f"self.quotas: {self.quotas}")
     if (self.quotas['vm']['usage'] < self.quotas['vm']['limit']
       and self.quotas['elastic_ip']['usage'] < self.quotas['elastic_ip']['limit']
       and self.quotas['vpc']['usage'] < self.quotas['vpc']['limit']):

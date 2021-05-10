@@ -251,7 +251,7 @@ def get_region_from_zone(cloud, zone):
       else:
         # return zone as it is. us-east-1
         return zone
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     # Troy, this may be all thats needed. Regions and zones have less distinction in azure, but i forget the specifics
     
     return zone

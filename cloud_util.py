@@ -165,10 +165,10 @@ def get_region_info(cloud):
       print(f"region diect: {region_dict}")
       output = json.loads(output.decode('utf-8'))
       print(f"region_list_command is: {output}")
-      region_dict[region_name]['Total Regional vCPUs'] ={}
-      region_dict[region_name]['Total Regional vCPUs']['limit'] = region_list_command
-      region_dict[region_name]['Total Regional vCPUs']['usage'] = len(output['Addresses'])
-
+      for quota_iter in output:
+        region_dict[region_name][quota_iter["localName"]] = (quota_iter["currentValue"], quota_iter["limit"])
+    print(f"Region Dict: {region_dict}")
+  quit
 
     
     print(f"\n\nThe Region Dict is {region_dict}\n\n")

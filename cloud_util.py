@@ -168,7 +168,7 @@ def get_region_info(cloud):
       for quota_iter in output:
         region_dict[region_name][quota_iter["localName"]] = (quota_iter["currentValue"], quota_iter["limit"])
     print(f"Region Dict: {region_dict}")
-  quit
+    quit
 
     
     print(f"\n\nThe Region Dict is {region_dict}\n\n")

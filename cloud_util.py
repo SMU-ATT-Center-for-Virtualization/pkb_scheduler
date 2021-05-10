@@ -235,6 +235,7 @@ def get_cloud_quotas(cloud):
 
 
 def get_region_from_zone(cloud, zone):
+  print(f"cloud is : {cloud}. Zone is : {zone}")
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
@@ -252,6 +253,7 @@ def get_region_from_zone(cloud, zone):
         return zone
   elif cloud == 'Azure':
     # Troy, this may be all thats needed. Regions and zones have less distinction in azure, but i forget the specifics
+    
     return zone
   else:
     return None

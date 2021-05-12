@@ -174,7 +174,7 @@ def get_region_info(cloud):
         #print(f"region_list_command is: {output}")
         print(f"Pre For Loop")
         for quota_iter in output:
-          print(f" variable is {region_dict[region_name][quota_iter['localName']]} and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
+          print(f" variable is  and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
           region_dict[region_name][quota_iter["localName"]] = (quota_iter["currentValue"], quota_iter["limit"])
       except:
         print(f"Error occurred when reading in quotas. Region was {region_name}")

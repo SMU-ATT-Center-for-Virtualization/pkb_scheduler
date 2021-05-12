@@ -166,11 +166,13 @@ def get_region_info(cloud):
         region_name = region_iter['name']
         #region_dict[region_name] = {"region_name" : region_name}
         region_list_command = f'az vm list-usage --location "{region_name}"'
+        print(f"region list commmand is: {region_list_command}")
         process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
         #print(f"region diect: {region_dict}")
         output = json.loads(output.decode('utf-8'))
         #print(f"region_list_command is: {output}")
+        print(f"Pre For Loop")
         for quota_iter in output:
           region_dict[region_name][quota_iter["localName"]] = (quota_iter["currentValue"], quota_iter["limit"])
       except:

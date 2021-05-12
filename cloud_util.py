@@ -164,19 +164,19 @@ def get_region_info(cloud):
     for region_iter in region_json:
       try:
         region_name = region_iter['name']
-        #region_dict[region_name] = {"region_name" : region_name}
+        region_dict[region_name] = {"region_name" : region_name}
         region_list_command = f'az vm list-usage --location "{region_name}"'
-        print(f"region list commmand is: {region_list_command}")
+        #print(f"region list commmand is: {region_list_command}")
         process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
         #print(f"region diect: {region_dict}")
         output = json.loads(output.decode('utf-8'))
         #print(f"region_list_command is: {output}")
-        print(f"Pre For Loop")
+        #print(f"Pre For Loop")
         for quota_iter in output:
-          print(f" variable is  and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
+          #print(f" variable is  and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
           quotaName = quota_iter["localName"]
-          print(f"region_dict is : {region_dict} \n\n quota name is: {quotaName}")
+          #print(f"region_dict is : {region_dict} \n\n quota name is: {quotaName}")
           region_dict[region_name][quotaName] = (quota_iter["currentValue"], quota_iter["limit"])
       except:
         print(f"Error occurred when reading in quotas. Region was {region_name}")

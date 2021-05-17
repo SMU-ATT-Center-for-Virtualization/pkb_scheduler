@@ -1,4 +1,4 @@
-# This tool requires the SMU AT&T CENTER pkb_autopilot branch
+# This tool requires the SMU AT&T CENTER pkb_autopilot_update branch
 # of PerfkitBenchmarker to run properly
 
 # It also requires config files passed to it to be formatted
@@ -150,26 +150,21 @@ def main(argv):
     benchmark_config_list = parse_config_folder(config_location)
 
   # print(benchmark_config_list)
+  
 
   logger.debug("\nNUMBER OF CONFIGS")
   logger.debug(len(benchmark_config_list))
   # for config in benchmark_config_list:
   #   print(config)
 
-  # benchmark_config_list = parse_config_folder("/home/derek/projects/pkb_scheduler")
-
-  print("COMPLETE BENCHMARK CONFIG LIST")
-  for tmpbm in benchmark_config_list:
-    print(tmpbm)
-
   # Create the initial graph from the config directory or file
   full_graph = create_graph_from_config_list(benchmark_config_list,
                                              pkb_command)
 
-  logger.debug("\nVMS TO CREATE:")
-  for vm in full_graph.virtual_machines:
-    logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type +
-                 " " + vm.os_type + " " + vm.cloud)
+  # logger.debug("\nVMS TO CREATE:")
+  # print(full_graph.virtual_machines)
+  # for vm in full_graph.virtual_machines:
+  #   print(vm.__dict__)
 
   logger.debug("\nBENCHMARKS TO RUN:")
   for bm in full_graph.benchmarks:
@@ -335,8 +330,102 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
   # print(benchmark_config[1]['flags']['extra_zones'])
   # full_graph.add_region_if_not_exists(region_name)
 
+
+  # print('benchmark_config------------------')
+  # print(type(benchmark_config))
+  # print(benchmark_config)
+  # print('----------------------------------')
+
+  # print(benchmark_config[1].keys())
+  # benchmark_config[0] is name of benchmark
+  # benchmark_config[1] is the config for the benchmark
+
   if 'vm_groups' in benchmark_config[1]:
-    logging.error("Configs with vm groups not supported yet")
+    vm_config_list = []
+    for key in benchmark_config[1]['vm_groups']:
+      vm = benchmark_config[1]['vm_groups'][key]
+      # print(vm)
+      vm_config_tmp = {}
+      vm_config_tmp['cloud'] = vm['cloud']
+      vm_config_tmp['machine_type'] = vm['vm_spec'][vm['cloud']]['machine_type']
+      vm_config_tmp['zone'] = vm['vm_spec'][vm['cloud']]['zone']
+      vm_config_tmp['cpu_count'] = cloud_util.cpu_count_from_machine_type(vm_config_tmp['cloud'],
+                                                                          vm_config_tmp['machine_type'])
+      if vm['vm_spec'][vm['cloud']]['vpc_id']:
+        vm_config_tmp['network_name'] = vm['vm_spec'][vm['cloud']]['vpc_id']
+      else:
+        if vm_config_tmp['cloud'] == 'GCP' and 'gce_network_name' in benchmark_config[1]['flags']:
+          vm_config_tmp['network_name'] = benchmark_config[1]['flags']['gce_network_name']
+        elif vm_config_tmp['cloud'] == 'AWS' and 'aws_vpc' in benchmark_config[1]['flags']:
+          vm_config_tmp['network_name'] = benchmark_config[1]['flags']['aws_vpc']
+        elif vm_config_tmp['cloud'] == 'Azure':
+          pass
+        else:
+          vm_config_tmp['network_name'] = None
+
+      if 'subnet_id' in vm['vm_spec'][vm['cloud']]:
+        vm_config_tmp['subnet_name'] = vm['vm_spec'][vm['cloud']]['subnet_id']
+      else:
+        if vm_config_tmp['cloud'] == 'GCP' and 'gce_subnet_name' in benchmark_config[1]['flags']:
+          vm_config_tmp['subnet_name'] = None
+        elif vm_config_tmp['cloud'] == 'AWS' and 'aws_subnet' in benchmark_config[1]['flags']:
+          vm_config_tmp['subnet_name'] = benchmark_config[1]['flags']['aws_subnet']
+        elif vm_config_tmp['cloud'] == 'Azure':
+          pass
+        else:
+          vm_config_tmp['subnet_name'] = None
+      # TODO add disk config
+
+      # gce network tier is a flag, but we add it to the vm spec to better compare equivalent vms
+      vm_config_tmp['network_tier'] = None
+      vm_config_tmp['min_cpu_platform'] = None
+      if vm['cloud'] == 'GCP':
+        # network_tier = 'premium'
+        vm_config_tmp['network_tier'] = 'premium'
+        if 'gce_network_tier' in benchmark_config[1]['flags']:
+          vm_config_tmp['network_tier'] = benchmark_config[1]['flags']['gce_network_tier']
+        if 'gcp_min_cpu_platform' in benchmark_config[1]['flags'] :
+         vm_config_tmp['min_cpu_platform'] = benchmark_config[1]['flags']['gcp_min_cpu_platform']
+
+      # print("VM CONFIG TMP")
+      # print(vm_config_tmp)
+      vm_config_list.append(vm_config_tmp)
+
+    bigquery_table = FLAGS.bigquery_table
+    bq_project = FLAGS.bq_project
+    if 'bigquery_table' in benchmark_config[1]['flags']:
+      bigquery_table = benchmark_config[1]['flags']['bigquery_table']
+    if 'bq_project' in benchmark_config[1]['flags']:
+      bq_project = benchmark_config[1]['flags']['bq_project']
+
+    os_type = 'ubuntu1804'
+    if 'os_type' in benchmark_config[1]['flags']:
+      os_type = benchmark_config[1]['flags']['os_type']
+
+
+    vm_specs = []
+
+    for vm_config in vm_config_list:
+      uuid_tmp = uuid.uuid1().int
+      vm_spec = VirtualMachineSpec(uid=uuid_tmp,
+                                   cpu_count=vm_config['cpu_count'],
+                                   zone=vm_config['zone'],
+                                   cloud=vm_config['cloud'],
+                                   machine_type=vm_config['machine_type'],
+                                   network_tier=vm_config['network_tier'],
+                                   os_type=os_type,
+                                   min_cpu_platform=vm_config['min_cpu_platform'],
+                                   network_name=vm_config['network_name'],
+                                   subnet_name=vm_config['subnet_name'])
+      vm_specs.append(vm_spec)
+
+    bm = Benchmark(benchmark_id=benchmark_id,
+                   benchmark_type=benchmark_config[0],
+                   vm_specs=vm_specs,
+                   bigquery_table=bigquery_table,
+                   bq_project=bq_project,
+                   flags=benchmark_config[1]['flags'])
+
   else:
     cloud = benchmark_config[1]['flags']['cloud']
     machine_type=benchmark_config[1]['flags']['machine_type']
@@ -550,9 +639,13 @@ def parse_config_file(path="configs/file.yaml"):
   # return empty list if not correct yaml
   f = open(path, "r")
   contents = f.read()
-  yaml_contents = yaml.load(contents)
+  yaml_contents = yaml.safe_load(contents)
   if not isinstance(yaml_contents, dict):
     return []
+
+  print('YAML CONTENTS---------------------------')
+  print(yaml_contents)
+  print('----------------------------------------')
 
   # print(yaml_contents.keys())
   benchmark_name = list(yaml_contents.keys())[0]

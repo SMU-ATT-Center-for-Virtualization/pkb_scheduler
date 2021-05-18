@@ -179,10 +179,9 @@ def get_region_info(cloud):
           #print(f"region_dict is : {region_dict} \n\n quota name is: {quotaName}")
           region_dict[region_name][quotaName] = (quota_iter["currentValue"], quota_iter["limit"])
         #az network list-usages --location eastus --out table
-        region_name = region_iter['name']
-        region_dict[region_name] = {"region_name" : region_name}
         region_list_command = f'az network list-usages --location "{region_name}"'
         #print(f"region list commmand is: {region_list_command}")
+        #Public IP Addresses - Basic
         process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
         #print(f"region diect: {region_dict}")

@@ -306,8 +306,8 @@ class AzureRegion(Region):
     # Troy, change this depending on the relevant quotas. Leave the bandwidth stuff alone
     print(f"self.quotas: {self.quotas}")
     passingQuotas = 1
-    for quotaCheck in quotas:
-      print(f"quotaCheck: {quotaCheck}")
+    # for quotaCheck in quotas:
+    #   print(f"quotaCheck: {quotaCheck}")
     if (self.quotas['Total Regional vCPUs'][0] < self.quotas['Total Regional vCPUs'][1]
       and self.quotas['Virtual Machines'][0] < self.quotas['Virtual Machines'][1]
       and self.quotas['Public IP Addresses - Basic'][0] < self.quotas['Public IP Addresses - Basic'][1]):

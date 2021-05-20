@@ -310,7 +310,7 @@ class AzureRegion(Region):
       print(f"quotaCheck: {quotaCheck}")
     if (self.quotas['Total Regional vCPUs'][0] < self.quotas['Total Regional vCPUs'][1]
       and self.quotas['Virtual Machines'][0] < self.quotas['Virtual Machines'][1]
-      and self.quotas['Public IP Addresses - Basic'][0] < self.quotas['Public IP Addresses - Basic'][0]):
+      and self.quotas['Public IP Addresses - Basic'][0] < self.quotas['Public IP Addresses - Basic'][1]):
       # If we are checking bandwidth limits, and if this exceeds limit
       if not self.bandwidth_limit or estimated_bandwidth + self.bandwidth_usage <= self.bandwidth_limit:
         if not self.cloud.bandwidth_limit or estimated_bandwidth + self.cloud.bandwidth_usage <= self.cloud.bandwidth_limit:

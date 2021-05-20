@@ -322,6 +322,7 @@ class AzureRegion(Region):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):
       estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', vm.machine_type)
       self.virtual_machines.append(vm)
+      print(f"\n\nvm is: {vm}")
       self.quotas['vm']['usage'] += 1
       self.quotas['vpc']['usage'] += 1
       self.quotas['elastic_ip']['usage'] += 1

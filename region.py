@@ -325,6 +325,9 @@ class AzureRegion(Region):
       self.quotas['vm']['usage'] += 1
       self.quotas['vpc']['usage'] += 1
       self.quotas['elastic_ip']['usage'] += 1
+      self.quotas['Total Regional vCPUs'][0] += 1
+      self.quotas['Virtual Machines'][0] += 1
+      self.quotas['Public IP Addresses - Basic'][0] += 1
       self.bandwidth_usage += estimated_bandwidth
       self.cloud.bandwidth_usage += estimated_bandwidth
       print(f"AWS VM USAGE: {self.quotas['vm']['usage']}, QUOTA: {self.quotas['vm']['limit']}")

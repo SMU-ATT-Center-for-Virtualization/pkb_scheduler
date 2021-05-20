@@ -323,7 +323,7 @@ class AzureRegion(Region):
       estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', vm.machine_type)
       self.virtual_machines.append(vm)
       print(f"\n\nvm is: {vm.__dict__}")
-      if vm["cloud"].upper() == "AZURE":
+      if vm.cloud.upper() == "AZURE":
         self.quotas['Total Regional vCPUs'][0] += 1
         self.quotas['Virtual Machines'][0] += 1
         self.quotas['Public IP Addresses - Basic'][0] += 1

@@ -517,46 +517,62 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # get all regions from gcloud
   # make regions
+  clouds_in_benchmark_set = []
+  for benchmark_config in benchmark_config_list: 
+    if 'vm_groups' in benchmark_config[1]:
+      for key in benchmark_config[1]['vm_groups']:
+        cloud = benchmark_config[1]['vm_groups'][key]['cloud']
+        clouds_in_benchmark_set.append(cloud)
+    else:
+      cloud = benchmark_config[1]['flags']['cloud']
+      clouds_in_benchmark_set.append(cloud)
+
+  clouds_in_benchmark_set = list(set(clouds_in_benchmark_set))
+  print("CLOUDS IN BENCHMARK SET")
+  print(clouds_in_benchmark_set)
 
   # CREATE and ADD regions for GCP
-  region_dict = cloud_util.get_region_info(cloud='GCP')
 
-  new_cloud = Cloud('GCP', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
-  full_graph.add_cloud_if_not_exists(new_cloud)
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    new_region = GcpRegion(region_name=key,
-                           cloud=new_cloud,
-                           quotas=region_dict[key],
-                           bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    full_graph.add_region_if_not_exists(new_region=new_region)
+  if 'GCP' in clouds_in_benchmark_set:
+    region_dict = cloud_util.get_region_info(cloud='GCP')
 
-
-  # CREATE and ADD regions for AWS
-  new_cloud = Cloud('AWS', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
-  full_graph.add_cloud_if_not_exists(new_cloud)
-  region_dict = cloud_util.get_region_info(cloud='AWS')
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    new_region = AwsRegion(region_name=key,
-                           cloud=new_cloud,
-                           quotas=region_dict[key],
-                           bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    full_graph.add_region_if_not_exists(new_region=new_region)
-
-  # CREATE and ADD regions for Azure
-  # Troy if there are any cloud wide quotas, we should deal with them here
-  # Also let me know, because I'll need to add better support for cloud-wide quotas (currently there is ~None)
-  new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
-  full_graph.add_cloud_if_not_exists(new_cloud)
-  region_dict = cloud_util.get_region_info(cloud='Azure')
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    new_region = AzureRegion(region_name=key,
+    new_cloud = Cloud('GCP', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+    full_graph.add_cloud_if_not_exists(new_cloud)
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      new_region = GcpRegion(region_name=key,
                              cloud=new_cloud,
                              quotas=region_dict[key],
                              bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    full_graph.add_region_if_not_exists(new_region=new_region)
+      full_graph.add_region_if_not_exists(new_region=new_region)
+
+  if 'AWS' in clouds_in_benchmark_set:
+    # CREATE and ADD regions for AWS
+    new_cloud = Cloud('AWS', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+    full_graph.add_cloud_if_not_exists(new_cloud)
+    region_dict = cloud_util.get_region_info(cloud='AWS')
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      new_region = AwsRegion(region_name=key,
+                             cloud=new_cloud,
+                             quotas=region_dict[key],
+                             bandwidth_limit=FLAGS.regional_bandwidth_limit)
+      full_graph.add_region_if_not_exists(new_region=new_region)
+
+  if 'Azure' in clouds_in_benchmark_set:
+    # CREATE and ADD regions for Azure
+    # Troy if there are any cloud wide quotas, we should deal with them here
+    # Also let me know, because I'll need to add better support for cloud-wide quotas (currently there is ~None)
+    new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+    full_graph.add_cloud_if_not_exists(new_cloud)
+    region_dict = cloud_util.get_region_info(cloud='Azure')
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      new_region = AzureRegion(region_name=key,
+                               cloud=new_cloud,
+                               quotas=region_dict[key],
+                               bandwidth_limit=FLAGS.regional_bandwidth_limit)
+      full_graph.add_region_if_not_exists(new_region=new_region)
 
 
   # This takes all the stuff from the config dictionaries

@@ -327,8 +327,9 @@ class AzureRegion(Region):
       if vm.cloud.upper() == "AZURE":
         verified_machine_type = re.findall("[123456789-]+", vm.machine_type)
         verified_machine_type = vm.machine_type.replace(verified_machine_type[0], "")
+        verified_machine_type = vm.machine_type.replace("_", "")
         verified_machine_type = verified_machine_type.upper()
-        full_machine_string = "STANDARD " + verified_machine_type + "FAMILY VCPUS"
+        full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"
         print(f"\n\nThe full machine string is: {full_machine_string}\n\n")
         self.quotas[full_machine_string][0] += 1
         self.quotas['TOTAL REGIONAL VCPUS'][0] += 1

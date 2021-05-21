@@ -329,9 +329,9 @@ class AzureRegion(Region):
         # verified_machine_type = vm.machine_type.replace(verified_machine_type[0], "")
         verified_machine_type = vm.machine_type
         previous = ""
-        counter = 0
+        counter = 0 
         for x in vm.machine_type:
-          if x.isdigit() and previous != 'v':
+          if x.isDigit() and previous != 'v':
             verified_machine_type = verified_machine_type[0:counter] + verified_machine_type[counter+1:]
           counter += 1
           previous = x

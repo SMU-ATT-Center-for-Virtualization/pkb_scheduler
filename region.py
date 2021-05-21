@@ -355,8 +355,8 @@ class AzureRegion(Region):
       
       self.bandwidth_usage += estimated_bandwidth
       self.cloud.bandwidth_usage += estimated_bandwidth
-      print(f"AWS VM USAGE: {self.quotas['vm']['usage']}, QUOTA: {self.quotas['vm']['limit']}")
-      print(f"AWS ELASTIC IP USAGE: {self.quotas['elastic_ip']['usage']}, QUOTA: {self.quotas['elastic_ip']['limit']}")
+      #print(f"AWS VM USAGE: {self.quotas['vm']['usage']}, QUOTA: {self.quotas['vm']['limit']}")
+      #print(f"AWS ELASTIC IP USAGE: {self.quotas['elastic_ip']['usage']}, QUOTA: {self.quotas['elastic_ip']['limit']}")
       return True
     else:
       print("Quota reached for region: " + self.name)

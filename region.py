@@ -344,6 +344,8 @@ class AzureRegion(Region):
         full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"
         print(f"\n\nThe full machine string is: {full_machine_string}\n\n")
         print(f"self.quotas[full_machine_string][0] is : {self.quotas[full_machine_string][0]}")
+        if self.quotas[full_machine_string][0] == self.quotas[full_machine_string][1]:
+          return False
         self.quotas[full_machine_string][0] += 1
         self.quotas['TOTAL REGIONAL VCPUS'][0] += 1
         self.quotas['VIRTUAL MACHINES'][0] += 1

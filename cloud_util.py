@@ -192,7 +192,7 @@ def get_region_info(cloud):
           #print(f" variable is  and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
           quotaName = quota_iter["localName"]
           #print(f"region_dict is : {region_dict} \n\n quota name is: {quotaName}")
-          region_dict[region_name][quotaName] = (quota_iter["currentValue"], quota_iter["limit"])
+          region_dict[region_name][quotaName] = (int(quota_iter["currentValue"]), int(quota_iter["limit"]))
       except:
         print(f"Error occurred when reading in quotas. Region was {region_name}")
     print(f"Region Dict: {region_dict}")

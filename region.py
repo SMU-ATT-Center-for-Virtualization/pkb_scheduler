@@ -325,8 +325,16 @@ class AzureRegion(Region):
       self.virtual_machines.append(vm)  
       print(f"\n\nvm is: {vm.__dict__}")
       if vm.cloud.upper() == "AZURE":
-        verified_machine_type = re.findall("[123456789-]+", vm.machine_type)
-        verified_machine_type = vm.machine_type.replace(verified_machine_type[0], "")
+        # verified_machine_type = re.findall("[123456789-]+", vm.machine_type)
+        # verified_machine_type = vm.machine_type.replace(verified_machine_type[0], "")
+        verified_machine_type = vm.machine_type
+        previous = ""
+        counter = 0
+        for x in vm.machine_type:
+          if x.isdigit() and previous != v:
+            verified_machine_type = verified_machine_type[0:counter] + verified_machine_type[counter+1:]
+          counter += 1
+          previous = x
         verified_machine_type = vm.machine_type.replace("_", "")
         verified_machine_type = verified_machine_type.upper()
         full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"

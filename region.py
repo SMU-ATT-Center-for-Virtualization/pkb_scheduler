@@ -332,7 +332,10 @@ class AzureRegion(Region):
         counter = 0 
         for x in vm.machine_type:
           if x.isdigit() and previous != 'v':
+            print(f"Before type is: {verified_machine_type}")
             verified_machine_type = verified_machine_type[0:counter] + verified_machine_type[counter+1:]
+            print(f"After type is: {verified_machine_type}")
+
             print(f"In if!")
           counter += 1
           previous = x

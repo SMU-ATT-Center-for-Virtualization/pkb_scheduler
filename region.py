@@ -1,5 +1,6 @@
 import cloud_util
 from cloud import Cloud
+import re
 
 class Region():
   """[summary]
@@ -308,9 +309,9 @@ class AzureRegion(Region):
     passingQuotas = 1
     # for quotaCheck in quotas:
     #   print(f"quotaCheck: {quotaCheck}")
-    if (self.quotas['Total Regional vCPUs'][0] < self.quotas['Total Regional vCPUs'][1]
-      and self.quotas['Virtual Machines'][0] < self.quotas['Virtual Machines'][1]
-      and self.quotas['Public IP Addresses - Basic'][0] < self.quotas['Public IP Addresses - Basic'][1]):
+    if (self.quotas['TOTAL REGIONAL VCPUS'][0] < self.quotas['TOTAL REGIONAL VCPUS'][1]
+      and self.quotas['VIRTUAL MACHINES'][0] < self.quotas['VIRTUAL MACHINES'][1]
+      and self.quotas['PUBLIC IP ADDRESSES - BASIC'][0] < self.quotas['PUBLIC IP ADDRESSES - BASIC'][1]):
       # If we are checking bandwidth limits, and if this exceeds limit
       if not self.bandwidth_limit or estimated_bandwidth + self.bandwidth_usage <= self.bandwidth_limit:
         if not self.cloud.bandwidth_limit or estimated_bandwidth + self.cloud.bandwidth_usage <= self.cloud.bandwidth_limit:
@@ -321,12 +322,18 @@ class AzureRegion(Region):
   def add_virtual_machine_if_possible(self, vm):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):
       estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', vm.machine_type)
-      self.virtual_machines.append(vm)
+      self.virtual_machines.append(vm)  
       print(f"\n\nvm is: {vm.__dict__}")
       if vm.cloud.upper() == "AZURE":
-        self.quotas['Total Regional vCPUs'][0] += 1
-        self.quotas['Virtual Machines'][0] += 1
-        self.quotas['Public IP Addresses - Basic'][0] += 1
+        verified_machine_type = re.findall("[123456789-]+", vm.machine_type)
+        verified_machine_type = vm.machine_type.replace(verified_machine_type[0], "")
+        verified_machine_type = verified_machine_type.upper()
+        full_machine_string = "STANDARD " + verified_machine_type + "FAMILY VCPUS"
+        print(f"\n\nThe full machine string is: {full_machine_string}\n\n")
+        self.quotas[full_machine_string][0] += 1
+        self.quotas['TOTAL REGIONAL VCPUS'][0] += 1
+        self.quotas['VIRTUAL MACHINES'][0] += 1
+        self.quotas['PUBLIC IP ADDRESSES - BASIC'][0] += 1
       else:
         self.quotas['vm']['usage'] += 1
         self.quotas['vpc']['usage'] += 1

@@ -366,7 +366,11 @@ class AzureRegion(Region):
 
   def remove_virtual_machine(self, vm):
     # TODO add safety checks here
-    print(f"\n\nSelf in remove v machine is: {self.cloud.name} \n\n")
+    print(f"\n\nSelf in remove v machine is: {self.__dict__} \n\n")
+    if self.cloud.name.upper() == "AZURE":
+      verified_machine_type = verified_machine_type.replace("_", "")
+      verified_machine_type = verified_machine_type.upper()
+      full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"
     cpu_type = self._get_cpu_type(vm.machine_type)
     estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', vm.machine_type)
     self.virtual_machines.remove(vm)

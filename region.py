@@ -366,7 +366,7 @@ class AzureRegion(Region):
 
   def remove_virtual_machine(self, vm):
     # TODO add safety checks here
-    print(f"\n\nSelf in remove v machine is: {self.__dict__} \n\n")
+    print(f"\n\nSelf in remove v machine is: {self.virtual_machines.__dict__} \n\n")
     if self.cloud.name.upper() == "AZURE":
       verified_machine_type = verified_machine_type.replace("_", "")
       verified_machine_type = verified_machine_type.upper()

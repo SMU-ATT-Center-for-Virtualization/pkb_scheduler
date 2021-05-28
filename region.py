@@ -407,7 +407,7 @@ class AzureRegion(Region):
       if self.quotas['elastic_ip']['usage'] < 0:
         self.quotas['vm']['usage'] = 0
       
-    estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', vm.machine_type)
+    estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type(self.cloud.name.upper(), vm.machine_type)
     self.virtual_machines.remove(vm)
     self.bandwidth_usage -= estimated_bandwidth
     self.cloud.bandwidth_usage -= estimated_bandwidth

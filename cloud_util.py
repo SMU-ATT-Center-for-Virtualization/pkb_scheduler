@@ -280,6 +280,7 @@ def get_region_from_zone(cloud, zone):
 
 
 def get_max_bandwidth_from_machine_type(cloud, machine_type):
+  
   if cloud == 'GCP':
     machine_type = machine_type.lower()
     cpu_type = cpu_type_from_machine_type('GCP', machine_type).upper()
@@ -300,5 +301,5 @@ def get_max_bandwidth_from_machine_type(cloud, machine_type):
   elif cloud == 'AWS':
     return -1
 
-  elif cloud == 'Azure':
+  elif cloud == 'AZURE':
     return -1

@@ -369,25 +369,36 @@ class AzureRegion(Region):
     print(f"\n\nSelf in remove v machine is: {self.virtual_machines[0].__dict__} \n\n")
     print(f"vm is: {vm.__dict__}")
     if self.cloud.name.upper() == "AZURE":
+      verified_machine_type = vm.machine_type
       verified_machine_type = verified_machine_type.replace("_", "")
       verified_machine_type = verified_machine_type.upper()
       full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"
-    cpu_type = self._get_cpu_type(vm.machine_type)
+      self.quotas[full_machine_string][0] -= 1
+      self.quotas['TOTAL REGIONAL VCPUS'][0] -= 1
+      self.quotas['VIRTUAL MACHINES'][0] -= 1
+      self.quotas['PUBLIC IP ADDRESSES - BASIC'][0] -= 1
+      if self.quotas[full_machine_string][0] < 0:
+        self.quotas[full_machine_string][0] = 0
+      if self.quotas['TOTAL REGIONAL VCPUS'][0] < 0:
+        self.quotas['TOTAL REGIONAL VCPUS'][0] = 0
+      if self.quotas['PUBLIC IP ADDRESSES - BASIC'][0] < 0:
+        self.quotas['PUBLIC IP ADDRESSES - BASIC'][0] = 0
+    else:
+      cpu_type = self._get_cpu_type(vm.machine_type)
+      self.quotas['vm']['usage'] -= 1
+      self.quotas['vpc']['usage'] -= 1
+      self.quotas['elastic_ip']['usage'] -= 1
+      if self.quotas['vm']['usage'] < 0:
+        self.quotas['vm']['usage'] = 0 
+      if self.quotas['vpc']['usage'] < 0:
+        self.quotas['vm']['usage'] = 0
+      if self.quotas['elastic_ip']['usage'] < 0:
+        self.quotas['vm']['usage'] = 0
+      
     estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', vm.machine_type)
     self.virtual_machines.remove(vm)
-    self.quotas['vm']['usage'] -= 1
-    self.quotas['vpc']['usage'] -= 1
-    self.quotas['elastic_ip']['usage'] -= 1
     self.bandwidth_usage -= estimated_bandwidth
     self.cloud.bandwidth_usage -= estimated_bandwidth
-
-    if self.quotas['vm']['usage'] < 0:
-      self.quotas['vm']['usage'] = 0 
-    if self.quotas['vpc']['usage'] < 0:
-      self.quotas['vm']['usage'] = 0
-    if self.quotas['elastic_ip']['usage'] < 0:
-      self.quotas['vm']['usage'] = 0
-
   def update_address_quota(self, quota):
     self.quotas['elastic_ip']['limit'] = quota
 

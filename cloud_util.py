@@ -31,7 +31,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
 
   # Troy. Only bother editing this if Azure has CPU quotas we need to track
   #Troy Update: We need to keep track of vCPU's. Additionally, we need to track total regional vCPU's
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     if machine_type == 'D2s_v3':
         cpu_count = 2
     else:
@@ -49,7 +49,7 @@ def cpu_type_from_machine_type(cloud, machine_type):
     return machine_type.split('-')[0]
   elif cloud == 'AWS':
     return machine_type.split('.')[0]
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     # Troy. Only bother editing this if Azure has CPU quotas we need to track
     #Troy Update: I'm not sure what this does? 
     #Answer: GCP has specific CPU quotas, n1 and n2. That's why this exists
@@ -134,7 +134,7 @@ def get_region_info(cloud):
       region_dict[region_name]['elastic_ip']['usage'] = len(output['Addresses'])
 
     return region_dict
-  elif cloud == "Azure":
+  elif cloud.upper() == "AZURE":
     # Troy PUT CODE HERE
     # fetch quota data from az cli (NOTE: there are two versions of azure cli. Use the newer version that uses the command 'az')
     # figure out important quota data per region, if quotas are for the whole cloud instead of each region, we'll need to
@@ -247,7 +247,7 @@ def get_cloud_quotas(cloud):
       elif quota_iter['AttributeName'] == 'max-elastic-ips':
         quota_dict['static_address_quota'] = quota_iter['AttributeValues'][0]['AttributeValue']
 
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     # Troy, if quotas are cloud-wide, get the info here and put it in quota_dict
     pass
 
@@ -301,5 +301,5 @@ def get_max_bandwidth_from_machine_type(cloud, machine_type):
   elif cloud == 'AWS':
     return -1
 
-  elif cloud == 'AZURE':
+  elif cloud.upper() == 'AZURE':
     return -1

@@ -370,6 +370,18 @@ class AzureRegion(Region):
     print(f"vm is: {vm.__dict__}")
     if self.cloud.name.upper() == "AZURE":
       verified_machine_type = vm.machine_type
+
+      previous = ""
+      counter = 0 
+      for x in vm.machine_type:
+        if x.isdigit() and previous != 'v':
+          #print(f"Before type is: {verified_machine_type}")
+          verified_machine_type = verified_machine_type[0:counter] + verified_machine_type[counter+1:]
+          #print(f"After type is: {verified_machine_type}")
+
+          print(f"In if!")
+        counter += 1
+        previous = x
       verified_machine_type = verified_machine_type.replace("_", "")
       verified_machine_type = verified_machine_type.upper()
       full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"

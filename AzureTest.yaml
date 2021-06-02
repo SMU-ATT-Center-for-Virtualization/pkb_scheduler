@@ -1,6 +1,6 @@
 #import anchors.yaml
 #benchmark ping
-
+#for tests, spin up different machines in different zones
 ping:
   flag_matrix: fmatrix
   flag_matrix_filters:

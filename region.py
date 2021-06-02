@@ -339,6 +339,7 @@ class AzureRegion(Region):
             print(f"In if!")
           counter += 1
           previous = x
+        verified_machine_type = verified_machine_type.replace("Standard_", "")
         verified_machine_type = verified_machine_type.replace("_", "")
         verified_machine_type = verified_machine_type.upper()
         full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"
@@ -382,6 +383,7 @@ class AzureRegion(Region):
           print(f"In if!")
         counter += 1
         previous = x
+      verified_machine_type = verified_machine_type.replace("Standard_", "")
       verified_machine_type = verified_machine_type.replace("_", "")
       verified_machine_type = verified_machine_type.upper()
       full_machine_string = "STANDARD " + verified_machine_type + " FAMILY VCPUS"

@@ -9,7 +9,7 @@ ping:
     fmatrix:
       zones: [eastus] # The zones should be the Names, not the DisplayNames
       extra_zones: [westus2] #, us-east-2, us-west-2, ap-southeast-1,ap-northeast-1, ap-northeast-2] #put 6 regions here
-      machine_type: [D2s_v3]
+      machine_type: [Standard_D2s_v3]
   flags:
     cloud: Azure
     iperf_runtime_in_seconds: 30

@@ -1,7 +1,7 @@
 #import anchors.yaml
 #benchmark ping
 #for tests, spin up different machines in different zones
-ping:
+netperf:
   flag_matrix: fmatrix
   flag_matrix_filters:
     fmatrix: "zones != extra_zones"
@@ -16,11 +16,10 @@ ping:
     netperf_histogram_buckets: 1000
     netperf_benchmarks: TCP_RR,TCP_STREAM,UDP_STREAM
     #netperf_rr_test_length: 100000
-    netperf_test_length: 30
-    netperf_num_streams: 1,32
+    netperf_test_length: 10
+    netperf_num_streams: 1
     iperf_sending_thread_count: 1,32
     netperf_tcp_stream_send_size_in_bytes: 131072
     tcp_max_receive_buffer: 500000000
     tcp_max_send_buffer: 500000000
     ip_addresses: EXTERNAL
-    ping_also_run_using_external_ip: True

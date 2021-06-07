@@ -163,9 +163,9 @@ def get_region_info(cloud):
      
     for region_iter in region_json:
       try:
-        print(f"region_iter is: {region_iter}")
-        if region_iter['metadata']['regionCategory'] != 'Recommended':
-          continue
+        #print(f"region_iter is: {region_iter}")
+        # if region_iter['metadata']['regionCategory'] != 'Recommended':
+        #   continue
         region_name = region_iter['name']
         region_dict[region_name] = {"region_name" : region_name}
         region_list_command = f'az vm list-usage --location "{region_name}"'

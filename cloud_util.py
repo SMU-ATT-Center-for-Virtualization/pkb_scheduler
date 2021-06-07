@@ -163,6 +163,7 @@ def get_region_info(cloud):
      
     for region_iter in region_json:
       try:
+        print(f"region_iter is: {region_iter}")
         if region_iter['metadata']['regionCategory'] != 'Recommended':
           continue
         region_name = region_iter['name']

@@ -299,6 +299,7 @@ def update_quota_usage(benchmark_graph):
 
   for cloud in benchmark_graph.clouds:
     #TODO change this
+    print(f"\n\n\n\nHELLO? Cloud is: {cloud}\n\n\n\n")
     if cloud == 'GCP':
       print(benchmark_graph.regions)
       region_dict = cloud_util.get_region_info(cloud='GCP')

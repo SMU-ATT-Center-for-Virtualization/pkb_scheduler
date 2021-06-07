@@ -320,6 +320,7 @@ def update_quota_usage(benchmark_graph):
         if benchmark_graph.regions[region_name].cloud == 'Azure':
           quotas = region_dict[region_name]
           benchmark_graph.regions[region_name].update_quotas(quotas)
+        print(f"Quotas from main: {quotas}")
     else:
       return
 

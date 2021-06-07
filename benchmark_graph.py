@@ -312,7 +312,10 @@ class BenchmarkGraph():
                           ssh_private_key=self.ssh_private_key_file,
                           ssl_cert=self.ssl_cert_file,
                           vm_spec=vm_spec,
-                          vm_spec_id=vm_spec.id)
+                          vm_spec_id=vm_spec.id,
+                          network_name=vm_spec.network_name,
+                          subnet_name=vm_spec.subnet_name,
+                          preexisting_network=vm_spec.preexisting_network)
 
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)
@@ -688,23 +691,46 @@ class BenchmarkGraph():
     results_dict['success'] = False
     results_dict['run_time'] = None
 
+    bm_clouds = []
+    all_vms_have_preexisting_network = True
+    for vm in bm.vms:
+      print(vm.__dict__)
+      bm_clouds.append(vm.cloud)
+      if vm.preexisting_network == False:
+        all_vms_have_preexisting_network = False
+
     cmd = (self.pkb_location +
            " --benchmarks=" + bm.benchmark_type +
-           " --gce_network_name=pkb-scheduler" +
            " --benchmark_config_file=" + bm.config_file +
            " --bigquery_table=" + bm.bigquery_table +
            " --bq_project=" + bm.bq_project +
            " --ignore_package_requirements=True")
+
+    # TODO add logic for different networks in GCP
+    # TODO add logic for existing network in AWS
+    # or perhaps that should be in the config file area
+    if 'GCP' in bm_clouds:
+      # Maybe this should be in the config file area
+      # cmd = (cmd + " --gce_network_name=pkb-scheduler")
+      pass
+    if 'AWS' in bm_clouds:
+      pass
+    if 'Azure' in bm_clouds:
+      pass
 
     # TODO figure out what to do if only one vm is windows
     if 'windows' in bm.vm_specs[0].os_type:
       cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
                    " --skip_package_cleanup=True")
 
+    if all_vms_have_preexisting_network:
+      cmd = cmd + " --skip_firewall_rules=True"
+
     if not FLAGS.precreate_and_share_vms:
-      cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh" 
-                 + " --skip_firewall_rules=True"
-                 + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
+      # TODO move both of these to individual config files
+      cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh")
+      if bm.vm_specs[0].min_cpu_platform:
+        cmd = (cmd + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
 
     # TODO do install_packages if vm has already been used
 
@@ -809,6 +835,8 @@ class BenchmarkGraph():
 
 
     for vm in vm_list:
+      print("VM TO WRITE TO CONFIG")
+      print(vm.__dict__)
       temp = config_yaml[bm.benchmark_type]['vm_groups']
       vm_num = 'vm_' + str(counter)
       temp[vm_num] = {}
@@ -829,6 +857,13 @@ class BenchmarkGraph():
       vm_config_dict['install_packages'] = True
       vm_config_dict['zone'] = vm.zone
       vm_config_dict['machine_type'] = vm.machine_type
+
+      # TODO add network stuff here
+      # IF VM HAS NETWORK CONFIG, put it here
+      if vm.network_name:
+        vm_config_dict['vpc_id'] = vm.network_name
+        if vm.subnet_name: 
+          vm_config_dict['subnet_id']  = vm.subnet_name
 
       temp[vm_num]['vm_spec'][vm.cloud] = vm_config_dict
 

@@ -19,7 +19,8 @@ class VirtualMachine():
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
-               vm_spec=None, vm_spec_id=None, min_cpu_platform=None):
+               vm_spec=None, vm_spec_id=None, min_cpu_platform=None,
+               network_name=None, subnet_name=None, preexisting_network=True):
 
     # get logger
     global logger
@@ -48,7 +49,9 @@ class VirtualMachine():
     self.creation_time = None
     self.deletion_time = None
     # TODO use this instead of static network name
-    self.network_name = None
+    self.network_name = network_name
+    self.subnet_name = subnet_name
+    self.preexisting_network = preexisting_network
     # self.ip_address = None
     self.vm_spec = vm_spec
     self.vm_spec_id = vm_spec_id
@@ -63,7 +66,11 @@ class VirtualMachine():
         self.machine_type == vm.machine_type and
         self.network_tier == vm.network_tier and
         self.vpn == vm.vpn and
-        self.os_type == vm.os_type):
+        self.os_type == vm.os_type and
+          ((self.preexisting_network == True and
+            self.network_name == vm.network_name and
+            self.subnet_name == vm.subnet_name) 
+          or self.preexisting_network == False)):
       return True
 
     return False
@@ -90,6 +97,7 @@ class VirtualMachine():
       vm: [description]
     """
     # TODO make this more robust
+    # TODO FIX ALL OF THIS
     if self.status == "Running":
       return (False, self.status)
 

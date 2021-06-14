@@ -323,7 +323,7 @@ def update_quota_usage(benchmark_graph):
           print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
           
           benchmark_graph.regions[region_name].update_quotas(quotas)
-        print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
+          print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
     else:
       return
 

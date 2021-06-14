@@ -8,7 +8,7 @@ netperf:
   flag_matrix_defs:
     fmatrix:
       zones: [eastus] # The zones should be the Names, not the DisplayNames
-      extra_zones: [westus2] #,westus3,eastus2] #, us-east-2, us-west-2, ap-southeast-1,ap-northeast-1, ap-northeast-2] #put 6 regions here
+      extra_zones: [westus2,westus3,eastus2] #, us-east-2, us-west-2, ap-southeast-1,ap-northeast-1, ap-northeast-2] #put 6 regions here
       machine_type: [Standard_D2s_v3]
   flags:
     cloud: Azure

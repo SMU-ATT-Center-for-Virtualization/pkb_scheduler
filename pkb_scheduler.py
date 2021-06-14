@@ -572,6 +572,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     region_dict = cloud_util.get_region_info(cloud='Azure')
     for key in region_dict:
       # if region['description'] in full_graph.regions
+      print(f"\n\n\nADDING QUOTAS HERE: {region_dict[key]}\n\n\n")
       new_region = AzureRegion(region_name=key,
                                cloud=new_cloud,
                                quotas=region_dict[key],

@@ -14,7 +14,7 @@ netperf:
     cloud: Azure
     iperf_runtime_in_seconds: 30
     netperf_histogram_buckets: 1000
-    netperf_benchmarks: TCP_RR,TCP_STREAM,UDP_STREAM
+    netperf_benchmarks: TCP_RR
     #netperf_rr_test_length: 100000
     netperf_test_length: 10
     netperf_num_streams: 1

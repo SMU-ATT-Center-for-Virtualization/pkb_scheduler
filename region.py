@@ -130,11 +130,11 @@ class GcpRegion(Region):
       self.quotas['IN_USE_ADDRESSES']['usage'] += 1
       self.bandwidth_usage += estimated_bandwidth
       self.cloud.bandwidth_usage += estimated_bandwidth
-      print(f"{cpu_type} CPU USAGE: {self.quotas[cpu_type]['usage']}, QUOTA: {self.quotas[cpu_type]['limit']}")
-      print(f"ADDR USAGE: {self.quotas['IN_USE_ADDRESSES']['usage']}, QUOTA: {self.quotas['IN_USE_ADDRESSES']['limit']}")
+      #print(f"{cpu_type} CPU USAGE: {self.quotas[cpu_type]['usage']}, QUOTA: {self.quotas[cpu_type]['limit']}")
+      #print(f"ADDR USAGE: {self.quotas['IN_USE_ADDRESSES']['usage']}, QUOTA: {self.quotas['IN_USE_ADDRESSES']['limit']}")
       return True
     else:
-      print("Quota reached for region: " + self.name)
+      #print("Quota reached for region: " + self.name)
       return False
 
   def remove_virtual_machine(self, vm):

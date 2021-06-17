@@ -112,7 +112,7 @@ class VirtualMachine():
            " --gce_network_name=pkb-scheduler" +
            " --gcp_min_cpu_platform=" + self.min_cpu_platform +
            " --ssh_key_file=" + self.ssh_private_key +
-           " --ssl_cert_file=" + self.ssl_cert +
+           # " --ssl_cert_file=" + self.ssl_cert +
            " --zones=" + self.zone +
            " --os_type=" + self.os_type +
            " --machine_type=" + self.machine_type +

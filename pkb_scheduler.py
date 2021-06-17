@@ -56,7 +56,7 @@ from absl import app
 # TODO change algorithm to try to limit egress/ingress per region
 # per test
 
-# TODO move skylake to config file
+# TODO move skylake to config file 
 
 
 # python3
@@ -236,9 +236,6 @@ def test_stuff(benchmark_graph):
 
 
 def run_benchmarks(benchmark_graph):
-  
-  if FLAGS.precreate_and_share_vms:
-    benchmark_graph.create_vms()
 
   benchmarks_run = []
   # benchmark_graph.print_graph()
@@ -246,6 +243,10 @@ def run_benchmarks(benchmark_graph):
   max_set_empty_counter = 0
 
   while benchmark_graph.benchmarks_left() > 0:
+    print(f"graph nodes remaining: {len(benchmark_graph.graph.nodes)}")
+    print(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
+    print(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
+    print(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.maximum_matching())
@@ -258,8 +259,15 @@ def run_benchmarks(benchmark_graph):
       exit()
     print("MAXIMUM SET")
     print(maximum_set)
+
+    max_set_vms = list(itertools.chain(*maximum_set))
+    if FLAGS.precreate_and_share_vms:
+      benchmark_graph.create_vms(vm_list=max_set_vms)
+
     maximum_sets.append(maximum_set)
     benchmarks_run.append(maximum_set)
+
+    # This actually runs all the benchmarks in this set
     benchmark_graph.run_benchmark_set(maximum_set)
     # possibly check
     # Completion statuses can be found at: 
@@ -271,8 +279,7 @@ def run_benchmarks(benchmark_graph):
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
-    if FLAGS.precreate_and_share_vms:
-      benchmark_graph.create_vms()
+
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     # benchmark_graph.print_graph()

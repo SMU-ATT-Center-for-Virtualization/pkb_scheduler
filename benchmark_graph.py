@@ -178,92 +178,6 @@ class BenchmarkGraph():
 
     return False, "Quota Exceeded"
 
-  @deprecated(reason="Use add_vms_for_benchmark_if_possible instead")
-  def add_vm_if_possible(self, cpu_count, zone,
-                         os_type, network_tier, machine_type,
-                         cloud, vpn=False, same_zone=False):
-    """[summary]
-
-    [description]
-
-    Args:
-      cpu_count: [description]
-      zone: [description]
-      os_type: [description]
-      network_tier: [description]
-      machine_type: [description]
-      cloud: [description]
-      vpn: [description] (default: {False})
-
-    Returns:
-      [description]
-      [type]
-    """
-
-    # Need region because quotas are regional
-    vm_region = cloud_util.get_region_from_zone(cloud, zone)
-
-    # create virtual_machine object
-    vm_id = self.vm_total_count
-    vm = VirtualMachine(node_id=vm_id,
-                        cpu_count=cpu_count,
-                        zone=zone,
-                        os_type=os_type,
-                        network_tier=network_tier,
-                        machine_type=machine_type,
-                        cloud=cloud,
-                        ssh_private_key=self.ssh_private_key_file,
-                        ssl_cert=self.ssl_cert_file)
-
-    # if VM with same specs already exists, return false 0
-    tmp_vm_list = self.get_list_if_vm_exists(vm)
-
-    # if a vm already exists
-    if len(tmp_vm_list) > 0:
-      can_add_another, status = self.check_if_can_add_vm(vm)
-      # if there is room to add a duplicate vm and if flags allow it 
-      # then add the VM
-      if (can_add_another 
-          and status == "VM Exists. Quota not Exceeded" 
-          and (FLAGS.allow_duplicate_vms == True or same_zone==True)):
-        success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        if success:
-          self.virtual_machines.append(vm)
-          self.graph.add_node(vm_id, vm=vm)
-          self.vm_total_count += 1
-          return True, vm
-        else:
-          logger.debug("QUOTA EXCEEDED")
-          return False, None
-      #if not room in quota, return duplicate vm with lowest degree
-      else:
-        tmp_vm_index = 0
-        min_degree_index = 0
-        min_degree = self.graph.degree[tmp_vm_list[0].node_id]
-        while tmp_vm_index < len(tmp_vm_list):
-          degree = self.graph.degree[tmp_vm_list[tmp_vm_index].node_id]
-          if degree < min_degree:
-            min_degree_index = tmp_vm_index
-          tmp_vm_index += 1
-        return False, tmp_vm_list[min_degree_index]
-    # if vm does not exist yet
-    else:
-      # try to add vm to region
-      status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-
-      # if successful, also add that vm to virtual_machines list
-      # and increment total number of vms, return True, and the vm
-      if status is True:
-        print("adding vm in zone " + vm.zone)
-        self.virtual_machines.append(vm)
-        self.graph.add_node(vm_id, vm=vm)
-        self.vm_total_count += 1
-        return True, vm
-      # return false, -1 if not enough space in region
-      else:
-        logger.debug("QUOTA EXCEEDED")
-        return False, None
-
   def add_or_waitlist_benchmark_and_vms(self, bm):
     vms = self.add_vms_for_benchmark_if_possible(bm)
     vms_no_none = list(filter(None, vms))
@@ -471,17 +385,20 @@ class BenchmarkGraph():
     return nx.max_weight_matching(tmp_graph, maxcardinality=True, weight='weight')
 
 
-  def create_vms(self):
+  def create_vms(self, vm_list=[]):
     # TODO add max thread logic here, make sure things are stood up in a reasonable way
     # go through nodes in network. Stand up Vms that have not been created
     max_processes = FLAGS.max_processes
 
-    node_list = list(self.graph.nodes)
+    node_list = vm_list
+    if len(node_list) == 0:
+      node_list = list(self.graph.nodes)
     node_index = 0
     created_nodes = []
 
     logger.info("LENGTH NODE LIST: " + str(len(node_list)))
-
+    print("NODE LIST")
+    print(node_list)
     # for each node in the graph
     while node_index < len(node_list):
       vm_processes = []

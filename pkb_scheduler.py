@@ -132,6 +132,8 @@ flags.DEFINE_integer('max_retries', 20,
 logger = None
 
 maximum_sets = []
+vms_created = []
+vms_removed = []
 
 def main(argv):
 
@@ -200,6 +202,10 @@ def main(argv):
 
   print("ALL BENCHMARK TIMES:")
   print(full_graph.benchmark_run_times)
+  try:
+    print(f"TOTAL BENCHMARK TIME: {sum(full_graph.benchmark_run_times)}")
+  except:
+    pass
 
   print("TOTAL VM UPTIME: ")
   total_time = 0
@@ -238,7 +244,8 @@ def test_stuff(benchmark_graph):
 def run_benchmarks(benchmark_graph):
 
   benchmarks_run = []
-  # benchmark_graph.print_graph()
+  if FLAGS.print_graph:
+    benchmark_graph.print_graph()
   vms_removed = []
   max_set_empty_counter = 0
 
@@ -249,7 +256,9 @@ def run_benchmarks(benchmark_graph):
     print(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
 
     # TODO make get_benchmark_set work better than maximum matching
-    maximum_set = list(benchmark_graph.maximum_matching())
+    maximum_set = list(benchmark_graph.get_benchmark_set())
+    # maximum_set = list(benchmark_graph.maximum_matching())
+
     if len(maximum_set) == 0:
       max_set_empty_counter += 1
     else:
@@ -269,7 +278,7 @@ def run_benchmarks(benchmark_graph):
 
     # This actually runs all the benchmarks in this set
     benchmark_graph.run_benchmark_set(maximum_set)
-    # possibly check
+    # TODO possibly check completion status
     # Completion statuses can be found at: 
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
@@ -282,7 +291,8 @@ def run_benchmarks(benchmark_graph):
 
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
-    # benchmark_graph.print_graph()
+    if FLAGS.print_graph:
+      benchmark_graph.print_graph()
 
   logging.debug(len(benchmarks_run))
   logging.debug("BMS RUN EACH LOOP")

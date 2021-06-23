@@ -33,6 +33,9 @@ class Region():
     else:
       return False
 
+  def vm_has_enough_resources(self, vm):
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
+
   def add_virtual_machine_if_possible(self, vm):
     if (self.get_available_cpus() >= vm.cpu_count 
         and self.address_quota > self.address_usage):
@@ -120,6 +123,9 @@ class GcpRegion(Region):
           return True
   
     return False
+
+  def vm_has_enough_resources(self, vm):
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
 
   def add_virtual_machine_if_possible(self, vm):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):
@@ -221,6 +227,9 @@ class AwsRegion(Region):
   
     return False
 
+  def vm_has_enough_resources(self, vm):
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
+
   def add_virtual_machine_if_possible(self, vm):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):
       # cpu_type = self._get_cpu_type(vm.machine_type)
@@ -318,6 +327,9 @@ class AzureRegion(Region):
           return True
   
     return False
+
+  def vm_has_enough_resources(self, vm):
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
 
   def add_virtual_machine_if_possible(self, vm):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):

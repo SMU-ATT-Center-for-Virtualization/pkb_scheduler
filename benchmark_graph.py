@@ -100,7 +100,7 @@ class BenchmarkGraph():
     nx.draw(self.graph)
     plt.show()
 
-  def get_list_if_vm_exists(self, vm: VirtualMachine):
+  def get_list_if_vm_exists(self, vm: VirtualMachine) -> list[VirtualMachine]:
     """Tries to find a VM in the graph with equivalent specs
 
     Searches graph nodes and returns a list of VMs
@@ -122,6 +122,46 @@ class BenchmarkGraph():
       else:
         continue
     return vm_list
+
+  def get_node_id_list_if_vm_exists(self, vm: VirtualMachine) -> list[int]:
+    """Tries to find a VM in the graph with equivalent specs
+
+    Searches graph nodes and returns a list of VMs
+    with identical specs to the argument vm
+
+    Args:
+      vm: vm with specs to search for
+
+    Returns:
+      list of node_ids with VMs with matching specs to parameter
+      list[int]
+    """
+    node_list = []
+    vm_list = self.get_list_if_vm_exists(vm)
+    for vm in vm_list:
+      node_list.append(vm.node_id)
+    return node_list
+
+  def check_if_should_add_vm(self, vm_list: list[VirtualMachine]) -> bool:
+    """Checks if the degree of the vms on the list is less than the max of the
+       whoel network
+
+    Args:
+        vm_list (list[VirtualMachine]): [description]
+
+    Returns:
+        bool: True if we should add a new VM, false is we should try to use existing
+    """
+    max_benchmarks = max(dict(self.graph.degree).values())
+    max_degree = max_benchmarks
+    for vm in vm_list:
+      benchmarks_for_this_vm = self.graph.degree(vm.node_id)
+      if benchmarks_for_this_vm > max_degree:
+        max_degree = benchmarks_for_this_vm
+    print(f"MAX DEGREE {max_benchmarks}, MIN DEG FOR THIS BENCHMARK: {max_degree}")
+    if benchmarks_for_this_vm < max_benchmarks:
+      return True
+    return False
 
   def check_if_can_add_vm(self, vm: VirtualMachine):
     """Checks if there is enough space in the region to add VM
@@ -150,7 +190,7 @@ class BenchmarkGraph():
 
     return False, "Quota Exceeded"
 
-  def add_or_waitlist_benchmark_and_vms(self, bm: Benchmark):
+  def add_or_waitlist_benchmark_and_vms(self, bm: Benchmark) -> tuple[list[VirtualMachine], str]:
     vms = self.add_vms_for_benchmark_if_possible(bm)
     vms_no_none = list(filter(None, vms))
 
@@ -164,7 +204,6 @@ class BenchmarkGraph():
       bm.status = "Waitlist"
       self.benchmark_wait_list.append(bm)
       return [], "Waitlisted"
-
 
   def add_vms_for_benchmark_if_possible(self, bm: Benchmark) -> list[VirtualMachine]:
     """[summary]
@@ -219,6 +258,7 @@ class BenchmarkGraph():
         if (can_add_another 
             and status == "VM Exists. Quota not Exceeded"
             and FLAGS.allow_duplicate_vms == True
+            # and self.check_if_should_add_vm(tmp_vm_list)
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
           print("here1")
           # checks if there is enough space in a region to add another vm
@@ -277,7 +317,7 @@ class BenchmarkGraph():
         # if successful, also add that vm to virtual_machines list
         # and increment total number of vms, return True, and the vm
         if status is True:
-          print("adding vm in zone " + vm.zone)
+          # print("adding vm in zone " + vm.zone)
           self.virtual_machines.append(vm)
           self.graph.add_node(vm_id, vm=vm)
           vms.append(vm)
@@ -291,8 +331,184 @@ class BenchmarkGraph():
     # print(vms)
     return vms
 
+  def equalize_graph(self):
+    print("RUN EQUALIZE GRAPH")
+    PERCENTAGE_TO_EQUALIZE = .20
+    highest_degree_node_list = self.get_list_of_nodes_by_highest_degree()
+    number_of_nodes_to_equalize = int(len(highest_degree_node_list)*PERCENTAGE_TO_EQUALIZE)
+    for i in range(0, number_of_nodes_to_equalize):
+      max_node_id, max_node_degree = highest_degree_node_list[i]
+      max_node_degree = self.graph.degree(max_node_id)
+      if max_node_degree <= 1:
+        continue
+      print(f'EQUALIZING NODE {max_node_id} with degree {max_node_degree}')
+      if max_node_id == None:
+        continue
+      max_node_adjacency_list = list(self.graph[max_node_id])
+      if len(max_node_adjacency_list) == 0:
+        continue
+      max_node_adjacency_degree_list = sorted(list(self.graph.degree(max_node_adjacency_list)),
+                                              key=lambda x: x[1], reverse=False)
+      # check if an equivalent VM exists with a lower degree
+      max_node_vm = self.graph.nodes[max_node_id]['vm']
+      equivalent_max_node_list = self.get_node_id_list_if_vm_exists(max_node_vm)
+      print(f'EQUIVALENT NODE LIST: {equivalent_max_node_list}')
+      # get and sort list of equivalent vms
+      number_changed = 0
+      equality_improved = True
+      while equality_improved:
+        equality_improved = False
+        equivalent_max_node_degree_list = list(self.graph.degree(equivalent_max_node_list))
+        equivalent_max_node_degree_list = sorted(equivalent_max_node_degree_list,
+                                                key=lambda x: x[1], reverse=False)
+
+        for new_node_id, new_node_degree in equivalent_max_node_degree_list:
+          # if degree of equivalent node < degree of max node, transfer over a benchmark
+          if new_node_degree < (max_node_degree - 1):
+            # pick a node adjacent to max_degree_node to transfer to equivalent node
+            new_node_vm = self.graph.nodes[new_node_id]['vm']
+            bm_to_change = None
+            key_to_remove = None
+            node_to_transfer = None
+            node_to_tranfer_degree = None
+            for node, node_degree in max_node_adjacency_degree_list:
+              incident_edges = self.graph.get_edge_data(max_node_id, node)
+              print(f'incident edges {incident_edges}')
+              for key in incident_edges:
+                if incident_edges[key]['bm'].status == "Not Executed":
+                  bm_to_change = incident_edges[key]['bm']
+                  key_to_remove = key
+                  node_to_transfer = node
+                  node_to_tranfer_degree = node_degree
+                  break
+                else:
+                  print(incident_edges[key]['bm'].status)
+              if node_to_transfer:
+                break
+
+            if bm_to_change != None:
+              print(f'Moving bm from nodes {max_node_id} with degree {max_node_degree} to node {new_node_id} with degree {new_node_degree}')
+              equality_improved = True
+              # change bm.vms[]
+              bm_to_change.vms.remove(max_node_vm)
+              bm_to_change.vms.append(new_node_vm)
+              # remove old edge
+              self.graph.remove_edge(max_node_id, node_to_transfer, key_to_remove)
+              # add new edge
+              self.graph.add_edges_from([(new_node_id, node_to_transfer, {'bm': bm_to_change})])
+              max_node_degree = self.graph.degree(max_node_id)
+              number_changed += 1
+              max_node_adjacency_list = list(self.graph[max_node_id])
+              max_node_adjacency_degree_list = sorted(list(self.graph.degree(max_node_adjacency_list)),
+                                                      key=lambda x: x[1], reverse=False)
+              # answer = input("...").lower()
+
+
+      if max_node_degree > 1:
+        vm_region = cloud_util.get_region_from_zone(max_node_vm.cloud, max_node_vm.zone)
+        new_vm_id = self.vm_total_count
+        new_vm = VirtualMachine(node_id=new_vm_id,
+                                cpu_count=max_node_vm.cpu_count,
+                                zone=max_node_vm.zone,
+                                os_type=max_node_vm.os_type,
+                                network_tier=max_node_vm.network_tier,
+                                machine_type=max_node_vm.machine_type,
+                                cloud=max_node_vm.cloud,
+                                min_cpu_platform=max_node_vm.min_cpu_platform,
+                                ssh_private_key=self.ssh_private_key_file,
+                                ssl_cert=self.ssl_cert_file,
+                                vm_spec=max_node_vm.vm_spec,
+                                vm_spec_id=max_node_vm.vm_spec_id,
+                                network_name=max_node_vm.network_name,
+                                subnet_name=max_node_vm.subnet_name,
+                                preexisting_network=max_node_vm.preexisting_network)
+        # if VM with same specs already exists, return false 0
+        tmp_vm_list = self.get_list_if_vm_exists(new_vm)
+        can_add_another, status = self.check_if_can_add_vm(new_vm)
+        # if there is room to add a duplicate vm and if flags allow it
+        # then add the VM
+        if (can_add_another
+            and status == "VM Exists. Quota not Exceeded"
+            and FLAGS.allow_duplicate_vms == True
+            # and self.check_if_should_add_vm(tmp_vm_list)
+            and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
+          # checks if there is enough space in a region to add another vm
+          success = self.regions[vm_region].add_virtual_machine_if_possible(new_vm)
+          if success:
+            print("DUPLICATE VM ADDED")
+            self.virtual_machines.append(new_vm)
+            self.graph.add_node(new_vm_id, vm=new_vm)
+            self.vm_total_count += 1
+            bm_to_change = None
+            key_to_remove = None
+            node_to_transfer = None
+            node_to_tranfer_degree = None
+            for node, node_degree in max_node_adjacency_degree_list:
+              incident_edges = self.graph.get_edge_data(max_node_id, node)
+              print(f'incident edges {incident_edges}')
+              for key in incident_edges:
+                if incident_edges[key]['bm'].status == "Not Executed":
+                  bm_to_change = incident_edges[key]['bm']
+                  key_to_remove = key
+                  node_to_transfer = node
+                  node_to_tranfer_degree = node_degree
+                  break
+              if node_to_transfer:
+                break
+            print(f'node to transfer: {node_to_transfer}')
+            print(f'edge to change {key}')
+            print(f'bm to change {bm_to_change}')
+            if bm_to_change != None:
+              # change bm.vms[]
+              bm_to_change.vms.remove(max_node_vm)
+              bm_to_change.vms.append(new_vm)
+              # remove old edge
+              self.graph.remove_edge(max_node_id, node_to_transfer, key_to_remove)
+              # add new edge
+              self.graph.add_edges_from([(new_vm_id, node_to_transfer, {'bm': bm_to_change})])
+              max_node_degree = self.graph.degree(max_node_id)
+              number_changed += 1
+              max_node_adjacency_list = list(self.graph[max_node_id])
+              print(f'new max node adjacency list {max_node_adjacency_list}')
+              print(f'new other node adjacency list {list(self.graph[new_node_id])}')
+              max_node_adjacency_degree_list = sorted(list(self.graph.degree(max_node_adjacency_list)),
+                                                      key=lambda x: x[1], reverse=False)
+              print("MOVED BM TO NEW VM")
+
+            # answer = input("...").lower()
+
+          else:
+            print("QUOTA EXCEEDED. CANNOT ADD ANOTHER VM")
+      print(f"NUMBER CHANGED {number_changed}")
+    # answer = input("...").lower()
+
+  def get_list_of_nodes_by_highest_degree(self) -> list[tuple[int, int]]:
+    """Returns list of nodes with highest degree and its degree in a tuple
+
+    Returns:
+        list[tuple[int, int]]: node_id, degree
+    """
+    # get list of tuples (node_id, degree) sorted in descending order
+    degree_list = sorted(list(self.graph.degree), key=lambda x: x[1], reverse=True)
+    return degree_list
+
+  def get_node_with_highest_degree(self) -> tuple[int, int]:
+    """Returns node with highest degree and its degree in a tuple
+
+    Returns:
+        tuple[int, int]: node_id, degree
+    """
+    # get list of tuples (node_id, degree) sorted in descending order
+    degree_list = sorted(list(self.graph.degree), key=lambda x: x[1], reverse=True)
+    if len(degree_list) == 0:
+      return (None,None)
+    return degree_list[0]
+
+  def redistribute_edges_for_node(self, node_id: int):
+    pass
+
   def add_same_zone_vms(self, vm1, vm2):
-    vm1_list = get_list_if_vm_exists(vm1)
+    vm1_list = self.get_list_if_vm_exists(vm1)
     pass
 
   def get_list_of_nodes(self):
@@ -336,15 +552,16 @@ class BenchmarkGraph():
     # calculate weight based on degree of each node 1/(n1.degree * n2.degree)
     # also take into account if vms in benchmark are already created
     for e in edges_set:
-      c = 1 / (node_degree_dict[e[0]] * node_degree_dict[e[1]])
+      c = 10 / (node_degree_dict[e[0]] * node_degree_dict[e[1]])
       if self.graph.nodes[e[0]]['vm'].status == 'Running':
-        c = c + 1
+        c = c + 10
       if self.graph.nodes[e[1]]['vm'].status == 'Running':
-        c = c + 1
+        c = c + 10
       t = (e[0], e[1], c)
       edges_to_add.append(t)
 
     tmp_graph.add_weighted_edges_from(edges_to_add)
+    print(tmp_graph)
     print("NODES:")
     print(tmp_graph.nodes)
     print("EDGES:")
@@ -814,12 +1031,12 @@ class BenchmarkGraph():
 
       if len(bm.vm_specs) == len(vms_no_none) == len(vms):
         bm.vms = vms
+        bm.status = 'Not Executed'
         self.benchmarks.append(bm)
         self.add_benchmark_as_edge(bm, vms[0].node_id, vms[1].node_id)
         bms_added.append(bm)
 
     # Remove bm from waitlist if it is added to graph
-
     logging.info("ADDED " + str(len(bms_added)) + " BENCHMARKS")
     for bm in bms_added:
       self.benchmark_wait_list.remove(bm)
@@ -882,7 +1099,7 @@ class BenchmarkGraph():
       self.regions[vm_region].remove_virtual_machine(vm)
       vm_removed_count += 1
 
-    return vm_removed_count
+    return keys_to_remove
 
   def benchmarks_left(self) -> int:
     # TODO fix this

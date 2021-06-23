@@ -30,7 +30,6 @@ from absl import flags
 from absl import app
 
 # TODO
-# parse diff types of files
 # tighter cohesion with pkb (use pkb classes)?
 
 # put configs into unique directory
@@ -57,6 +56,8 @@ from absl import app
 # per test
 
 # TODO move skylake to config file 
+
+# TODO add ability to reconfigure graph after each benchmark run
 
 
 # python3
@@ -196,10 +197,37 @@ def main(argv):
                               len(list(filter(None, full_graph.benchmark_run_times))))
     logging.info("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
-  print("ALL MAXIMUM SETS")
-  for max_set in maximum_sets:
-    print(max_set)
-
+  # print("ALL MAXIMUM SETS")
+  # for max_set in maximum_sets:
+  #   print(max_set)
+  # print("ALL VMS CREATED")
+  # for vm_set in vms_created:
+  #   print(vm_set)
+  # print("ALL VMS DESTROYED")
+  # for vm_set in vms_removed:
+  #   print(vm_set)
+    
+  print("BENCHMARK SCHEDULE HISTORY")
+  vms_at_time = 0
+  if FLAGS.precreate_and_share_vms:
+    for i in range(0, len(maximum_sets)):
+      vms_at_time = vms_at_time + len(vms_created[i])
+      vms_used_this_round = len(list(itertools.chain(*maximum_sets[i])))
+      print(f"ROUND \n{i}")
+      print(f"VM USAGE: {vms_used_this_round}/{vms_at_time}")
+      print(f"{len(vms_created[i])} VMS CREATED:")
+      print(vms_created[i])
+      print(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      print(maximum_sets[i])
+      print(f"{len(vms_removed[i])} VMS DESTROYED:")
+      print(vms_removed[i])
+      vms_at_time = vms_at_time - len(vms_removed[i])
+  else:
+    for i in range(0, len(maximum_sets)):
+      print(f"ROUND \n{i}")
+      print(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      print(maximum_sets[i])
+  
   print("ALL BENCHMARK TIMES:")
   print(full_graph.benchmark_run_times)
   try:
@@ -244,9 +272,9 @@ def test_stuff(benchmark_graph):
 def run_benchmarks(benchmark_graph):
 
   benchmarks_run = []
+  benchmark_graph.equalize_graph()
   if FLAGS.print_graph:
     benchmark_graph.print_graph()
-  vms_removed = []
   max_set_empty_counter = 0
 
   while benchmark_graph.benchmarks_left() > 0:
@@ -271,7 +299,8 @@ def run_benchmarks(benchmark_graph):
 
     max_set_vms = list(itertools.chain(*maximum_set))
     if FLAGS.precreate_and_share_vms:
-      benchmark_graph.create_vms(vm_list=max_set_vms)
+      created_list = benchmark_graph.create_vms(vm_list=max_set_vms)
+      vms_created.append(created_list)
 
     maximum_sets.append(maximum_set)
     benchmarks_run.append(maximum_set)
@@ -282,8 +311,10 @@ def run_benchmarks(benchmark_graph):
     # Completion statuses can be found at: 
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
-    removed_count = benchmark_graph.remove_orphaned_nodes()
-    vms_removed.append(removed_count)
+    benchmark_graph.add_benchmarks_from_waitlist()
+    benchmark_graph.equalize_graph()
+    removed_list = benchmark_graph.remove_orphaned_nodes()
+    vms_removed.append(removed_list)
     logging.info("UPDATE REGION QUOTAS")
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
@@ -300,8 +331,8 @@ def run_benchmarks(benchmark_graph):
     logging.debug(len(bmset))
 
   logging.debug("VMS REMOVED EACH LOOP")
-  for vm_count in vms_removed:
-    logging.debug(vm_count)
+  for vm_list in vms_removed:
+    logging.debug(vm_list)
 
 
 def update_quota_usage(benchmark_graph):

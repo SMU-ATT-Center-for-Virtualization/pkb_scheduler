@@ -271,7 +271,7 @@ class VirtualMachine():
     self.subnet_name = vm.subnet_name
     self.preexisting_network = vm.preexisting_network
     self.vm_spec = vm.vm_spec
-    self.vm_spec_id = vm_spec_id
+    self.vm_spec_id = vm.vm_spec_id
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()

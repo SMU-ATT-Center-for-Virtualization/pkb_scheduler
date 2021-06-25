@@ -223,7 +223,7 @@ class BenchmarkGraph():
 
     for vm_spec in bm.vm_specs:
 
-      print(vm_spec.id)
+      # print(vm_spec.id)
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       vm_id = self.vm_total_count
       vm = VirtualMachine(node_id=vm_id,
@@ -260,7 +260,7 @@ class BenchmarkGraph():
             and FLAGS.allow_duplicate_vms == True
             # and self.check_if_should_add_vm(tmp_vm_list)
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
-          print("here1")
+          # print("here1")
           # checks if there is enough space in a region to add another vm
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
@@ -312,7 +312,7 @@ class BenchmarkGraph():
         # print(f"vm region is: {vm_region}\n\n self.regions is: {self.regions}")
 
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        print("Status ", status)
+        # print("Status ", status)
 
         # if successful, also add that vm to virtual_machines list
         # and increment total number of vms, return True, and the vm
@@ -677,6 +677,8 @@ class BenchmarkGraph():
        It then calls a function to create a config file for
        the benchmarks and then runs the benchmarks
 
+    Args:
+        bm_list (list[tuple[int, int]]): list of node_id tuples (node_id, node_id)
     """
     benchmarks_to_run = []
     benchmarks_to_run_tuples = []
@@ -691,22 +693,22 @@ class BenchmarkGraph():
       vm_list = []
       vm_list.append(self.graph.nodes[node_tuple[0]]['vm'])
       vm_list.append(self.graph.nodes[node_tuple[1]]['vm'])
-      print(self.graph[node_tuple[0]][node_tuple[1]])
+      # print(f'benchmarks between nodes ({node_tuple[0]},{node_tuple[1]}): {self.graph[node_tuple[0]][node_tuple[1]]}')
 
       # get dict of benchmarks from vm 0 to vm 1
       bm_dict = dict(self.graph[node_tuple[0]][node_tuple[1]])
       # get list of keys from dict
       bm_key_list = list(bm_dict.keys())
-
+      # print(f'BENCHMARK KEY LIST {bm_key_list}')
       # get last benchmark on list
       # TODO have some optimization here so benchmarks take similar times?
-      bm_index_to_run = len(bm_key_list) - 1
-
+      bm_index_to_run = bm_key_list[len(bm_key_list) - 1]
+      # print(f'BM index to run: {bm_index_to_run}')
       # edge tuple (node1, node2, key)
       bm_tuple = (node_tuple[0], node_tuple[1], bm_index_to_run)
       # get actual Benchmark object from edge in graph
       bm_to_run = self.graph[node_tuple[0]][node_tuple[1]][bm_index_to_run]['bm']
-      print(bm_to_run)
+      # print(bm_to_run)
       # create config file, get file name 
       bm_config_file = None
 
@@ -863,6 +865,8 @@ class BenchmarkGraph():
       cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh")
       if bm.vm_specs[0].min_cpu_platform:
         cmd = (cmd + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
+      if FLAGS.skip_prepare:
+        cmd = (cmd + " --skip_prepare=True")
 
     # TODO do install_packages if vm has already been used
     print("BM TUPLE")
@@ -1025,7 +1029,7 @@ class BenchmarkGraph():
 
     bms_added = []
     for bm in self.benchmark_wait_list:
-      print("here4, ", str(len(self.benchmark_wait_list)))
+      # print("here4, ", str(len(self.benchmark_wait_list)))
       vms = self.add_vms_for_benchmark_if_possible(bm)
       vms_no_none = list(filter(None, vms))
 

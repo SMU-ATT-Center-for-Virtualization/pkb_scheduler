@@ -259,7 +259,7 @@ def get_cloud_quotas(cloud):
 
 
 def get_region_from_zone(cloud, zone):
-  print(f"cloud is : {cloud}. Zone is : {zone}")
+  # print(f"cloud is : {cloud}. Zone is : {zone}")
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':

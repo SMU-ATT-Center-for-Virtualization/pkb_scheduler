@@ -122,10 +122,13 @@ flags.DEFINE_boolean('precreate_and_share_vms', True,
 flags.DEFINE_boolean('use_maximum_matching', True,
                     'If true, this run VMs based on maximum matching')
 
+flags.DEFINE_boolean('skip_prepare', True,
+                     'skips the prepare phase for benchmarks where this is implemented')
+
 flags.DEFINE_integer('regional_bandwidth_limit', None,
-                 'Applies a bandwidth limit per region (Gbps)')
+                     'Applies a bandwidth limit per region (Gbps)')
 flags.DEFINE_integer('cloud_bandwidth_limit', None,
-                 'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+                     'Applies a bandwidth limit to all tests on a cloud (Gbps)')
 
 flags.DEFINE_integer('max_retries', 20,
                      'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
@@ -319,7 +322,7 @@ def run_benchmarks(benchmark_graph):
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
-
+    benchmark_graph.equalize_graph()
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     if FLAGS.print_graph:

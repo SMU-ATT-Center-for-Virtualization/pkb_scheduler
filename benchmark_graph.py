@@ -249,6 +249,7 @@ class BenchmarkGraph():
 
       # if a vm already exists
       if len(tmp_vm_list) > 0:
+        print(f"MATCHING VM FOR {vm} EXISTS")
         can_add_another, status = self.check_if_can_add_vm(vm)
 
         add_from_list = True
@@ -264,6 +265,7 @@ class BenchmarkGraph():
           # checks if there is enough space in a region to add another vm
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
+            print(f"ADD DUPLICATE VM {vm}")
             add_from_list = False
             self.virtual_machines.append(vm)
             self.graph.add_node(vm_id, vm=vm)
@@ -277,7 +279,7 @@ class BenchmarkGraph():
             # TODO add to tmp_list
             add_from_list = True
         # if not room in quota, return duplicate vm with lowest degree
-        elif add_from_list:
+        if add_from_list:
           tmp_vm_index = 0
           min_degree_index = 0
           # find initial min_degree_index that has not been used 
@@ -301,12 +303,13 @@ class BenchmarkGraph():
             tmp_vm_index += 1
 
           if suitable_vm_found:
+            print(f"USING EXISTING VM {tmp_vm_list[min_degree_index]}FOR BENCMARK")
             vms.append(tmp_vm_list[min_degree_index])
             vm_ids.append(tmp_vm_list[min_degree_index].node_id)
             continue
 
       # if vm does not exist yet
-      elif (not suitable_vm_found):
+      if (not suitable_vm_found):
         # try to add vm to region
         # print("here2")
         # print(f"vm region is: {vm_region}\n\n self.regions is: {self.regions}")
@@ -318,6 +321,7 @@ class BenchmarkGraph():
         # and increment total number of vms, return True, and the vm
         if status is True:
           # print("adding vm in zone " + vm.zone)
+          print("NO SUITABLE VM FOUND, CREATING NEW VM")
           self.virtual_machines.append(vm)
           self.graph.add_node(vm_id, vm=vm)
           vms.append(vm)
@@ -722,13 +726,14 @@ class BenchmarkGraph():
       bm_key_list = list(bm_dict.keys())
       # print(f'BENCHMARK KEY LIST {bm_key_list}')
       # get last benchmark on list
+
       # TODO have some optimization here so benchmarks take similar times?
-      bm_chosen_key = len(bm_key_list) - 1
+      bm_chosen_key = bm_key_list[len(bm_key_list) - 1]
       for key in bm_key_list:
         if bm_dict[key]['bm'].benchmark_type == highest_count_bm:
           bm_chosen_key = key
           break
-      bm_index_to_run = bm_key_list[bm_chosen_key]
+      bm_index_to_run = bm_chosen_key
       # print(f'BM index to run: {bm_index_to_run}')
       # edge tuple (node1, node2, key)
       bm_tuple = (node_tuple[0], node_tuple[1], bm_index_to_run)

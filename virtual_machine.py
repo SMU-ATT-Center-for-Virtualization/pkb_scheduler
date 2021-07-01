@@ -277,3 +277,6 @@ class VirtualMachine():
     # vm2.__dict__ = vm1.__dict__.copy()
     # or this
     # destination.__dict__.update(source.__dict__).
+
+  def __str__(self):
+    return f'VM {{id: {self.node_id}, cloud: {self.cloud}, zone: {self.zone}, machine_type: {self.machine_type}}}'

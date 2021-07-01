@@ -73,8 +73,11 @@ flags.DEFINE_boolean('no_run', False,
                      'Prints out commands, but does not actually '
                      'run them')
 
-flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
+flags.DEFINE_string('log_level', "info", 'info, warn, debug, error '
                     'prints debug statements')
+
+flags.DEFINE_string('pkb_log_level', "info", 'info, warn, debug, error '
+                    'prints debug statements for pkb processes')
 
 # not implemented
 flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'],

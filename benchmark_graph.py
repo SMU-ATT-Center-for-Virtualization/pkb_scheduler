@@ -684,6 +684,27 @@ class BenchmarkGraph():
     benchmarks_to_run_tuples = []
     print("RUN BENCHMARKS")
 
+    # Go through list of benchmarks to run and see what benchmarks are in each list
+    # try to run benchmark with most occurences
+    benchmark_count_dict = {}
+    for node_tuple in bm_list:
+      bm_dict = dict(self.graph[node_tuple[0]][node_tuple[1]])
+      # get list of keys from dict
+      bm_key_list = list(bm_dict.keys())
+      for bm_key in bm_key_list:
+        benchmark_type = self.graph[node_tuple[0]][node_tuple[1]][bm_key]['bm'].benchmark_type
+        if benchmark_type in benchmark_count_dict:
+          benchmark_count_dict[benchmark_type] += 1
+        else:
+          benchmark_count_dict[benchmark_type] = 1
+
+    highest_count_bm = ''
+    highest_count = 0
+    for key in benchmark_count_dict:
+      if benchmark_count_dict[key] > highest_count:
+        highest_count_bm = key
+        highest_count = benchmark_count_dict[key]
+    
     # create benchmark configs for each benchmark in set
     # bm_list is a list of tuples [(n1,n2), (n3,n4)]
     for node_tuple in bm_list:
@@ -702,13 +723,18 @@ class BenchmarkGraph():
       # print(f'BENCHMARK KEY LIST {bm_key_list}')
       # get last benchmark on list
       # TODO have some optimization here so benchmarks take similar times?
-      bm_index_to_run = bm_key_list[len(bm_key_list) - 1]
+      bm_chosen_key = len(bm_key_list) - 1
+      for key in bm_key_list:
+        if bm_dict[key]['bm'].benchmark_type == highest_count_bm:
+          bm_chosen_key = key
+          break
+      bm_index_to_run = bm_key_list[bm_chosen_key]
       # print(f'BM index to run: {bm_index_to_run}')
       # edge tuple (node1, node2, key)
       bm_tuple = (node_tuple[0], node_tuple[1], bm_index_to_run)
       # get actual Benchmark object from edge in graph
       bm_to_run = self.graph[node_tuple[0]][node_tuple[1]][bm_index_to_run]['bm']
-      # print(bm_to_run)
+      print(f'BM TO RUN TYPE: {bm_to_run.benchmark_type}')
       # create config file, get file name 
       bm_config_file = None
 
@@ -865,8 +891,10 @@ class BenchmarkGraph():
       cmd = (cmd + " --gce_remote_access_firewall_rule=allow-ssh")
       if bm.vm_specs[0].min_cpu_platform:
         cmd = (cmd + " --gcp_min_cpu_platform=" + bm.vm_specs[0].min_cpu_platform)
-      if FLAGS.skip_prepare:
-        cmd = (cmd + " --skip_prepare=True")
+    if FLAGS.skip_prepare:
+      cmd = (cmd + " --skip_prepare=True")
+
+    cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
 
     # TODO do install_packages if vm has already been used
     print("BM TUPLE")

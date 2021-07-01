@@ -122,8 +122,9 @@ class VirtualMachine():
            " --gce_remote_access_firewall_rule=allow-ssh" +
            " --ignore_package_requirements=True")
 
+    cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
+    logging.info('CREATE INSTANCE: ' + cmd)
     if FLAGS.no_run:
-      print("CREATE INSTANCE: " + cmd)
       self.run_uri = "no_run"
       self.uid = "no_run"
       self.ip_address = "9.9.9.9"
@@ -134,8 +135,7 @@ class VirtualMachine():
       return (True, self.status)
 
     start_time = time.time()
-    self.create_timestamp = time.time()
-
+    self.create_timestamp = time.time() 
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -208,7 +208,7 @@ class VirtualMachine():
     # --run_stage=cleanup,teardown --run_uri=074af5cd
 
     # TODO make the network a parameter
-    print("DELETING VM INSTANCE")
+    # print("DELETING VM INSTANCE")
 
     cmd = (pkb_location)
     if 'windows' in self.os_type:
@@ -224,14 +224,14 @@ class VirtualMachine():
            " --run_stage=cleanup,teardown" +
            " --ignore_package_requirements=True")
 
+    cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
+    logging.info("DELETING INSTANCE: " + cmd)
     if FLAGS.no_run:
-      logging.debug("DELETING INSTANCE: " + cmd)
       self.status = "Shutdown"
       self.delete_timestamp = time.time()
       return (True, self.status)
 
     start_time = time.time()
-
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()

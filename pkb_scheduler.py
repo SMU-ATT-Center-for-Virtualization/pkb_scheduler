@@ -190,7 +190,6 @@ def main(argv):
 
   end_time = time.time()
   total_run_time = (end_time - start_time)
-  print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
   # Print out Timing Metrics
   if len(list(filter(None, full_graph.vm_creation_times))) > 0:
@@ -246,6 +245,8 @@ def main(argv):
   for vm in full_graph.virtual_machines:
     total_time = total_time + vm.uptime()
   print(total_time)
+
+  print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
   exit(0)
 

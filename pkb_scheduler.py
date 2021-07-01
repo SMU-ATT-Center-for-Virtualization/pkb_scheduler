@@ -285,10 +285,10 @@ def run_benchmarks(benchmark_graph):
   max_set_empty_counter = 0
 
   while benchmark_graph.benchmarks_left() > 0:
-    print(f"graph nodes remaining: {len(benchmark_graph.graph.nodes)}")
-    print(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
-    print(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
-    print(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
+    logging.info(f"graph nodes remaining: {len(benchmark_graph.graph.nodes)}")
+    logging.info(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
+    logging.info(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
+    logging.info(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = list(benchmark_graph.get_benchmark_set())

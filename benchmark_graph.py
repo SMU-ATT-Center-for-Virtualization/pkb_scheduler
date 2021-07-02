@@ -631,6 +631,61 @@ class BenchmarkGraph():
 
     return maximum_match
 
+  def replace_edges_with_multiedge_set(max_match):
+
+
+    graph = nx.Graph()
+
+    def tuples_list_to_list(tuples_list: list[tuple[any,any]]) -> list[any]:
+      return [item for t in tuples_list for item in t]
+
+    graph.add_edge(0,1)
+    graph.add_edge(1,2)
+    graph.add_edge(2,3)
+    graph.add_edge(3,4)
+    graph.add_edge(4,5)
+    graph.add_edge(4,6)
+    graph.add_edge(1,6)
+    graph.add_edge(6,7)
+    graph.add_edge(7,8)
+    graph.add_edge(8,9)
+    graph.add_edge(8,10)
+    graph.add_edge(9,10)
+
+    graph_edges = list(graph.edges)
+
+    multi_edge_sets = []
+    multi_edge_sets.append(('a', [1,2,3,4,6]))
+    multi_edge_sets.append(('b', [8,9,10]))
+
+    print(multi_edge_sets)
+    # print(tuples_list_to_list(multi_edge_sets))
+    m_sets = list(zip(*multi_edge_sets))
+    print(m_sets)
+
+
+    max_match = list(nx.max_weight_matching(graph))
+    print(f"MAX MATCH: {max_match}")
+
+    for mes in m_sets[1]:
+      intersect_count = 0
+      intersect_tuples = []
+      for m in max_match:
+        intersect = list(set(mes).intersection(set(m)))
+        print(intersect)
+        if len(intersect) == 1:
+          intersect_count += 1
+          intersect_tuples.append(m)
+        elif len(intersect) == 2:
+          intersect_tuples.append(m)
+        else:
+          intersect_count += 0
+        print(intersect_count)
+      print(intersect_count)
+      if intersect_count < len(mes):
+        pass
+      else:
+        pass
 
   def create_vms(self, vm_list: list[int] = []) -> list[int]:
     """Create Virtual Machines that have not yet been created

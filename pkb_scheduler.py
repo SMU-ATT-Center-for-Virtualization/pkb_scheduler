@@ -5,7 +5,7 @@
 # in a certain way. They should include the cloud and
 # machine type flags, as well as other things that might be
 # default when using just PKB
-
+from __future__ import annotations
 import yaml
 import six
 import copy
@@ -177,7 +177,7 @@ def main(argv):
 
   logger.debug("\nBENCHMARKS TO RUN:")
   for bm in full_graph.benchmarks:
-    logger.debug("Benchmark " + bm.vm_specs[0].zone + "--" + bm.vm_specs[1].zone)
+    logger.debug(f"Benchmark {bm}")
 
   logger.debug("\n\nFULL GRAPH:")
   logger.debug(full_graph.get_list_of_nodes())
@@ -289,9 +289,10 @@ def run_benchmarks(benchmark_graph):
     logging.info(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
     logging.info(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
     logging.info(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
+    logging.info(f"multiedge benchmarks: {benchmark_graph.multiedge_benchmarks}")
 
     # TODO make get_benchmark_set work better than maximum matching
-    maximum_set = list(benchmark_graph.get_benchmark_set())
+    maximum_set = benchmark_graph.get_benchmark_set()
     # maximum_set = list(benchmark_graph.maximum_matching())
 
     if len(maximum_set) == 0:
@@ -406,11 +407,17 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
       # print(vm)
       vm_config_tmp = {}
       vm_config_tmp['cloud'] = vm['cloud']
+      vm_config_tmp['os_type'] = 'ubuntu1804'
+      if 'os_type' in vm:
+        vm_config_tmp['os_type'] = vm['os_type']
+      elif 'os_type' in benchmark_config[1]['flags']:
+        vm_config_tmp['os_type'] = benchmark_config[1]['flags']['os_type']
+
       vm_config_tmp['machine_type'] = vm['vm_spec'][vm['cloud']]['machine_type']
       vm_config_tmp['zone'] = vm['vm_spec'][vm['cloud']]['zone']
       vm_config_tmp['cpu_count'] = cloud_util.cpu_count_from_machine_type(vm_config_tmp['cloud'],
                                                                           vm_config_tmp['machine_type'])
-      if vm['vm_spec'][vm['cloud']]['vpc_id']:
+      if 'vpc_id' in vm['vm_spec'][vm['cloud']]:
         vm_config_tmp['network_name'] = vm['vm_spec'][vm['cloud']]['vpc_id']
       else:
         if vm_config_tmp['cloud'] == 'GCP' and 'gce_network_name' in benchmark_config[1]['flags']:
@@ -448,7 +455,11 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
 
       # print("VM CONFIG TMP")
       # print(vm_config_tmp)
-      vm_config_list.append(vm_config_tmp)
+      if 'vm_count' in vm:
+        for i in range(0,vm['vm_count']):
+          vm_config_list.append(vm_config_tmp)
+      else:
+        vm_config_list.append(vm_config_tmp)
 
     bigquery_table = FLAGS.bigquery_table
     bq_project = FLAGS.bq_project
@@ -456,11 +467,6 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
       bigquery_table = benchmark_config[1]['flags']['bigquery_table']
     if 'bq_project' in benchmark_config[1]['flags']:
       bq_project = benchmark_config[1]['flags']['bq_project']
-
-    os_type = 'ubuntu1804'
-    if 'os_type' in benchmark_config[1]['flags']:
-      os_type = benchmark_config[1]['flags']['os_type']
-
 
     vm_specs = []
 
@@ -472,7 +478,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    cloud=vm_config['cloud'],
                                    machine_type=vm_config['machine_type'],
                                    network_tier=vm_config['network_tier'],
-                                   os_type=os_type,
+                                   os_type=vm_config['os_type'],
                                    min_cpu_platform=vm_config['min_cpu_platform'],
                                    network_name=vm_config['network_name'],
                                    subnet_name=vm_config['subnet_name'])
@@ -506,8 +512,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'os_type' in benchmark_config[1]['flags']:
       os_type = benchmark_config[1]['flags']['os_type']
 
-    # TODO change to none and put gcp_min_cpu_platform: skylake in all the configs
-    min_cpu_platform = 'skylake'
+    min_cpu_platform = None
     if 'gcp_min_cpu_platform' in benchmark_config[1]['flags']:
       min_cpu_platform = benchmark_config[1]['flags']['gcp_min_cpu_platform']
 
@@ -522,15 +527,17 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    network_tier=network_tier,
                                    os_type=os_type,
                                    min_cpu_platform=min_cpu_platform)
-    vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
-                                   cpu_count=cpu_count,
-                                   zone=benchmark_config[1]['flags']['extra_zones'],
-                                   cloud=cloud,
-                                   machine_type=machine_type,
-                                   network_tier=network_tier,
-                                   os_type=os_type,
-                                   min_cpu_platform=min_cpu_platform)
-    vm_specs = [vm_spec_1, vm_spec_2]
+    vm_specs = [vm_spec_1]
+    if 'extra_zones' in benchmark_config[1]['flags']:
+      vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
+                                     cpu_count=cpu_count,
+                                     zone=benchmark_config[1]['flags']['extra_zones'],
+                                     cloud=cloud,
+                                     machine_type=machine_type,
+                                     network_tier=network_tier,
+                                     os_type=os_type,
+                                     min_cpu_platform=min_cpu_platform)
+      vm_specs.append(vm_spec_2)
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],
                    vm_specs=vm_specs,
@@ -656,7 +663,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   # create virtual machines (node)
   # attach with edges and benchmarks
   for bm in temp_benchmarks:
-    logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+    logger.debug(f"Trying to add {bm}")
     vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
 
   logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))

@@ -60,3 +60,6 @@ class Benchmark():
 
   def run(self):
     pass
+
+  def __str__(self):
+    return f'BM {{id: {self.benchmark_id}}}'

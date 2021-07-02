@@ -51,6 +51,7 @@ class BenchmarkGraph():
     self.virtual_machines = []
     self.benchmarks = []
     self.benchmark_wait_list = []
+    self.multiedge_benchmarks = []
     self.vm_total_count = 0
     self.bm_total_count = 0
 
@@ -71,6 +72,7 @@ class BenchmarkGraph():
     self.vm_creation_times = []
     self.benchmark_run_times = []
     self.deletion_times = []
+
 
   def add_cloud_if_not_exists(self, cloud: str):
     if cloud.name not in self.clouds:
@@ -192,12 +194,13 @@ class BenchmarkGraph():
 
   def add_or_waitlist_benchmark_and_vms(self, bm: Benchmark) -> tuple[list[VirtualMachine], str]:
     vms = self.add_vms_for_benchmark_if_possible(bm)
+
+    # Filter None values from list
     vms_no_none = list(filter(None, vms))
 
+    # If it was able to add all vms from benchmark, add bm as edge. Else -> waitlist
     if len(bm.vm_specs) == len(vms_no_none) == len(vms):
-      bm.vms = vms
-      self.benchmarks.append(bm)
-      self.add_benchmark_as_edge(bm, vms[0].node_id, vms[1].node_id)
+      self.add_benchmark_to_graph(bm, vms)
       return bm.vms, "Added"
     else:
       logger.debug("BM WAITLISTED")
@@ -521,11 +524,26 @@ class BenchmarkGraph():
   def get_list_of_edges(self):
     return self.graph.edges
 
-  def add_benchmark_as_edge(self, new_benchmark: Benchmark, node1: int, node2: int):
+  def add_benchmark_to_graph(self, bm: Benchmark, vms: list[VirtualMachine]):
     #  M[v1][v2]
     # M.add_edges_from([(v1,v2,{'route':45645})])
-    new_benchmark.benchmark_id = self.bm_total_count
-    self.graph.add_edges_from([(node1, node2, {'bm': new_benchmark})])
+    bm.vms = vms
+    self.benchmarks.append(bm)
+    if len(bm.vms) == 1:
+      self.graph.add_edges_from([(vms[0].node_id, vms[0].node_id, {'bm': bm})])
+    elif len(bm.vms) == 2:
+      self.graph.add_edges_from([(vms[0].node_id, vms[1].node_id, {'bm': bm})])
+    else:
+      node_ids = []
+      for i in range(0, len(bm.vms)):
+        node_ids.append(bm.vms[i].node_id)
+        if i < len(bm.vms) - 1:
+          self.graph.add_edges_from([(vms[i].node_id, vms[i+1].node_id, {'bm': bm})])
+        elif i == len(bm.vms) - 1:
+          self.graph.add_edges_from([(vms[i].node_id, vms[0].node_id, {'bm': bm})])
+      self.multiedge_benchmarks.append((bm,node_ids))
+
+    bm.benchmark_id = self.bm_total_count
     self.bm_total_count += 1
 
   def maximum_matching(self) -> list[tuple[int,int]]:
@@ -552,17 +570,32 @@ class BenchmarkGraph():
     print("EDGE SET")
     print(edges_set)
     edges_to_add = []
+    dummy_node_index = -1
+    dummy_nodes = []
+    dummy_edges = []
 
     # calculate weight based on degree of each node 1/(n1.degree * n2.degree)
     # also take into account if vms in benchmark are already created
     for e in edges_set:
-      c = 10 / (node_degree_dict[e[0]] * node_degree_dict[e[1]])
-      if self.graph.nodes[e[0]]['vm'].status == 'Running':
-        c = c + 10
-      if self.graph.nodes[e[1]]['vm'].status == 'Running':
-        c = c + 10
-      t = (e[0], e[1], c)
-      edges_to_add.append(t)
+      # if self-loop, replace with dummy node and edge
+      if e[0] == e[1]:
+        dummy_node = dummy_node_index
+        c = 10 / (node_degree_dict[e[0]])
+        if self.graph.nodes[e[0]]['vm'].status == 'Running':
+          c = c + 10
+        t = (e[0], dummy_node, c)
+        edges_to_add.append(t)
+        dummy_nodes.append(dummy_node)
+        dummy_edges.append((e[0], dummy_node))
+        dummy_node_index -= 1
+      else:
+        c = 10 / (node_degree_dict[e[0]] * node_degree_dict[e[1]])
+        if self.graph.nodes[e[0]]['vm'].status == 'Running':
+          c = c + 10
+        if self.graph.nodes[e[1]]['vm'].status == 'Running':
+          c = c + 10
+        t = (e[0], e[1], c)
+        edges_to_add.append(t)
 
     tmp_graph.add_weighted_edges_from(edges_to_add)
     print(tmp_graph)
@@ -587,7 +620,16 @@ class BenchmarkGraph():
     #   self.graph.edges[e]['visited'] = False
     #   self.graph.edges[e]['used'] = False
 
-    return nx.max_weight_matching(tmp_graph, maxcardinality=True, weight='weight')
+    maximum_match = list(nx.max_weight_matching(tmp_graph, maxcardinality=True, weight='weight'))
+
+    # convert dummy nodes back to self-loops
+    for i in range(0, len(maximum_match)):
+      if maximum_match[i][0] < 0:
+        maximum_match[i] = (maximum_match[i][1], maximum_match[i][1])
+      elif maximum_match[i][1] < 0:
+        maximum_match[i] = (maximum_match[i][0], maximum_match[i][0])
+
+    return maximum_match
 
 
   def create_vms(self, vm_list: list[int] = []) -> list[int]:
@@ -792,7 +834,7 @@ class BenchmarkGraph():
 
         # create
         queue = mp.Queue()
-        logger.debug(bm.vm_specs[0].zone + " <-> " + bm.vm_specs[1].zone)
+        logger.debug(bm)
         p = mp.Process(target=self.run_benchmark_process,
                        args=(bm,
                              benchmarks_to_run_tuples[bm_index],
@@ -904,8 +946,8 @@ class BenchmarkGraph():
     # TODO do install_packages if vm has already been used
     print("BM TUPLE")
     print(bm_tuple)
-    print(bm.vm_specs[0].zone)
-    print(bm.vm_specs[1].zone)
+    # print(bm.vm_specs[0].zone)
+    # print(bm.vm_specs[1].zone)
     print(bm.config_file)
     print("RUN BM: " + cmd)
     if FLAGS.no_run:
@@ -1070,7 +1112,7 @@ class BenchmarkGraph():
         bm.vms = vms
         bm.status = 'Not Executed'
         self.benchmarks.append(bm)
-        self.add_benchmark_as_edge(bm, vms[0].node_id, vms[1].node_id)
+        self.add_benchmark_to_graph(bm, vms)
         bms_added.append(bm)
 
     # Remove bm from waitlist if it is added to graph

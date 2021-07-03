@@ -512,6 +512,16 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'os_type' in benchmark_config[1]['flags']:
       os_type = benchmark_config[1]['flags']['os_type']
 
+
+    # TODO expand for aws and azure
+    network_name = None
+    if 'gce_network_name' in benchmark_config[1]['flags']:
+      network_name = benchmark_config[1]['flags']['gce_network_name']
+
+    subnet_name = None
+    if 'gce_subnet_name' in benchmark_config[1]['flags']:
+      subnet_name = benchmark_config[1]['flags']['gce_subnet_name']
+
     min_cpu_platform = None
     if 'gcp_min_cpu_platform' in benchmark_config[1]['flags']:
       min_cpu_platform = benchmark_config[1]['flags']['gcp_min_cpu_platform']
@@ -526,7 +536,9 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    machine_type=machine_type,
                                    network_tier=network_tier,
                                    os_type=os_type,
-                                   min_cpu_platform=min_cpu_platform)
+                                   min_cpu_platform=min_cpu_platform,
+                                   network_name=network_name,
+                                   subnet_name=subnet_name)
     vm_specs = [vm_spec_1]
     if 'extra_zones' in benchmark_config[1]['flags']:
       vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
@@ -536,7 +548,9 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                      machine_type=machine_type,
                                      network_tier=network_tier,
                                      os_type=os_type,
-                                     min_cpu_platform=min_cpu_platform)
+                                     min_cpu_platform=min_cpu_platform,
+                                     network_name=network_name,
+                                     subnet_name=subnet_name)
       vm_specs.append(vm_spec_2)
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],
@@ -659,7 +673,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     benchmark_counter += 1
 
   logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
-
+  temp_benchmarks.sort(key=lambda x: x.largest_vm, reverse=True)
   # create virtual machines (node)
   # attach with edges and benchmarks
   for bm in temp_benchmarks:

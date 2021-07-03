@@ -109,19 +109,27 @@ class VirtualMachine():
       cmd = cmd + " --benchmarks=vm_setup"
 
     cmd = (cmd +
-           " --gce_network_name=pkb-scheduler" +
-           " --gcp_min_cpu_platform=" + self.min_cpu_platform +
            " --ssh_key_file=" + self.ssh_private_key +
            # " --ssl_cert_file=" + self.ssl_cert +
            " --zones=" + self.zone +
            " --os_type=" + self.os_type +
            " --machine_type=" + self.machine_type +
            " --cloud=" + self.cloud +
-           " --gce_network_tier=" + self.network_tier +
            " --run_stage=provision,prepare" +
-           " --gce_remote_access_firewall_rule=allow-ssh" +
            " --ignore_package_requirements=True")
 
+    if self.cloud == 'GCP':
+      cmd = (cmd +  " --gce_network_name=" + self.network_name +
+                    " --gce_remote_access_firewall_rule=allow-ssh" +
+                    " --gce_network_tier=" + self.network_tier +
+                    " --gce_subnet_name=" + self.network_name)
+    elif self.cloud == 'AWS':
+      pass # TODO
+    elif self.cloud == 'Azure':
+      pass # TODO
+
+    if self.min_cpu_platform:
+      cmd = (cmd + " --gcp_min_cpu_platform=" + self.min_cpu_platform)
     cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
     logging.info('CREATE INSTANCE: ' + cmd)
     if FLAGS.no_run:

@@ -31,6 +31,11 @@ class Benchmark():
       self.vm_specs = []
     else:
       self.vm_specs = vm_specs
+      largest_cpu_count = 0
+      for vm_spec in self.vm_specs:
+        if vm_spec.cpu_count > largest_cpu_count:
+          largest_cpu_count = vm_spec.cpu_count
+      self.largest_vm = largest_cpu_count
       
 
     # self.ssh_key = None
@@ -57,9 +62,25 @@ class Benchmark():
       self.vm_specs.append(tmp_vm_spec)
     # self.ssh_key = None
     # self.ip = None
+    self.largest_vm = bm.largest_vm
 
   def run(self):
     pass
 
+  def __repr__(self):
+    # zones = []
+    # machine_sizes = []
+    # for vm_spec in self.vm_specs:
+    #   zones.append(vm_spec.zone)
+    #   machine_sizes.append(vm_spec.machine_type)
+    # return f'BM {{id: {self.benchmark_id}, zones: {zones}, machine_sizes: {machine_sizes}}}'
+    return f'BM {id}'
+
   def __str__(self):
-    return f'BM {{id: {self.benchmark_id}}}'
+    # zones = []
+    # machine_sizes = []
+    # for vm_spec in self.vm_specs:
+    #   zones.append(vm_spec.zone)
+    #   machine_sizes.append(vm_spec.machine_type)
+    # return f'BM {{id: {self.benchmark_id}, zones: {zones}, machine_sizes: {machine_sizes}}}'
+    return f'BM {id}'

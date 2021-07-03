@@ -353,6 +353,9 @@ def update_quota_usage(benchmark_graph):
     benchmark_graph: Benchmark/VM Graph to update
   """
 
+  if FLAGS.no_run:
+    return
+
   for cloud in benchmark_graph.clouds:
     #TODO change this
     print(f"\n\n\n\nHELLO? Cloud is: {cloud}\n\n\n\n")

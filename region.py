@@ -1,6 +1,7 @@
 import cloud_util
 from cloud import Cloud
 import re
+import copy
 
 class Region():
   """[summary]
@@ -90,6 +91,13 @@ class Region():
   def update_quotas(self, quotas):
     pass
 
+  def get_all_quotas(self):
+    quotas = {}
+    quotas[self.name] = {}
+    quotas[self.name]['address_usage'] = self.address_usage
+    quotas[self.name]['address_quota'] = self.address_quota
+    return quotas
+
 
 class GcpRegion(Region):
 
@@ -136,8 +144,8 @@ class GcpRegion(Region):
       self.quotas['IN_USE_ADDRESSES']['usage'] += 1
       self.bandwidth_usage += estimated_bandwidth
       self.cloud.bandwidth_usage += estimated_bandwidth
-      #print(f"{cpu_type} CPU USAGE: {self.quotas[cpu_type]['usage']}, QUOTA: {self.quotas[cpu_type]['limit']}")
-      #print(f"ADDR USAGE: {self.quotas['IN_USE_ADDRESSES']['usage']}, QUOTA: {self.quotas['IN_USE_ADDRESSES']['limit']}")
+      # print(f"ADD {self.name} {cpu_type} CPU USAGE: {self.quotas[cpu_type]['usage']}, QUOTA: {self.quotas[cpu_type]['limit']}")
+      # print(f"ADD {self.name} ADDR USAGE: {self.quotas['IN_USE_ADDRESSES']['usage']}, QUOTA: {self.quotas['IN_USE_ADDRESSES']['limit']}")
       return True
     else:
       #print("Quota reached for region: " + self.name)
@@ -157,6 +165,9 @@ class GcpRegion(Region):
       self.quotas[cpu_type]['usage'] = 0
     if self.quotas['IN_USE_ADDRESSES']['usage'] < 0:
       self.quotas['IN_USE_ADDRESSES']['usage'] = 0
+
+    # print(f"REMOVE {self.name} {cpu_type} CPU USAGE: {self.quotas[cpu_type]['usage']}, QUOTA: {self.quotas[cpu_type]['limit']}")
+    # print(f"REMOVE {self.name} ADDR USAGE: {self.quotas['IN_USE_ADDRESSES']['usage']}, QUOTA: {self.quotas['IN_USE_ADDRESSES']['limit']}")
 
   def update_cpu_quota(self, quota, machine_type):
     cpu_type = self._get_cpu_type(machine_type)
@@ -188,7 +199,13 @@ class GcpRegion(Region):
   #     return False
 
   def update_quotas(self, quotas):
+    print("UPDATE ALL QUOTAS")
     self.quotas = quotas
+
+  def get_all_quotas(self):
+    quotas = {}
+    quotas[self.name] = copy.deepcopy(self.quotas)
+    return quotas
 
 
 class AwsRegion(Region):

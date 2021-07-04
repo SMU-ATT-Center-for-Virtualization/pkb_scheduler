@@ -1238,3 +1238,10 @@ class BenchmarkGraph():
   def benchmarks_left(self) -> int:
     # TODO fix this
     return len(self.graph.edges) + len(self.benchmark_wait_list)
+
+
+  def get_all_quota_usage(self):
+    region_quotas = []
+    for region_name in self.regions:
+      region_quotas.append(self.regions[region_name].get_all_quotas())
+    return region_quotas

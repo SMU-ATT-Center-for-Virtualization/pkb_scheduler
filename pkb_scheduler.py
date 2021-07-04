@@ -141,6 +141,7 @@ logger = None
 maximum_sets = []
 vms_created = []
 vms_removed = []
+region_quota_usage = []
 
 def main(argv):
 
@@ -227,6 +228,15 @@ def main(argv):
       print(f"{len(vms_removed[i])} VMS DESTROYED:")
       print(vms_removed[i])
       vms_at_time = vms_at_time - len(vms_removed[i])
+      print(f"ALL REGION QUOTA USAGE:")
+      for region_quota in region_quota_usage[i]:
+        for key in region_quota:
+          quota = region_quota[key]
+          print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
+                f"CPU USE: {quota['CPUS']['usage']}, "
+                f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
+                f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
+      # print(region_quota_usage[i])
   else:
     for i in range(0, len(maximum_sets)):
       print(f"ROUND \n{i}")
@@ -312,7 +322,15 @@ def run_benchmarks(benchmark_graph):
 
     maximum_sets.append(maximum_set)
     benchmarks_run.append(maximum_set)
-
+    quota_usage = benchmark_graph.get_all_quota_usage()
+    for region_quota in quota_usage:
+      for key in region_quota:
+        quota = region_quota[key]
+        print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
+              f"CPU USE: {quota['CPUS']['usage']}, "
+              f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
+              f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
+    region_quota_usage.append(quota_usage)
     # This actually runs all the benchmarks in this set
     benchmark_graph.run_benchmark_set(maximum_set)
     # TODO possibly check completion status

@@ -232,10 +232,10 @@ def main(argv):
       for region_quota in region_quota_usage[i]:
         for key in region_quota:
           quota = region_quota[key]
-          print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
-                f"CPU USE: {quota['CPUS']['usage']}, "
-                f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
-                f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
+          #print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
+          #      f"CPU USE: {quota['CPUS']['usage']}, "
+          #      f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
+          #      f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
       # print(region_quota_usage[i])
   else:
     for i in range(0, len(maximum_sets)):
@@ -326,10 +326,10 @@ def run_benchmarks(benchmark_graph):
     for region_quota in quota_usage:
       for key in region_quota:
         quota = region_quota[key]
-        print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
-              f"CPU USE: {quota['CPUS']['usage']}, "
-              f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
-              f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
+        #print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
+        #      f"CPU USE: {quota['CPUS']['usage']}, "
+        #      f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
+        #      f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
     region_quota_usage.append(quota_usage)
     # This actually runs all the benchmarks in this set
     benchmark_graph.run_benchmark_set(maximum_set)

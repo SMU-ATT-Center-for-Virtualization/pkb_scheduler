@@ -21,7 +21,8 @@ def cpu_count_from_machine_type(cloud, machine_type):
       elif machine_size == 'xlarge':
         cpu_count = 4
       elif 'xlarge' in machine_size:
-        multiplier = int(re.findall(r'\d+', machine_size))
+        print(machine_size)
+        multiplier = int(re.findall(r'\d+', machine_size)[0])
         cpu_count = 4 * multiplier
     elif 't2' in machine_category.lower():
       if 'micro' in machine_size.lower():

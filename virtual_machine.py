@@ -20,7 +20,8 @@ class VirtualMachine():
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
                vm_spec=None, vm_spec_id=None, min_cpu_platform=None,
-               network_name=None, subnet_name=None, preexisting_network=True):
+               network_name=None, subnet_name=None, preexisting_network=True,
+               estimated_bandwidth=-1):
 
     # get logger
     global logger
@@ -56,6 +57,7 @@ class VirtualMachine():
     self.vm_spec = vm_spec
     self.vm_spec_id = vm_spec_id
     self.password = None
+    self.estimated_bandwidth = estimated_bandwidth
 
   def vm_spec_is_equivalent(self, vm):
     """Returns true if the spec of a vm that is

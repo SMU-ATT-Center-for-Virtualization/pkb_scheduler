@@ -52,13 +52,17 @@ from absl import app
 # TODO get to work with VPNs
 # TODO add defaults all in one place
 
-# TODO change algorithm to try to limit egress/ingress per region
-# per test
-
 # TODO move skylake to config file 
 
 # TODO add ability to reconfigure graph after each benchmark run
 
+
+# TODO change algorithm to try to limit egress/ingress per region
+# per test
+# TODO change estimated bandwidth
+# TODO maybe change the algorithm to choose the tests completely.
+# instead of maximum matching, use a linear programming, constraint optimization
+# or edit maximum matching to take into account certain parameters
 
 # python3
 
@@ -533,7 +537,6 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'os_type' in benchmark_config[1]['flags']:
       os_type = benchmark_config[1]['flags']['os_type']
 
-
     # TODO expand for aws and azure
     network_name = None
     if 'gce_network_name' in benchmark_config[1]['flags']:
@@ -547,6 +550,13 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'gcp_min_cpu_platform' in benchmark_config[1]['flags']:
       min_cpu_platform = benchmark_config[1]['flags']['gcp_min_cpu_platform']
 
+    # TODO, assigning estimated bandwidth to VMs instead of benchmarks is suboptimal
+    # but major changes are required to get it to work, so for now we are assigning estimated bandwidth to VMs
+    estimated_bandwidth = -1
+    if 'estimated_bandwidth' in benchmark_config[1]['flags']:
+      estimated_bandwidth = benchmark_config[1]['flags']['estimated_bandwidth']
+      del benchmark_config[1]['flags']['estimated_bandwidth']
+
     uuid_1 = uuid.uuid1().int
     uuid_2 = uuid.uuid1().int
 
@@ -559,7 +569,8 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    os_type=os_type,
                                    min_cpu_platform=min_cpu_platform,
                                    network_name=network_name,
-                                   subnet_name=subnet_name)
+                                   subnet_name=subnet_name,
+                                   estimated_bandwidth=estimated_bandwidth)
     vm_specs = [vm_spec_1]
     if 'extra_zones' in benchmark_config[1]['flags']:
       vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
@@ -571,13 +582,15 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                      os_type=os_type,
                                      min_cpu_platform=min_cpu_platform,
                                      network_name=network_name,
-                                     subnet_name=subnet_name)
+                                     subnet_name=subnet_name,
+                                     estimated_bandwidth=estimated_bandwidth)
       vm_specs.append(vm_spec_2)
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],
                    vm_specs=vm_specs,
                    bigquery_table=bigquery_table,
                    bq_project=bq_project,
+                   estimated_bandwidth=estimated_bandwidth,
                    flags=benchmark_config[1]['flags'])
     # print("FLAGS STUFF HERE")
     # print(benchmark_config[1]['flags'])

@@ -123,8 +123,10 @@ class GcpRegion(Region):
   def has_enough_cpus(self, cpu_count, machine_type):    
     return self.get_available_cpus(machine_type) >= cpu_count
 
-  def has_enough_resources(self, cpu_count, machine_type):
-    estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', machine_type)
+  def has_enough_resources(self, cpu_count, machine_type, estimated_bandwidth):
+    if estimated_bandwidth < 0:
+      estimated_bandwidth = 0
+    # estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', machine_type)
     if (self.get_available_cpus(machine_type) >= cpu_count and self.quotas['IN_USE_ADDRESSES']['limit'] > self.quotas['IN_USE_ADDRESSES']['usage']):
       if not self.bandwidth_limit or estimated_bandwidth + self.bandwidth_usage <= self.bandwidth_limit:
         if not self.cloud.bandwidth_limit or estimated_bandwidth + self.cloud.bandwidth_usage <= self.cloud.bandwidth_limit:
@@ -133,12 +135,14 @@ class GcpRegion(Region):
     return False
 
   def vm_has_enough_resources(self, vm):
-    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type, vm.estimated_bandwidth)
 
   def add_virtual_machine_if_possible(self, vm):
-    if self.has_enough_resources(vm.cpu_count, vm.machine_type):
+    if self.has_enough_resources(vm.cpu_count, vm.machine_type, vm.estimated_bandwidth):
       cpu_type = self._get_cpu_type(vm.machine_type)
-      estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', vm.machine_type)
+      estimated_bandwidth = vm.estimated_bandwidth
+      if estimated_bandwidth < 0:
+        estimated_bandwidth = 0
       self.virtual_machines.append(vm)
       self.quotas[cpu_type]['usage'] += vm.cpu_count
       self.quotas['IN_USE_ADDRESSES']['usage'] += 1
@@ -154,7 +158,10 @@ class GcpRegion(Region):
   def remove_virtual_machine(self, vm):
     # TODO add safety checks here
     cpu_type = self._get_cpu_type(vm.machine_type)
-    estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', vm.machine_type)
+    # estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('GCP', vm.machine_type)
+    estimated_bandwidth = vm.estimated_bandwidth
+    if estimated_bandwidth < 0:
+      estimated_bandwidth = 0
     self.virtual_machines.remove(vm)
     self.quotas[cpu_type]['usage'] -= vm.cpu_count
     self.quotas['IN_USE_ADDRESSES']['usage'] -= 1

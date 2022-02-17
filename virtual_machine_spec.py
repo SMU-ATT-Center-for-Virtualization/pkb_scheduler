@@ -14,7 +14,8 @@ class VirtualMachineSpec():
 
   def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu1804', machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
-               vpn_tunnel_count=0, min_cpu_platform=None, network_name=None, subnet_name=None):
+               vpn_tunnel_count=0, min_cpu_platform=None, network_name=None, subnet_name=None,
+               estimated_bandwidth=-1):
 
     # get logger
     global logger
@@ -36,6 +37,7 @@ class VirtualMachineSpec():
     else:
       self.preexisting_network = False
     # self.ip_address = None
+    self.estimated_bandwidth = estimated_bandwidth
 
   def vm_spec_is_equivalent(self, vm_spec):
     """Returns true if the spec of a vm that is

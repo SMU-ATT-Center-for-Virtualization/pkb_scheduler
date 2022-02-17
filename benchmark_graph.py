@@ -180,7 +180,7 @@ class BenchmarkGraph():
     vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
 
     #TODO change implementation to just take vm.machine_type
-    if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.machine_type):
+    if self.regions[vm_region].has_enough_resources(vm.cpu_count, vm.machine_type, vm.estimated_bandwidth):
       if self.required_vm_exists(vm):
         # returns this is vm exists but there is enough space
         # for another
@@ -243,7 +243,8 @@ class BenchmarkGraph():
                           vm_spec_id=vm_spec.id,
                           network_name=vm_spec.network_name,
                           subnet_name=vm_spec.subnet_name,
-                          preexisting_network=vm_spec.preexisting_network)
+                          preexisting_network=vm_spec.preexisting_network,
+                          estimated_bandwidth=vm_spec.estimated_bandwidth)
 
       # if VM with same specs already exists, return false 0
       tmp_vm_list = self.get_list_if_vm_exists(vm)

@@ -33,6 +33,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
   # Troy. Only bother editing this if Azure has CPU quotas we need to track
   #Troy Update: We need to keep track of vCPU's. Additionally, we need to track total regional vCPU's
   elif cloud.upper() == 'AZURE':
+    cpu_count = None
     if machine_type == 'D2s_v3':
       cpu_count = 2
     elif machine_type == 'Standard_D2s_v3':
@@ -42,7 +43,7 @@ def cpu_count_from_machine_type(cloud, machine_type):
         cpu_count = int(machine_type[1])
       except:
         print(f"Error when trying to get cpu_count of virtual machine.")
-    return None
+    return cpu_count
   else:
     return None
 

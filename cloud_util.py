@@ -34,7 +34,9 @@ def cpu_count_from_machine_type(cloud, machine_type):
   #Troy Update: We need to keep track of vCPU's. Additionally, we need to track total regional vCPU's
   elif cloud.upper() == 'AZURE':
     if machine_type == 'D2s_v3':
-        cpu_count = 2
+      cpu_count = 2
+    elif machine_type == 'Standard_D2s_v3':
+      cput_count = 2
     else:
       try:
         cpu_count = int(machine_type[1])

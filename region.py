@@ -335,7 +335,7 @@ class AzureRegion(Region):
     self.quotas = quotas # this is a dictionary
     Region.__init__(self, region_name, cloud, bandwidth_limit=bandwidth_limit)
 
-  def has_enough_resources(self, cpu_count, machine_type):
+  def has_enough_resources(self, cpu_count, machine_type, estimated_bandwidth=-1):
     estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AZURE', machine_type)
     # Troy, change this depending on the relevant quotas. Leave the bandwidth stuff alone
     print(f"self.quotas: {self.quotas}")
@@ -353,7 +353,7 @@ class AzureRegion(Region):
     return False
 
   def vm_has_enough_resources(self, vm):
-    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type, estimated_bandwidth=-1)
 
   def add_virtual_machine_if_possible(self, vm):
     if self.has_enough_resources(vm.cpu_count, vm.machine_type):

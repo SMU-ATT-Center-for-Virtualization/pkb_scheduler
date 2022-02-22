@@ -282,6 +282,7 @@ class VirtualMachine():
     self.preexisting_network = vm.preexisting_network
     self.vm_spec = vm.vm_spec
     self.vm_spec_id = vm.vm_spec_id
+    self.estimated_bandwidth = vm.estimated_bandwidth
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()

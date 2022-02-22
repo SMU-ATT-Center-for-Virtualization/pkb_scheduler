@@ -1090,6 +1090,8 @@ class BenchmarkGraph():
     counter = 1
 
     config_yaml[bm.benchmark_type] = {}
+    if bm.vpc_peering:
+      config_yaml[bm.benchmark_type]['vpc_peering'] = bm.vpc_peering
     config_yaml[bm.benchmark_type]['vm_groups'] = {}
     config_yaml[bm.benchmark_type]['flags'] = bm.flags
     config_flags = config_yaml[bm.benchmark_type]['flags']

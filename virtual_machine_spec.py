@@ -70,6 +70,7 @@ class VirtualMachineSpec():
     self.network_name = vm.network_name
     self.subnet_name = vm.subnet_name
     self.preexisting_network = vm.preexisting_network
+    self.estimated_bandwidth = vn.estimated_bandwidth
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()

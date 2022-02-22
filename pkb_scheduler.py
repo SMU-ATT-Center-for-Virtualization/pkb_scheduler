@@ -424,6 +424,9 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
   # print(benchmark_config[1].keys())
   # benchmark_config[0] is name of benchmark
   # benchmark_config[1] is the config for the benchmark
+  vpc_peering = False
+  if 'vpc_peering' in benchmark_config[1]:
+    vpc_peering = True
 
   if 'vm_groups' in benchmark_config[1]:
     vm_config_list = []
@@ -514,6 +517,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                    vm_specs=vm_specs,
                    bigquery_table=bigquery_table,
                    bq_project=bq_project,
+                   vpc_peering=vpc_peering,
                    flags=benchmark_config[1]['flags'])
 
   else:
@@ -591,6 +595,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                    bigquery_table=bigquery_table,
                    bq_project=bq_project,
                    estimated_bandwidth=estimated_bandwidth,
+                   vpc_peering=vpc_peering,
                    flags=benchmark_config[1]['flags'])
     # print("FLAGS STUFF HERE")
     # print(benchmark_config[1]['flags'])

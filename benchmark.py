@@ -11,7 +11,7 @@ class Benchmark():
                os_type='ubuntu1804', machine_type=None, cloud='GCP',
                network_tier='premium', vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, bigquery_table=None, bq_project=None,
-               estimated_bandwidth=-1,
+               estimated_bandwidth=-1, vpc_peering=False,
                flags={}):
 
     self.benchmark_id = benchmark_id
@@ -20,9 +20,10 @@ class Benchmark():
     self.vms = []
     self.config_file = None
     self.flags = flags
-    self.bigquery_table=bigquery_table
-    self.bq_project=bq_project
-    self.estimated_bandwidth=estimated_bandwidth
+    self.bigquery_table = bigquery_table
+    self.bq_project = bq_project
+    self.estimated_bandwidth = estimated_bandwidth
+    self.vpc_peering = vpc_peering
 
     if len(vm_specs) <= 0:  
       self.zone1 = zone1
@@ -67,6 +68,8 @@ class Benchmark():
     # self.ssh_key = None
     # self.ip = None
     self.largest_vm = bm.largest_vm
+    self.estimated_bandwidth = bm.estimated_bandwidth
+    self.vpc_peering = bm.vpc_peering
 
   def run(self):
     pass

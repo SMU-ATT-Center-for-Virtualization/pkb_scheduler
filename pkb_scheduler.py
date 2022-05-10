@@ -98,7 +98,7 @@ flags.DEFINE_integer('max_duplicate_vms', 1000,
                      'Amount of duplicate vms allowed')
 
 flags.DEFINE_string('config', 'config.yaml',
-                    'pass config file,directory, or comma separated list of directories')
+                    'pass config file, directory, or comma separated list of directories')
 
 flags.DEFINE_integer('max_processes', 30,
                      'max threads to use. A value of -1 will give '

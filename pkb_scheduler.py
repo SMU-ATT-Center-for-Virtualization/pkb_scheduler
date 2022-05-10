@@ -98,7 +98,7 @@ flags.DEFINE_integer('max_duplicate_vms', 1000,
                      'Amount of duplicate vms allowed')
 
 flags.DEFINE_string('config', 'config.yaml',
-                    'pass config file or directory')
+                    'pass config file,directory, or comma separated list of directories')
 
 flags.DEFINE_integer('max_processes', 30,
                      'max threads to use. A value of -1 will give '
@@ -158,7 +158,10 @@ def main(argv):
   pkb_command = "python3 " + FLAGS.pkb_location
 
   benchmark_config_list = []
-  if(config_location.endswith(".yaml")):
+  if ',' in config_location:
+    config_location_list = config_location.split(',')
+    benchmark_config_list = parse_config_list(config_location_list)
+  elif(config_location.endswith(".yaml")):
     benchmark_config_list = parse_config_file(config_location)
   else:
     benchmark_config_list = parse_config_folder(config_location)
@@ -726,6 +729,36 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     pass
 
   return full_graph
+
+
+def parse_config_list(config_list, ignore_hidden_folders=True):
+  """Parse all config files found in a directory and sub directories
+
+  Parse all .yaml and .yml config files in a folder
+  and subfolders
+
+  Args:
+    path: The folder path to look for config files (default: {"configs/"})
+  """
+  file_list = []
+  for path in config_list:
+    path = path.strip()
+    for r, d, f in os.walk(path):
+      for file in f:
+        if ('.yaml' in file) or ('.yml' in file):
+          file_path = os.path.join(r, file)
+          if ('/.' not in file_path) or (ignore_hidden_folders is False):
+            file_list.append(os.path.join(r, file))
+
+  for f in file_list:
+    print(f)
+
+  benchmark_config_list = []
+  for file in file_list:
+    benchmark_config_list.extend(parse_config_file(file))
+
+  return benchmark_config_list
+
 
 
 def parse_config_folder(path="configs/", ignore_hidden_folders=True):

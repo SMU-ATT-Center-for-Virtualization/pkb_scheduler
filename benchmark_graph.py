@@ -1104,41 +1104,73 @@ class BenchmarkGraph():
     # config_flags["static_cloud_metadata"] = bm.vm_specs[0].cloud
     # config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
 
-
-    for vm in vm_list:
+    if bm.benchmark_type in ['omb']:
+      # default:
+      #   vm_count: 2
+      #   vm_spec: *default_single_core
       print("VM TO WRITE TO CONFIG")
-      print(vm.__dict__)
+      print(vm_list[0].__dict__)
       temp = config_yaml[bm.benchmark_type]['vm_groups']
-      vm_num = 'vm_' + str(counter)
-      temp[vm_num] = {}
-      # temp[vm_num]['static_vms'] = []
-      temp[vm_num]['cloud'] = vm.cloud
+      vm_num = len(vm_list)
 
-      if 'windows' in vm.os_type:
-        temp[vm_num]['os_type'] = vm.os_type
-        # vm_config_dict['password'] = vm.password
-
-      temp[vm_num]['vm_spec'] = {}
-      temp[vm_num]['vm_spec'][vm.cloud] = {}
+      temp['default'] = {}
+      temp['default']['vm_count'] = vm_num
+      temp['default']['cloud'] = vm_list[0].cloud
+      temp['default']['vm_spec'] = {}
+      temp['default']['vm_spec'][vm_list[0].cloud] = {}
       vm_config_dict = {}
       # vm_config_dict['user_name'] = 'perfkit'
       # vm_config_dict['ssh_private_key'] = vm.ssh_private_key
       # vm_config_dict['ip_address'] = vm.ip_address
       # vm_config_dict['internal_ip'] = vm.internal_ip
       vm_config_dict['install_packages'] = True
-      vm_config_dict['zone'] = vm.zone
-      vm_config_dict['machine_type'] = vm.machine_type
+      vm_config_dict['zone'] = vm_list[0].zone
+      vm_config_dict['machine_type'] = vm_list[0].machine_type
 
       # TODO add network stuff here
       # IF VM HAS NETWORK CONFIG, put it here
-      if vm.network_name:
-        vm_config_dict['vpc_id'] = vm.network_name
-        if vm.subnet_name: 
-          vm_config_dict['subnet_id']  = vm.subnet_name
+      if vm_list[0].network_name:
+        vm_config_dict['vpc_id'] = vm_list[0].network_name
+        if vm_list[0].subnet_name: 
+          vm_config_dict['subnet_id']  = vm_list[0].subnet_name
 
-      temp[vm_num]['vm_spec'][vm.cloud] = vm_config_dict
+      temp['default']['vm_spec'][vm_list[0].cloud] = vm_config_dict
 
-      counter += 1
+    else:
+      for vm in vm_list:
+        print("VM TO WRITE TO CONFIG")
+        print(vm.__dict__)
+        temp = config_yaml[bm.benchmark_type]['vm_groups']
+        vm_num = 'vm_' + str(counter)
+        temp[vm_num] = {}
+        # temp[vm_num]['static_vms'] = []
+        temp[vm_num]['cloud'] = vm.cloud
+
+        if 'windows' in vm.os_type:
+          temp[vm_num]['os_type'] = vm.os_type
+          # vm_config_dict['password'] = vm.password
+
+        temp[vm_num]['vm_spec'] = {}
+        temp[vm_num]['vm_spec'][vm.cloud] = {}
+        vm_config_dict = {}
+        # vm_config_dict['user_name'] = 'perfkit'
+        # vm_config_dict['ssh_private_key'] = vm.ssh_private_key
+        # vm_config_dict['ip_address'] = vm.ip_address
+        # vm_config_dict['internal_ip'] = vm.internal_ip
+        vm_config_dict['install_packages'] = True
+        vm_config_dict['zone'] = vm.zone
+        vm_config_dict['machine_type'] = vm.machine_type
+
+        # TODO add network stuff here
+        # IF VM HAS NETWORK CONFIG, put it here
+        if vm.network_name:
+          vm_config_dict['vpc_id'] = vm.network_name
+          if vm.subnet_name: 
+            vm_config_dict['subnet_id']  = vm.subnet_name
+
+        temp[vm_num]['vm_spec'][vm.cloud] = vm_config_dict
+
+        counter += 1
 
     file_name = (self.generated_config_path + "config_" 
                  + str(bm.benchmark_id) + ".yaml")

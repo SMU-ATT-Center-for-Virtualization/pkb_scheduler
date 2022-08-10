@@ -187,20 +187,12 @@ def main(argv):
 
   config_locations.extend(FLAGS.config_individual)
 
-  print(config_locations)
-
-  sys.exit(0)
-
   for config_location in config_locations:
     if(config_location.endswith(".yaml")):
       benchmark_config_list.extend(parse_config_file(config_location))
     else:
       benchmark_config_list.extend(parse_config_folder(config_location))
 
-  print("BENCHMARK CONFIG LIST")
-  print(benchmark_config_list)
-  sys.exit(0)
-  
 
   logger.debug("\nNUMBER OF CONFIGS")
   logger.debug(len(benchmark_config_list))

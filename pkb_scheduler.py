@@ -18,6 +18,7 @@ import time
 import logging
 import cloud_util
 import uuid
+import sys
 
 
 from typing import List, Dict, Tuple, Set
@@ -73,72 +74,97 @@ from absl import app
 FLAGS = flags.FLAGS
 
 
-flags.DEFINE_boolean('no_run', False, 
-                     'Prints out commands, but does not actually '
-                     'run them')
+flags.DEFINE_boolean(
+  'no_run', False, 
+  'Prints out commands, but does not actually '
+  'run them')
 
-flags.DEFINE_string('log_level', "info", 'info, warn, debug, error '
-                    'prints debug statements')
+flags.DEFINE_string(
+  'log_level', "info", 'info, warn, debug, error '
+  'prints debug statements')
 
-flags.DEFINE_string('pkb_log_level', "info", 'info, warn, debug, error '
-                    'prints debug statements for pkb processes')
+flags.DEFINE_string(
+  'pkb_log_level', "info", 'info, warn, debug, error '
+  'prints debug statements for pkb processes')
 
 # not implemented
-flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'],
-                  'Chooses whether algorithm should be more time or '
-                  'space efficient.')
+flags.DEFINE_enum(
+  'optimize', 'TIME', ['TIME', 'SPACE'],
+  'Chooses whether algorithm should be more time or '
+  'space efficient.')
 
-flags.DEFINE_boolean('allow_duplicate_vms', True,
-                     'Defines whether or not tool should create '
-                     'multiple identical VMs if there is capacity '
-                     'and run tests in parallel or if it should '
-                     'wait for existing vm to become available')
+flags.DEFINE_boolean(
+  'allow_duplicate_vms', True,
+  'Defines whether or not tool should create '
+  'multiple identical VMs if there is capacity '
+  'and run tests in parallel or if it should '
+  'wait for existing vm to become available')
 
-flags.DEFINE_integer('max_duplicate_vms', 1000,
-                     'Amount of duplicate vms allowed')
+flags.DEFINE_integer(
+  'max_duplicate_vms', 1000,
+  'Amount of duplicate vms allowed')
 
-flags.DEFINE_string('config', 'config.yaml',
-                    'pass config file, directory, or comma separated list of directories')
+flags.DEFINE_list(
+  'config', [],
+  'pass config file, directory, or comma separated list of directories')
 
-flags.DEFINE_integer('max_processes', 30,
-                     'max threads to use. A value of -1 will give '
-                     'the system permission to use as many threads '
-                     'as it wants. This may result in system slow downs '
-                     'or hang ups')
+flags.DEFINE_multi_string(
+  'config_individual', [],
+  'Similar to --config flag, but allows the flag to be specified multiple times'
+  'Any values passed here will be appended to those passed by --config'
+  'pass config file, directory, or comma separated list of directories')
 
-flags.DEFINE_string('pkb_location',
-                    "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py",
-                    'location of pkb on disk')
+flags.DEFINE_integer(
+  'max_processes', 30,
+  'max threads to use. A value of -1 will give '
+  'the system permission to use as many threads '
+  'as it wants. This may result in system slow downs '
+  'or hang ups')
 
-flags.DEFINE_boolean('print_graph', False,
-                     'If True, tool will use pyplot to print a visual '
-                     'representation of the benchmark_graph after every '
-                     'iteration')
+flags.DEFINE_string(
+  'pkb_location',
+  '/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py',
+  'location of pkb on disk')
 
-flags.DEFINE_string('bigquery_table', 'daily_tests.scheduler_test_1',
-                    'bigquery table to push results to')
+flags.DEFINE_boolean(
+  'print_graph', False,
+  'If True, tool will use pyplot to print a visual '
+  'representation of the benchmark_graph after every '
+  'iteration')
 
-flags.DEFINE_string('bq_project', 'smu-benchmarking',
-                    'bigquery project to push results to')
+flags.DEFINE_string(
+  'bigquery_table', 'daily_tests.scheduler_test_1',
+  'bigquery table to push results to')
 
-flags.DEFINE_boolean('precreate_and_share_vms', True,
-                     'If true, this will precreate and reuse vms. '
-                     'If false, every benchmark will create and destroy '
-                     'its own VMS')
+flags.DEFINE_string(
+  'bq_project', 'smu-benchmarking',
+  'bigquery project to push results to')
 
-flags.DEFINE_boolean('use_maximum_matching', True,
-                    'If true, this run VMs based on maximum matching')
+flags.DEFINE_boolean(
+  'precreate_and_share_vms', True,
+  'If true, this will precreate and reuse vms. '
+  'If false, every benchmark will create and destroy '
+  'its own VMS')
 
-flags.DEFINE_boolean('skip_prepare', True,
-                     'skips the prepare phase for benchmarks where this is implemented')
+flags.DEFINE_boolean(
+  'use_maximum_matching', True,
+  'If true, this run VMs based on maximum matching')
 
-flags.DEFINE_integer('regional_bandwidth_limit', None,
-                     'Applies a bandwidth limit per region (Gbps)')
-flags.DEFINE_integer('cloud_bandwidth_limit', None,
-                     'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+flags.DEFINE_boolean(
+  'skip_prepare', True,
+  'skips the prepare phase for benchmarks where this is implemented')
 
-flags.DEFINE_integer('max_retries', 20,
-                     'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
+flags.DEFINE_integer(
+  'regional_bandwidth_limit', None,
+  'Applies a bandwidth limit per region (Gbps)')
+
+flags.DEFINE_integer(
+  'cloud_bandwidth_limit', None,
+  'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+
+flags.DEFINE_integer(
+  'max_retries', 20,
+  'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
 
 logger = None
 
@@ -154,19 +180,26 @@ def main(argv):
   # setup logging and debug
   setup_logging()
   logger.debug("DEBUG LOGGING MODE")
-  config_location = FLAGS.config
+  config_locations = FLAGS.config
   pkb_command = "python3 " + FLAGS.pkb_location
 
   benchmark_config_list = []
-  if ',' in config_location:
-    config_location_list = config_location.split(',')
-    benchmark_config_list = parse_config_list(config_location_list)
-  elif(config_location.endswith(".yaml")):
-    benchmark_config_list = parse_config_file(config_location)
-  else:
-    benchmark_config_list = parse_config_folder(config_location)
 
-  # print(benchmark_config_list)
+  config_locations.extend(FLAGS.config_individual)
+
+  print(config_locations)
+
+  sys.exit(0)
+
+  for config_location in config_locations:
+    if(config_location.endswith(".yaml")):
+      benchmark_config_list.extend(parse_config_file(config_location))
+    else:
+      benchmark_config_list.extend(parse_config_folder(config_location))
+
+  print("BENCHMARK CONFIG LIST")
+  print(benchmark_config_list)
+  sys.exit(0)
   
 
   logger.debug("\nNUMBER OF CONFIGS")
@@ -741,7 +774,10 @@ def parse_config_list(config_list, ignore_hidden_folders=True):
     path: The folder path to look for config files (default: {"configs/"})
   """
   file_list = []
+  print("LIST")
+  print(config_list)
   for path in config_list:
+    print(f'PATH: {path}')
     path = path.strip()
     for r, d, f in os.walk(path):
       for file in f:

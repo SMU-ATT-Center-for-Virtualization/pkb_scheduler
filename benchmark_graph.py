@@ -1104,7 +1104,7 @@ class BenchmarkGraph():
     # config_flags["static_cloud_metadata"] = bm.vm_specs[0].cloud
     # config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
 
-    if bm.benchmark_type in ['omb']:
+    if bm.benchmark_type in ['omb', 'mpi']:
       # default:
       #   vm_count: 2
       #   vm_spec: *default_single_core

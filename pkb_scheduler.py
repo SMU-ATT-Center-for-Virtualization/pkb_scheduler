@@ -314,12 +314,14 @@ def upload_stats_to_bigquery(benchmarks_per_table):
   now = datetime.now()
   # datetime.utcfromtimestamp(int_timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
+  run_id = int(str(uuid.uuid1().int)[:10])
   rows_to_insert = []
   for key in benchmarks_per_table:
-    row = (now, key, benchmarks_per_table[key])
+    row = (now, key, benchmarks_per_table[key], run_id)
     rows_to_insert.append(row)
 
   errors = bigquery_client.insert_rows(table, rows_to_insert)
+  print(errors)
 
 
 def setup_logging():

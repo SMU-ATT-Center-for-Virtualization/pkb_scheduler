@@ -20,7 +20,8 @@ import cloud_util
 import uuid
 import sys
 
-
+from datetime import datetime
+from google.cloud import bigquery
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
@@ -70,6 +71,8 @@ from absl import app
 #EXAMPLE execution
 
 #python3 pkb_scheduler.py --no_run=True --config=run_test/daily_interzone --precreate_and_share_vms=False --pkb_location=</full/path/to/PerfKitBenchmarker/pkb.py
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'service_key.json'
 
 FLAGS = flags.FLAGS
 
@@ -172,6 +175,7 @@ maximum_sets = []
 vms_created = []
 vms_removed = []
 region_quota_usage = []
+benchmarks_per_table = {}
 
 def main(argv):
 
@@ -290,7 +294,32 @@ def main(argv):
 
   print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
+  print("BENCHMARKS PER BIGQUERY TABLE")
+  print(benchmarks_per_table)
+  with open('benchmarks_per_table.json', 'w') as json_file:
+    json.dump(benchmarks_per_table, json_file)
+  upload_stats_to_bigquery(benchmarks_per_table)
+
   exit(0)
+
+
+def upload_stats_to_bigquery(benchmarks_per_table):
+  bigquery_client = bigquery.Client()
+  # Prepares a reference to the dataset
+  dataset_ref = bigquery_client.dataset('reporting')
+
+  table_ref = dataset_ref.table('daily_benchmarks_per_table')
+  table = bigquery_client.get_table(table_ref)  # API call
+
+  now = datetime.now()
+  # datetime.utcfromtimestamp(int_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
+  rows_to_insert = []
+  for key in benchmarks_per_table:
+    row = (now, key, benchmarks_per_table[key])
+    rows_to_insert.append(row)
+
+  errors = bigquery_client.insert_rows(table, rows_to_insert)
 
 
 def setup_logging():
@@ -343,7 +372,9 @@ def run_benchmarks(benchmark_graph):
       max_set_empty_counter = 0
 
     if FLAGS.max_retries >= 0 and max_set_empty_counter > FLAGS.max_retries:
-      exit()
+      print("BENCHMARK WAIT LIST")
+      print(benchmark_graph.benchmark_wait_list)
+      return
     print("MAXIMUM SET")
     print(maximum_set)
 
@@ -463,7 +494,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
       # print(vm)
       vm_config_tmp = {}
       vm_config_tmp['cloud'] = vm['cloud']
-      vm_config_tmp['os_type'] = 'ubuntu1804'
+      vm_config_tmp['os_type'] = 'ubuntu2004'
       if 'os_type' in vm:
         vm_config_tmp['os_type'] = vm['os_type']
       elif 'os_type' in benchmark_config[1]['flags']:
@@ -625,9 +656,6 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                    estimated_bandwidth=estimated_bandwidth,
                    vpc_peering=vpc_peering,
                    flags=benchmark_config[1]['flags'])
-    # print("FLAGS STUFF HERE")
-    # print(benchmark_config[1]['flags'])
-    # print(bm.flags)
 
   return bm
 
@@ -738,6 +766,13 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
                                                  benchmark_counter)
     temp_benchmarks.append(new_benchmark)
     benchmark_counter += 1
+
+    # Logic to count number of benchmarks for each bigquery table
+    if new_benchmark.bigquery_table in benchmarks_per_table:
+      benchmarks_per_table[new_benchmark.bigquery_table] += 1
+    else:
+      benchmarks_per_table[new_benchmark.bigquery_table] = 1
+
 
   logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
   temp_benchmarks.sort(key=lambda x: x.largest_vm, reverse=True)

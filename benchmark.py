@@ -8,7 +8,7 @@ class Benchmark():
 
   def __init__(self, benchmark_id, benchmark_type, vm_specs=[], 
                zone1=None, zone2=None, more_zones=[],
-               os_type='ubuntu1804', machine_type=None, cloud='GCP',
+               os_type='ubuntu2004', machine_type=None, cloud='GCP',
                network_tier='premium', vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, bigquery_table=None, bq_project=None,
                estimated_bandwidth=-1, vpc_peering=False,
@@ -24,6 +24,7 @@ class Benchmark():
     self.bq_project = bq_project
     self.estimated_bandwidth = estimated_bandwidth
     self.vpc_peering = vpc_peering
+    self.machine_type = machine_type
 
     if len(vm_specs) <= 0:  
       self.zone1 = zone1
@@ -81,7 +82,10 @@ class Benchmark():
     #   zones.append(vm_spec.zone)
     #   machine_sizes.append(vm_spec.machine_type)
     # return f'BM {{id: {self.benchmark_id}, zones: {zones}, machine_sizes: {machine_sizes}}}'
-    return f'BM {id}'
+    bm_str = f'BM {self.benchmark_id} {self.benchmark_type} {self.bigquery_table}'
+    for vm_spec in self.vm_specs:
+      bm_str = bm_str + f'{vm_spec.zone}'
+    return bm_str
 
   def __str__(self):
     # zones = []
@@ -90,4 +94,7 @@ class Benchmark():
     #   zones.append(vm_spec.zone)
     #   machine_sizes.append(vm_spec.machine_type)
     # return f'BM {{id: {self.benchmark_id}, zones: {zones}, machine_sizes: {machine_sizes}}}'
-    return f'BM {id}'
+    bm_str = f'BM {self.benchmark_id} {self.benchmark_type} {self.bigquery_table}'
+    for vm_spec in self.vm_specs:
+      bm_str = bm_str + f' {vm_spec.zone} '
+    return bm_str

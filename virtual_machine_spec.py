@@ -12,7 +12,7 @@ class VirtualMachineSpec():
   [description]
   """
 
-  def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu1804', machine_type=None,
+  def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu2004', machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, min_cpu_platform=None, network_name=None, subnet_name=None,
                estimated_bandwidth=-1):

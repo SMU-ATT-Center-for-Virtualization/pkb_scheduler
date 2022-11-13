@@ -19,7 +19,9 @@ class VirtualMachine():
   def __init__(self, node_id, cpu_count, zone, os_type=None, machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
-               vm_spec=None, vm_spec_id=None, min_cpu_platform=None):
+               vm_spec=None, vm_spec_id=None, min_cpu_platform=None,
+               network_name=None, subnet_name=None, preexisting_network=True,
+               estimated_bandwidth=-1):
 
     # get logger
     global logger
@@ -48,11 +50,14 @@ class VirtualMachine():
     self.creation_time = None
     self.deletion_time = None
     # TODO use this instead of static network name
-    self.network_name = None
+    self.network_name = network_name
+    self.subnet_name = subnet_name
+    self.preexisting_network = preexisting_network
     # self.ip_address = None
     self.vm_spec = vm_spec
     self.vm_spec_id = vm_spec_id
     self.password = None
+    self.estimated_bandwidth = estimated_bandwidth
 
   def vm_spec_is_equivalent(self, vm):
     """Returns true if the spec of a vm that is
@@ -63,7 +68,11 @@ class VirtualMachine():
         self.machine_type == vm.machine_type and
         self.network_tier == vm.network_tier and
         self.vpn == vm.vpn and
-        self.os_type == vm.os_type):
+        self.os_type == vm.os_type and
+          ((self.preexisting_network == True and
+            self.network_name == vm.network_name and
+            self.subnet_name == vm.subnet_name) 
+          or self.preexisting_network == False)):
       return True
 
     return False
@@ -90,6 +99,7 @@ class VirtualMachine():
       vm: [description]
     """
     # TODO make this more robust
+    # TODO FIX ALL OF THIS
     if self.status == "Running":
       return (False, self.status)
 
@@ -101,21 +111,30 @@ class VirtualMachine():
       cmd = cmd + " --benchmarks=vm_setup"
 
     cmd = (cmd +
-           " --gce_network_name=pkb-scheduler" +
-           " --gcp_min_cpu_platform=" + self.min_cpu_platform +
            " --ssh_key_file=" + self.ssh_private_key +
-           " --ssl_cert_file=" + self.ssl_cert +
+           # " --ssl_cert_file=" + self.ssl_cert +
            " --zones=" + self.zone +
            " --os_type=" + self.os_type +
            " --machine_type=" + self.machine_type +
            " --cloud=" + self.cloud +
-           " --gce_network_tier=" + self.network_tier +
            " --run_stage=provision,prepare" +
-           " --gce_remote_access_firewall_rule=allow-ssh" +
            " --ignore_package_requirements=True")
 
+    if self.cloud == 'GCP':
+      cmd = (cmd +  " --gce_network_name=" + self.network_name +
+                    " --gce_remote_access_firewall_rule=allow-ssh" +
+                    " --gce_network_tier=" + self.network_tier +
+                    " --gce_subnet_name=" + self.network_name)
+    elif self.cloud == 'AWS':
+      pass # TODO
+    elif self.cloud == 'Azure':
+      pass # TODO
+
+    if self.min_cpu_platform:
+      cmd = (cmd + " --gcp_min_cpu_platform=" + self.min_cpu_platform)
+    cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
+    logging.info('CREATE INSTANCE: ' + cmd)
     if FLAGS.no_run:
-      print("CREATE INSTANCE: " + cmd)
       self.run_uri = "no_run"
       self.uid = "no_run"
       self.ip_address = "9.9.9.9"
@@ -126,8 +145,7 @@ class VirtualMachine():
       return (True, self.status)
 
     start_time = time.time()
-    self.create_timestamp = time.time()
-
+    self.create_timestamp = time.time() 
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -200,7 +218,7 @@ class VirtualMachine():
     # --run_stage=cleanup,teardown --run_uri=074af5cd
 
     # TODO make the network a parameter
-    print("DELETING VM INSTANCE")
+    # print("DELETING VM INSTANCE")
 
     cmd = (pkb_location)
     if 'windows' in self.os_type:
@@ -216,14 +234,14 @@ class VirtualMachine():
            " --run_stage=cleanup,teardown" +
            " --ignore_package_requirements=True")
 
+    cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
+    logging.info("DELETING INSTANCE: " + cmd)
     if FLAGS.no_run:
-      logging.debug("DELETING INSTANCE: " + cmd)
       self.status = "Shutdown"
       self.delete_timestamp = time.time()
       return (True, self.status)
 
     start_time = time.time()
-
     process = subprocess.Popen(cmd.split(),
                                stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -259,8 +277,17 @@ class VirtualMachine():
     self.network_name = vm.network_name
     self.create_timestamp = vm.create_timestamp
     self.delete_timestamp = vm.delete_timestamp
+    self.network_name = vm.network_name
+    self.subnet_name = vm.subnet_name
+    self.preexisting_network = vm.preexisting_network
+    self.vm_spec = vm.vm_spec
+    self.vm_spec_id = vm.vm_spec_id
+    self.estimated_bandwidth = vm.estimated_bandwidth
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()
     # or this
     # destination.__dict__.update(source.__dict__).
+
+  def __str__(self):
+    return f'VM {{id: {self.node_id}, cloud: {self.cloud}, zone: {self.zone}, machine_type: {self.machine_type}}}'

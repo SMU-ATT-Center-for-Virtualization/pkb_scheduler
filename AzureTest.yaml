@@ -1,0 +1,25 @@
+#import anchors.yaml
+#benchmark ping
+#for tests, spin up different machines in different zones
+netperf:
+  flag_matrix: fmatrix
+  flag_matrix_filters:
+    fmatrix: "zones != extra_zones"
+  flag_matrix_defs:
+    fmatrix:
+      zones: [eastus] # The zones should be the Names, not the DisplayNames
+      extra_zones: [westus2,westus3,eastus2,ukwest,norwayeast,northeurope] #, us-east-2, us-west-2, ap-southeast-1,ap-northeast-1, ap-northeast-2] #put 6 regions here
+      machine_type: [Standard_D2s_v3]
+  flags:
+    cloud: Azure
+    iperf_runtime_in_seconds: 30
+    netperf_histogram_buckets: 1000
+    netperf_benchmarks: TCP_RR
+    #netperf_rr_test_length: 100000
+    netperf_test_length: 10
+    netperf_num_streams: 1
+    iperf_sending_thread_count: 1,32
+    netperf_tcp_stream_send_size_in_bytes: 131072
+    tcp_max_receive_buffer: 500000000
+    tcp_max_send_buffer: 500000000
+    ip_addresses: EXTERNAL

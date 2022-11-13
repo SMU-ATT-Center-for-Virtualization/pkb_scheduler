@@ -12,9 +12,10 @@ class VirtualMachineSpec():
   [description]
   """
 
-  def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu1804', machine_type=None,
+  def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu2004', machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
-               vpn_tunnel_count=0, min_cpu_platform=None):
+               vpn_tunnel_count=0, min_cpu_platform=None, network_name=None, subnet_name=None,
+               estimated_bandwidth=-1):
 
     # get logger
     global logger
@@ -29,8 +30,14 @@ class VirtualMachineSpec():
     self.vpn = vpn
     self.min_cpu_platform = min_cpu_platform
     # TODO use this instead of static network name
-    self.network_name = None
+    self.network_name = network_name
+    self.subnet_name = subnet_name
+    if network_name:
+      self.preexisting_network = True
+    else:
+      self.preexisting_network = False
     # self.ip_address = None
+    self.estimated_bandwidth = estimated_bandwidth
 
   def vm_spec_is_equivalent(self, vm_spec):
     """Returns true if the spec of a vm that is
@@ -42,7 +49,10 @@ class VirtualMachineSpec():
         self.network_tier == vm_spec.network_tier and
         self.vpn == vm_spec.vpn and
         self.os_type == vm_spec.os_type and
-        self.min_cpu_platform == vm.min_cpu_platform):
+        self.min_cpu_platform == vm.min_cpu_platform and
+        self.network_name == vm.network_name and
+        self.subnet_name == vm.subnet_name and
+        self.preexisting_network == vm.preexisting_network):
       return True
 
     return False
@@ -57,6 +67,10 @@ class VirtualMachineSpec():
     self.vpn = vm.vpn
     self.network_name = vm.network_name
     self.min_cpu_platform = vm.min_cpu_platform
+    self.network_name = vm.network_name
+    self.subnet_name = vm.subnet_name
+    self.preexisting_network = vm.preexisting_network
+    self.estimated_bandwidth = vn.estimated_bandwidth
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()

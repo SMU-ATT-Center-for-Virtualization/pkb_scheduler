@@ -1,11 +1,11 @@
-# This tool requires the SMU AT&T CENTER pkb_autopilot branch
+# This tool requires the SMU AT&T CENTER pkb_autopilot_update branch
 # of PerfkitBenchmarker to run properly
 
 # It also requires config files passed to it to be formatted
 # in a certain way. They should include the cloud and
 # machine type flags, as well as other things that might be
 # default when using just PKB
-
+from __future__ import annotations
 import yaml
 import six
 import copy
@@ -18,8 +18,10 @@ import time
 import logging
 import cloud_util
 import uuid
+import sys
 
-
+from datetime import datetime
+from google.cloud import bigquery
 from typing import List, Dict, Tuple, Set
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
@@ -30,7 +32,6 @@ from absl import flags
 from absl import app
 
 # TODO
-# parse diff types of files
 # tighter cohesion with pkb (use pkb classes)?
 
 # put configs into unique directory
@@ -53,11 +54,17 @@ from absl import app
 # TODO get to work with VPNs
 # TODO add defaults all in one place
 
+# TODO move skylake to config file 
+
+# TODO add ability to reconfigure graph after each benchmark run
+
+
 # TODO change algorithm to try to limit egress/ingress per region
 # per test
-
-# TODO move skylake to config file
-
+# TODO change estimated bandwidth
+# TODO maybe change the algorithm to choose the tests completely.
+# instead of maximum matching, use a linear programming, constraint optimization
+# or edit maximum matching to take into account certain parameters
 
 # python3
 
@@ -65,73 +72,110 @@ from absl import app
 
 #python3 pkb_scheduler.py --no_run=True --config=run_test/daily_interzone --precreate_and_share_vms=False --pkb_location=</full/path/to/PerfKitBenchmarker/pkb.py
 
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'service_key.json'
+
 FLAGS = flags.FLAGS
 
 
-flags.DEFINE_boolean('no_run', False, 
-                     'Prints out commands, but does not actually '
-                     'run them')
+flags.DEFINE_boolean(
+  'no_run', False, 
+  'Prints out commands, but does not actually '
+  'run them')
 
-flags.DEFINE_string('log_level', "INFO", 'info, warn, debug, error '
-                    'prints debug statements')
+flags.DEFINE_string(
+  'log_level', "info", 'info, warn, debug, error '
+  'prints debug statements')
+
+flags.DEFINE_string(
+  'pkb_log_level', "info", 'info, warn, debug, error '
+  'prints debug statements for pkb processes')
 
 # not implemented
-flags.DEFINE_enum('optimize', 'TIME', ['TIME', 'SPACE'],
-                  'Chooses whether algorithm should be more time or '
-                  'space efficient.')
+flags.DEFINE_enum(
+  'optimize', 'TIME', ['TIME', 'SPACE'],
+  'Chooses whether algorithm should be more time or '
+  'space efficient.')
 
-flags.DEFINE_boolean('allow_duplicate_vms', True,
-                     'Defines whether or not tool should create '
-                     'multiple identical VMs if there is capacity '
-                     'and run tests in parallel or if it should '
-                     'wait for existing vm to become available')
+flags.DEFINE_boolean(
+  'allow_duplicate_vms', True,
+  'Defines whether or not tool should create '
+  'multiple identical VMs if there is capacity '
+  'and run tests in parallel or if it should '
+  'wait for existing vm to become available')
 
-flags.DEFINE_integer('max_duplicate_vms', 1000,
-                     'Amount of duplicate vms allowed')
+flags.DEFINE_integer(
+  'max_duplicate_vms', 1000,
+  'Amount of duplicate vms allowed')
 
-flags.DEFINE_string('config', 'config.yaml',
-                    'pass config file or directory')
+flags.DEFINE_list(
+  'config', [],
+  'pass config file, directory, or comma separated list of directories')
 
-flags.DEFINE_integer('max_processes', 30,
-                     'max threads to use. A value of -1 will give '
-                     'the system permission to use as many threads '
-                     'as it wants. This may result in system slow downs '
-                     'or hang ups')
+flags.DEFINE_multi_string(
+  'config_individual', [],
+  'Similar to --config flag, but allows the flag to be specified multiple times'
+  'Any values passed here will be appended to those passed by --config'
+  'pass config file, directory, or comma separated list of directories')
 
-flags.DEFINE_string('pkb_location',
-                    "/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py",
-                    'location of pkb on disk')
+flags.DEFINE_integer(
+  'max_processes', 30,
+  'max threads to use. A value of -1 will give '
+  'the system permission to use as many threads '
+  'as it wants. This may result in system slow downs '
+  'or hang ups')
 
-flags.DEFINE_boolean('print_graph', False,
-                     'If True, tool will use pyplot to print a visual '
-                     'representation of the benchmark_graph after every '
-                     'iteration')
+flags.DEFINE_string(
+  'pkb_location',
+  '/home/derek/projects/virt_center/pkb_autopilot_branch/PerfKitBenchmarker/pkb.py',
+  'location of pkb on disk')
 
-flags.DEFINE_string('bigquery_table', 'daily_tests.scheduler_test_1',
-                    'bigquery table to push results to')
+flags.DEFINE_boolean(
+  'print_graph', False,
+  'If True, tool will use pyplot to print a visual '
+  'representation of the benchmark_graph after every '
+  'iteration')
 
-flags.DEFINE_string('bq_project', 'smu-benchmarking',
-                    'bigquery project to push results to')
+flags.DEFINE_string(
+  'bigquery_table', 'daily_tests.scheduler_test_1',
+  'bigquery table to push results to')
 
-flags.DEFINE_boolean('precreate_and_share_vms', True,
-                     'If true, this will precreate and reuse vms. '
-                     'If false, every benchmark will create and destroy '
-                     'its own VMS')
+flags.DEFINE_string(
+  'bq_project', 'smu-benchmarking',
+  'bigquery project to push results to')
 
-flags.DEFINE_boolean('use_maximum_matching', True,
-                    'If true, this run VMs based on maximum matching')
+flags.DEFINE_boolean(
+  'precreate_and_share_vms', True,
+  'If true, this will precreate and reuse vms. '
+  'If false, every benchmark will create and destroy '
+  'its own VMS')
 
-flags.DEFINE_integer('regional_bandwidth_limit', None,
-                 'Applies a bandwidth limit per region (Gbps)')
-flags.DEFINE_integer('cloud_bandwidth_limit', None,
-                 'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+flags.DEFINE_boolean(
+  'use_maximum_matching', True,
+  'If true, this run VMs based on maximum matching')
 
-flags.DEFINE_integer('max_retries', 20,
-                     'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
+flags.DEFINE_boolean(
+  'skip_prepare', True,
+  'skips the prepare phase for benchmarks where this is implemented')
+
+flags.DEFINE_integer(
+  'regional_bandwidth_limit', None,
+  'Applies a bandwidth limit per region (Gbps)')
+
+flags.DEFINE_integer(
+  'cloud_bandwidth_limit', None,
+  'Applies a bandwidth limit to all tests on a cloud (Gbps)')
+
+flags.DEFINE_integer(
+  'max_retries', 20,
+  'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
 
 logger = None
 
 maximum_sets = []
+vms_created = []
+vms_removed = []
+region_quota_usage = []
+benchmarks_per_table = {}
 
 def main(argv):
 
@@ -140,40 +184,37 @@ def main(argv):
   # setup logging and debug
   setup_logging()
   logger.debug("DEBUG LOGGING MODE")
-  config_location = FLAGS.config
+  config_locations = FLAGS.config
   pkb_command = "python3 " + FLAGS.pkb_location
 
   benchmark_config_list = []
-  if(config_location.endswith(".yaml")):
-    benchmark_config_list = parse_config_file(config_location)
-  else:
-    benchmark_config_list = parse_config_folder(config_location)
 
-  # print(benchmark_config_list)
+  config_locations.extend(FLAGS.config_individual)
+
+  for config_location in config_locations:
+    if(config_location.endswith(".yaml")):
+      benchmark_config_list.extend(parse_config_file(config_location))
+    else:
+      benchmark_config_list.extend(parse_config_folder(config_location))
+
 
   logger.debug("\nNUMBER OF CONFIGS")
   logger.debug(len(benchmark_config_list))
   # for config in benchmark_config_list:
   #   print(config)
 
-  # benchmark_config_list = parse_config_folder("/home/derek/projects/pkb_scheduler")
-
-  print("COMPLETE BENCHMARK CONFIG LIST")
-  for tmpbm in benchmark_config_list:
-    print(tmpbm)
-
   # Create the initial graph from the config directory or file
   full_graph = create_graph_from_config_list(benchmark_config_list,
                                              pkb_command)
 
-  logger.debug("\nVMS TO CREATE:")
-  for vm in full_graph.virtual_machines:
-    logger.debug(vm.zone + " " + vm.network_tier + " " + vm.machine_type +
-                 " " + vm.os_type + " " + vm.cloud)
+  # logger.debug("\nVMS TO CREATE:")
+  # print(full_graph.virtual_machines)
+  # for vm in full_graph.virtual_machines:
+  #   print(vm.__dict__)
 
   logger.debug("\nBENCHMARKS TO RUN:")
   for bm in full_graph.benchmarks:
-    logger.debug("Benchmark " + bm.vm_specs[0].zone + "--" + bm.vm_specs[1].zone)
+    logger.debug(f"Benchmark {bm}")
 
   logger.debug("\n\nFULL GRAPH:")
   logger.debug(full_graph.get_list_of_nodes())
@@ -182,11 +223,9 @@ def main(argv):
 
   # This method does almost everything
   run_benchmarks(full_graph)
-  # test_stuff(full_graph)
 
   end_time = time.time()
   total_run_time = (end_time - start_time)
-  print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
   # Print out Timing Metrics
   if len(list(filter(None, full_graph.vm_creation_times))) > 0:
@@ -199,12 +238,52 @@ def main(argv):
                               len(list(filter(None, full_graph.benchmark_run_times))))
     logging.info("AVG BENCHMARK RUN TIME: " + str(avg_benchmark_run_time))
 
-  print("ALL MAXIMUM SETS")
-  for max_set in maximum_sets:
-    print(max_set)
-
+  # print("ALL MAXIMUM SETS")
+  # for max_set in maximum_sets:
+  #   print(max_set)
+  # print("ALL VMS CREATED")
+  # for vm_set in vms_created:
+  #   print(vm_set)
+  # print("ALL VMS DESTROYED")
+  # for vm_set in vms_removed:
+  #   print(vm_set)
+    
+  print("BENCHMARK SCHEDULE HISTORY")
+  vms_at_time = 0
+  if FLAGS.precreate_and_share_vms:
+    for i in range(0, len(maximum_sets)):
+      vms_at_time = vms_at_time + len(vms_created[i])
+      vms_used_this_round = len(list(itertools.chain(*maximum_sets[i])))
+      print(f"ROUND \n{i}")
+      print(f"VM USAGE: {vms_used_this_round}/{vms_at_time}")
+      print(f"{len(vms_created[i])} VMS CREATED:")
+      print(vms_created[i])
+      print(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      print(maximum_sets[i])
+      print(f"{len(vms_removed[i])} VMS DESTROYED:")
+      print(vms_removed[i])
+      vms_at_time = vms_at_time - len(vms_removed[i])
+      print(f"ALL REGION QUOTA USAGE:")
+      for region_quota in region_quota_usage[i]:
+        for key in region_quota:
+          quota = region_quota[key]
+          #print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
+          #      f"CPU USE: {quota['CPUS']['usage']}, "
+          #      f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
+          #      f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
+      # print(region_quota_usage[i])
+  else:
+    for i in range(0, len(maximum_sets)):
+      print(f"ROUND \n{i}")
+      print(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      print(maximum_sets[i])
+  
   print("ALL BENCHMARK TIMES:")
   print(full_graph.benchmark_run_times)
+  try:
+    print(f"TOTAL BENCHMARK TIME: {sum(full_graph.benchmark_run_times)}")
+  except:
+    pass
 
   print("TOTAL VM UPTIME: ")
   total_time = 0
@@ -212,7 +291,46 @@ def main(argv):
     total_time = total_time + vm.uptime()
   print(total_time)
 
+  print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
+
+  with open('benchmarks_per_table.json', 'w') as json_file:
+    json.dump(benchmarks_per_table, json_file)
+
+  if FLAGS.no_run == False:
+    upload_stats_to_bigquery(benchmarks_per_table)
+
   exit(0)
+
+
+def upload_stats_to_bigquery(benchmarks_per_table: Dict):
+  """Summary
+  
+  Args:
+      benchmarks_per_table (Dict): Description
+  
+  Returns:
+      TYPE: Description
+  """
+  if len(benchmarks_per_table) == 0:
+    return
+  bigquery_client = bigquery.Client()
+  # Prepares a reference to the dataset
+  dataset_ref = bigquery_client.dataset('reporting')
+
+  table_ref = dataset_ref.table('daily_benchmarks_per_table')
+  table = bigquery_client.get_table(table_ref)  # API call
+
+  now = datetime.now()
+  # datetime.utcfromtimestamp(int_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
+  run_id = int(str(uuid.uuid1().int)[:10])
+  rows_to_insert = []
+  for key in benchmarks_per_table:
+    row = (now, key, benchmarks_per_table[key], run_id)
+    rows_to_insert.append(row)
+
+  errors = bigquery_client.insert_rows(table, rows_to_insert)
+  print(errors)
 
 
 def setup_logging():
@@ -241,46 +359,71 @@ def test_stuff(benchmark_graph):
 
 
 def run_benchmarks(benchmark_graph):
-  
-  if FLAGS.precreate_and_share_vms:
-    benchmark_graph.create_vms()
 
   benchmarks_run = []
-  # benchmark_graph.print_graph()
-  vms_removed = []
+  benchmark_graph.equalize_graph()
+  if FLAGS.print_graph:
+    benchmark_graph.print_graph()
   max_set_empty_counter = 0
 
   while benchmark_graph.benchmarks_left() > 0:
+    logging.info(f"graph nodes remaining: {len(benchmark_graph.graph.nodes)}")
+    logging.info(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
+    logging.info(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
+    logging.info(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
+    logging.info(f"multiedge benchmarks: {benchmark_graph.multiedge_benchmarks}")
 
     # TODO make get_benchmark_set work better than maximum matching
-    maximum_set = list(benchmark_graph.maximum_matching())
+    maximum_set = benchmark_graph.get_benchmark_set()
+    # maximum_set = list(benchmark_graph.maximum_matching())
+
     if len(maximum_set) == 0:
       max_set_empty_counter += 1
     else:
       max_set_empty_counter = 0
 
     if FLAGS.max_retries >= 0 and max_set_empty_counter > FLAGS.max_retries:
-      exit()
+      print("BENCHMARK WAIT LIST")
+      print(benchmark_graph.benchmark_wait_list)
+      return
     print("MAXIMUM SET")
     print(maximum_set)
+
+    max_set_vms = list(itertools.chain(*maximum_set))
+    if FLAGS.precreate_and_share_vms:
+      created_list = benchmark_graph.create_vms(vm_list=max_set_vms)
+      vms_created.append(created_list)
+
     maximum_sets.append(maximum_set)
     benchmarks_run.append(maximum_set)
+    quota_usage = benchmark_graph.get_all_quota_usage()
+    for region_quota in quota_usage:
+      for key in region_quota:
+        quota = region_quota[key]
+        #print(f"region: {key}, CPU QUOTA: {quota['CPUS']['limit']}, "
+        #      f"CPU USE: {quota['CPUS']['usage']}, "
+        #      f"ADDRS QUOTA: {quota['IN_USE_ADDRESSES']['limit']}, "
+        #      f"ADDRS USE: {quota['IN_USE_ADDRESSES']['usage']}")
+    region_quota_usage.append(quota_usage)
+    # This actually runs all the benchmarks in this set
     benchmark_graph.run_benchmark_set(maximum_set)
-    # possibly check
+    # TODO possibly check completion status
     # Completion statuses can be found at: 
     # /tmp/perfkitbenchmarker/runs/7fab9158/completion_statuses.json
     # before removal of edges
-    removed_count = benchmark_graph.remove_orphaned_nodes()
-    vms_removed.append(removed_count)
+    benchmark_graph.add_benchmarks_from_waitlist()
+    benchmark_graph.equalize_graph()
+    removed_list = benchmark_graph.remove_orphaned_nodes()
+    vms_removed.append(removed_list)
     logging.info("UPDATE REGION QUOTAS")
     update_quota_usage(benchmark_graph)
     logging.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
-    if FLAGS.precreate_and_share_vms:
-      benchmark_graph.create_vms()
+    benchmark_graph.equalize_graph()
     logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
-    # benchmark_graph.print_graph()
+    if FLAGS.print_graph:
+      benchmark_graph.print_graph()
 
   logging.debug(len(benchmarks_run))
   logging.debug("BMS RUN EACH LOOP")
@@ -288,8 +431,8 @@ def run_benchmarks(benchmark_graph):
     logging.debug(len(bmset))
 
   logging.debug("VMS REMOVED EACH LOOP")
-  for vm_count in vms_removed:
-    logging.debug(vm_count)
+  for vm_list in vms_removed:
+    logging.debug(vm_list)
 
 
 def update_quota_usage(benchmark_graph):
@@ -302,8 +445,12 @@ def update_quota_usage(benchmark_graph):
     benchmark_graph: Benchmark/VM Graph to update
   """
 
+  if FLAGS.no_run:
+    return
+
   for cloud in benchmark_graph.clouds:
     #TODO change this
+    print(f"\n\n\n\nHELLO? Cloud is: {cloud}\n\n\n\n")
     if cloud == 'GCP':
       print(benchmark_graph.regions)
       region_dict = cloud_util.get_region_info(cloud='GCP')
@@ -324,7 +471,10 @@ def update_quota_usage(benchmark_graph):
       for region_name in benchmark_graph.regions:
         if benchmark_graph.regions[region_name].cloud == 'Azure':
           quotas = region_dict[region_name]
+          print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
+          
           benchmark_graph.regions[region_name].update_quotas(quotas)
+          print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
     else:
       return
 
@@ -335,8 +485,111 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
   # print(benchmark_config[1]['flags']['extra_zones'])
   # full_graph.add_region_if_not_exists(region_name)
 
+
+  # print('benchmark_config------------------')
+  # print(type(benchmark_config))
+  # print(benchmark_config)
+  # print('----------------------------------')
+
+  # print(benchmark_config[1].keys())
+  # benchmark_config[0] is name of benchmark
+  # benchmark_config[1] is the config for the benchmark
+  vpc_peering = False
+  if 'vpc_peering' in benchmark_config[1]:
+    vpc_peering = True
+
   if 'vm_groups' in benchmark_config[1]:
-    logging.error("Configs with vm groups not supported yet")
+    vm_config_list = []
+    for key in benchmark_config[1]['vm_groups']:
+      vm = benchmark_config[1]['vm_groups'][key]
+      # print(vm)
+      vm_config_tmp = {}
+      vm_config_tmp['cloud'] = vm['cloud']
+      vm_config_tmp['os_type'] = 'ubuntu2004'
+      if 'os_type' in vm:
+        vm_config_tmp['os_type'] = vm['os_type']
+      elif 'os_type' in benchmark_config[1]['flags']:
+        vm_config_tmp['os_type'] = benchmark_config[1]['flags']['os_type']
+
+      vm_config_tmp['machine_type'] = vm['vm_spec'][vm['cloud']]['machine_type']
+      vm_config_tmp['zone'] = vm['vm_spec'][vm['cloud']]['zone']
+      vm_config_tmp['cpu_count'] = cloud_util.cpu_count_from_machine_type(vm_config_tmp['cloud'],
+                                                                          vm_config_tmp['machine_type'])
+      if 'vpc_id' in vm['vm_spec'][vm['cloud']]:
+        vm_config_tmp['network_name'] = vm['vm_spec'][vm['cloud']]['vpc_id']
+      else:
+        if vm_config_tmp['cloud'] == 'GCP' and 'gce_network_name' in benchmark_config[1]['flags']:
+          vm_config_tmp['network_name'] = benchmark_config[1]['flags']['gce_network_name']
+        elif vm_config_tmp['cloud'] == 'AWS' and 'aws_vpc' in benchmark_config[1]['flags']:
+          vm_config_tmp['network_name'] = benchmark_config[1]['flags']['aws_vpc']
+        elif vm_config_tmp['cloud'] == 'Azure':
+          pass
+        else:
+          vm_config_tmp['network_name'] = None
+
+      if 'subnet_id' in vm['vm_spec'][vm['cloud']]:
+        vm_config_tmp['subnet_name'] = vm['vm_spec'][vm['cloud']]['subnet_id']
+      else:
+        if vm_config_tmp['cloud'] == 'GCP' and 'gce_subnet_name' in benchmark_config[1]['flags']:
+          vm_config_tmp['subnet_name'] = None
+        elif vm_config_tmp['cloud'] == 'AWS' and 'aws_subnet' in benchmark_config[1]['flags']:
+          vm_config_tmp['subnet_name'] = benchmark_config[1]['flags']['aws_subnet']
+        elif vm_config_tmp['cloud'] == 'Azure':
+          pass
+        else:
+          vm_config_tmp['subnet_name'] = None
+      # TODO add disk config
+
+      # gce network tier is a flag, but we add it to the vm spec to better compare equivalent vms
+      vm_config_tmp['network_tier'] = None
+      vm_config_tmp['min_cpu_platform'] = None
+      if vm['cloud'] == 'GCP':
+        # network_tier = 'premium'
+        vm_config_tmp['network_tier'] = 'premium'
+        if 'gce_network_tier' in benchmark_config[1]['flags']:
+          vm_config_tmp['network_tier'] = benchmark_config[1]['flags']['gce_network_tier']
+        if 'gcp_min_cpu_platform' in benchmark_config[1]['flags'] :
+         vm_config_tmp['min_cpu_platform'] = benchmark_config[1]['flags']['gcp_min_cpu_platform']
+
+      # print("VM CONFIG TMP")
+      # print(vm_config_tmp)
+      if 'vm_count' in vm:
+        for i in range(0,vm['vm_count']):
+          vm_config_list.append(vm_config_tmp)
+      else:
+        vm_config_list.append(vm_config_tmp)
+
+    bigquery_table = FLAGS.bigquery_table
+    bq_project = FLAGS.bq_project
+    if 'bigquery_table' in benchmark_config[1]['flags']:
+      bigquery_table = benchmark_config[1]['flags']['bigquery_table']
+    if 'bq_project' in benchmark_config[1]['flags']:
+      bq_project = benchmark_config[1]['flags']['bq_project']
+
+    vm_specs = []
+
+    for vm_config in vm_config_list:
+      uuid_tmp = uuid.uuid1().int
+      vm_spec = VirtualMachineSpec(uid=uuid_tmp,
+                                   cpu_count=vm_config['cpu_count'],
+                                   zone=vm_config['zone'],
+                                   cloud=vm_config['cloud'],
+                                   machine_type=vm_config['machine_type'],
+                                   network_tier=vm_config['network_tier'],
+                                   os_type=vm_config['os_type'],
+                                   min_cpu_platform=vm_config['min_cpu_platform'],
+                                   network_name=vm_config['network_name'],
+                                   subnet_name=vm_config['subnet_name'])
+      vm_specs.append(vm_spec)
+
+    bm = Benchmark(benchmark_id=benchmark_id,
+                   benchmark_type=benchmark_config[0],
+                   vm_specs=vm_specs,
+                   bigquery_table=bigquery_table,
+                   bq_project=bq_project,
+                   vpc_peering=vpc_peering,
+                   flags=benchmark_config[1]['flags'])
+
   else:
     cloud = benchmark_config[1]['flags']['cloud']
     machine_type=benchmark_config[1]['flags']['machine_type']
@@ -358,10 +611,25 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
     if 'os_type' in benchmark_config[1]['flags']:
       os_type = benchmark_config[1]['flags']['os_type']
 
-    # TODO change to none and put gcp_min_cpu_platform: skylake in all the configs
-    min_cpu_platform = 'skylake'
+    # TODO expand for aws and azure
+    network_name = None
+    if 'gce_network_name' in benchmark_config[1]['flags']:
+      network_name = benchmark_config[1]['flags']['gce_network_name']
+
+    subnet_name = None
+    if 'gce_subnet_name' in benchmark_config[1]['flags']:
+      subnet_name = benchmark_config[1]['flags']['gce_subnet_name']
+
+    min_cpu_platform = None
     if 'gcp_min_cpu_platform' in benchmark_config[1]['flags']:
       min_cpu_platform = benchmark_config[1]['flags']['gcp_min_cpu_platform']
+
+    # TODO, assigning estimated bandwidth to VMs instead of benchmarks is suboptimal
+    # but major changes are required to get it to work, so for now we are assigning estimated bandwidth to VMs
+    estimated_bandwidth = -1
+    if 'estimated_bandwidth' in benchmark_config[1]['flags']:
+      estimated_bandwidth = benchmark_config[1]['flags']['estimated_bandwidth']
+      del benchmark_config[1]['flags']['estimated_bandwidth']
 
     uuid_1 = uuid.uuid1().int
     uuid_2 = uuid.uuid1().int
@@ -373,25 +641,32 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
                                    machine_type=machine_type,
                                    network_tier=network_tier,
                                    os_type=os_type,
-                                   min_cpu_platform=min_cpu_platform)
-    vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
-                                   cpu_count=cpu_count,
-                                   zone=benchmark_config[1]['flags']['extra_zones'],
-                                   cloud=cloud,
-                                   machine_type=machine_type,
-                                   network_tier=network_tier,
-                                   os_type=os_type,
-                                   min_cpu_platform=min_cpu_platform)
-    vm_specs = [vm_spec_1, vm_spec_2]
+                                   min_cpu_platform=min_cpu_platform,
+                                   network_name=network_name,
+                                   subnet_name=subnet_name,
+                                   estimated_bandwidth=estimated_bandwidth)
+    vm_specs = [vm_spec_1]
+    if 'extra_zones' in benchmark_config[1]['flags']:
+      vm_spec_2 = VirtualMachineSpec(uid=uuid_2,
+                                     cpu_count=cpu_count,
+                                     zone=benchmark_config[1]['flags']['extra_zones'],
+                                     cloud=cloud,
+                                     machine_type=machine_type,
+                                     network_tier=network_tier,
+                                     os_type=os_type,
+                                     min_cpu_platform=min_cpu_platform,
+                                     network_name=network_name,
+                                     subnet_name=subnet_name,
+                                     estimated_bandwidth=estimated_bandwidth)
+      vm_specs.append(vm_spec_2)
     bm = Benchmark(benchmark_id=benchmark_id,
                    benchmark_type=benchmark_config[0],
                    vm_specs=vm_specs,
                    bigquery_table=bigquery_table,
                    bq_project=bq_project,
+                   estimated_bandwidth=estimated_bandwidth,
+                   vpc_peering=vpc_peering,
                    flags=benchmark_config[1]['flags'])
-    # print("FLAGS STUFF HERE")
-    # print(benchmark_config[1]['flags'])
-    # print(bm.flags)
 
   return bm
 
@@ -428,46 +703,63 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
 
   # get all regions from gcloud
   # make regions
+  clouds_in_benchmark_set = []
+  for benchmark_config in benchmark_config_list: 
+    if 'vm_groups' in benchmark_config[1]:
+      for key in benchmark_config[1]['vm_groups']:
+        cloud = benchmark_config[1]['vm_groups'][key]['cloud']
+        clouds_in_benchmark_set.append(cloud)
+    else:
+      cloud = benchmark_config[1]['flags']['cloud']
+      clouds_in_benchmark_set.append(cloud)
+
+  clouds_in_benchmark_set = list(set(clouds_in_benchmark_set))
+  print("CLOUDS IN BENCHMARK SET")
+  print(clouds_in_benchmark_set)
 
   # CREATE and ADD regions for GCP
-  region_dict = cloud_util.get_region_info(cloud='GCP')
 
-  new_cloud = Cloud('GCP', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
-  full_graph.add_cloud_if_not_exists(new_cloud)
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    new_region = GcpRegion(region_name=key,
-                           cloud=new_cloud,
-                           quotas=region_dict[key],
-                           bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    full_graph.add_region_if_not_exists(new_region=new_region)
+  if 'GCP' in clouds_in_benchmark_set:
+    region_dict = cloud_util.get_region_info(cloud='GCP')
 
-
-  # CREATE and ADD regions for AWS
-  new_cloud = Cloud('AWS', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
-  full_graph.add_cloud_if_not_exists(new_cloud)
-  region_dict = cloud_util.get_region_info(cloud='AWS')
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    new_region = AwsRegion(region_name=key,
-                           cloud=new_cloud,
-                           quotas=region_dict[key],
-                           bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    full_graph.add_region_if_not_exists(new_region=new_region)
-
-  # CREATE and ADD regions for Azure
-  # Troy if there are any cloud wide quotas, we should deal with them here
-  # Also let me know, because I'll need to add better support for cloud-wide quotas (currently there is ~None)
-  new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
-  full_graph.add_cloud_if_not_exists(new_cloud)
-  region_dict = cloud_util.get_region_info(cloud='Azure')
-  for key in region_dict:
-    # if region['description'] in full_graph.regions
-    new_region = AzureRegion(region_name=key,
+    new_cloud = Cloud('GCP', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+    full_graph.add_cloud_if_not_exists(new_cloud)
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      new_region = GcpRegion(region_name=key,
                              cloud=new_cloud,
                              quotas=region_dict[key],
                              bandwidth_limit=FLAGS.regional_bandwidth_limit)
-    full_graph.add_region_if_not_exists(new_region=new_region)
+      full_graph.add_region_if_not_exists(new_region=new_region)
+
+  if 'AWS' in clouds_in_benchmark_set:
+    # CREATE and ADD regions for AWS
+    new_cloud = Cloud('AWS', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+    full_graph.add_cloud_if_not_exists(new_cloud)
+    region_dict = cloud_util.get_region_info(cloud='AWS')
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      new_region = AwsRegion(region_name=key,
+                             cloud=new_cloud,
+                             quotas=region_dict[key],
+                             bandwidth_limit=FLAGS.regional_bandwidth_limit)
+      full_graph.add_region_if_not_exists(new_region=new_region)
+
+  if 'Azure' in clouds_in_benchmark_set:
+    # CREATE and ADD regions for Azure
+    # Troy if there are any cloud wide quotas, we should deal with them here
+    # Also let me know, because I'll need to add better support for cloud-wide quotas (currently there is ~None)
+    new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
+    full_graph.add_cloud_if_not_exists(new_cloud)
+    region_dict = cloud_util.get_region_info(cloud='Azure')
+    for key in region_dict:
+      # if region['description'] in full_graph.regions
+      print(f"\n\n\nADDING QUOTAS HERE: {region_dict[key]}\n\n\n")
+      new_region = AzureRegion(region_name=key,
+                               cloud=new_cloud,
+                               quotas=region_dict[key],
+                               bandwidth_limit=FLAGS.regional_bandwidth_limit)
+      full_graph.add_region_if_not_exists(new_region=new_region)
 
 
   # This takes all the stuff from the config dictionaries
@@ -486,12 +778,19 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     temp_benchmarks.append(new_benchmark)
     benchmark_counter += 1
 
-  logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
+    # Logic to count number of benchmarks for each bigquery table
+    if new_benchmark.bigquery_table in benchmarks_per_table:
+      benchmarks_per_table[new_benchmark.bigquery_table] += 1
+    else:
+      benchmarks_per_table[new_benchmark.bigquery_table] = 1
 
+
+  logger.debug("Number of benchmarks: " + str(len(temp_benchmarks)))
+  temp_benchmarks.sort(key=lambda x: x.largest_vm, reverse=True)
   # create virtual machines (node)
   # attach with edges and benchmarks
   for bm in temp_benchmarks:
-    logger.debug("Trying to add " + bm.vm_specs[0].zone + " and " + bm.vm_specs[1].zone)
+    logger.debug(f"Trying to add {bm}")
     vms = full_graph.add_or_waitlist_benchmark_and_vms(bm)
 
   logger.debug("Number of benchmarks: " + str(len(full_graph.benchmarks)))
@@ -501,6 +800,39 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
     pass
 
   return full_graph
+
+
+def parse_config_list(config_list, ignore_hidden_folders=True):
+  """Parse all config files found in a directory and sub directories
+
+  Parse all .yaml and .yml config files in a folder
+  and subfolders
+
+  Args:
+    path: The folder path to look for config files (default: {"configs/"})
+  """
+  file_list = []
+  print("LIST")
+  print(config_list)
+  for path in config_list:
+    print(f'PATH: {path}')
+    path = path.strip()
+    for r, d, f in os.walk(path):
+      for file in f:
+        if ('.yaml' in file) or ('.yml' in file):
+          file_path = os.path.join(r, file)
+          if ('/.' not in file_path) or (ignore_hidden_folders is False):
+            file_list.append(os.path.join(r, file))
+
+  for f in file_list:
+    print(f)
+
+  benchmark_config_list = []
+  for file in file_list:
+    benchmark_config_list.extend(parse_config_file(file))
+
+  return benchmark_config_list
+
 
 
 def parse_config_folder(path="configs/", ignore_hidden_folders=True):
@@ -550,9 +882,13 @@ def parse_config_file(path="configs/file.yaml"):
   # return empty list if not correct yaml
   f = open(path, "r")
   contents = f.read()
-  yaml_contents = yaml.load(contents)
+  yaml_contents = yaml.safe_load(contents)
   if not isinstance(yaml_contents, dict):
     return []
+
+  print('YAML CONTENTS---------------------------')
+  print(yaml_contents)
+  print('----------------------------------------')
 
   # print(yaml_contents.keys())
   benchmark_name = list(yaml_contents.keys())[0]

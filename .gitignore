@@ -1,0 +1,6 @@
+*.vscode
+*.pyc
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+service_key.json

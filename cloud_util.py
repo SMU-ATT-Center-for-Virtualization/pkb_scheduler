@@ -21,7 +21,8 @@ def cpu_count_from_machine_type(cloud, machine_type):
       elif machine_size == 'xlarge':
         cpu_count = 4
       elif 'xlarge' in machine_size:
-        multiplier = int(re.findall(r'\d+', machine_size))
+        print(machine_size)
+        multiplier = int(re.findall(r'\d+', machine_size)[0])
         cpu_count = 4 * multiplier
     elif 't2' in machine_category.lower():
       if 'micro' in machine_size.lower():
@@ -30,8 +31,19 @@ def cpu_count_from_machine_type(cloud, machine_type):
     return cpu_count
 
   # Troy. Only bother editing this if Azure has CPU quotas we need to track
-  elif cloud == 'Azure':
-    return None
+  #Troy Update: We need to keep track of vCPU's. Additionally, we need to track total regional vCPU's
+  elif cloud.upper() == 'AZURE':
+    cpu_count = None
+    if machine_type == 'D2s_v3':
+      cpu_count = 2
+    elif machine_type == 'Standard_D2s_v3':
+      cpu_count = 2
+    else:
+      try:
+        cpu_count = int(machine_type[1])
+      except:
+        print(f"Error when trying to get cpu_count of virtual machine.")
+    return cpu_count
   else:
     return None
 
@@ -41,8 +53,10 @@ def cpu_type_from_machine_type(cloud, machine_type):
     return machine_type.split('-')[0]
   elif cloud == 'AWS':
     return machine_type.split('.')[0]
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     # Troy. Only bother editing this if Azure has CPU quotas we need to track
+    #Troy Update: I'm not sure what this does? 
+    #Answer: GCP has specific CPU quotas, n1 and n2. That's why this exists
     return None
   else:
     return None
@@ -124,7 +138,7 @@ def get_region_info(cloud):
       region_dict[region_name]['elastic_ip']['usage'] = len(output['Addresses'])
 
     return region_dict
-  elif cloud == "Azure":
+  elif cloud.upper() == "AZURE":
     # Troy PUT CODE HERE
     # fetch quota data from az cli (NOTE: there are two versions of azure cli. Use the newer version that uses the command 'az')
     # figure out important quota data per region, if quotas are for the whole cloud instead of each region, we'll need to
@@ -144,6 +158,56 @@ def get_region_info(cloud):
     #                           }
     #               }
     # basically its dictionaries all the way down
+    region_list_command = 'az account list-locations'
+    process = subprocess.Popen(region_list_command.split(),
+                               stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    # load json and convert to a more useable output
+    region_json = json.loads((output.decode('utf-8')))
+     
+    for region_iter in region_json:
+      try:
+        #print(f"region_iter is: {region_iter}")
+        # if region_iter['metadata']['regionCategory'] != 'Recommended':
+        #   continue
+        region_name = region_iter['name']
+        region_dict[region_name] = {"region_name" : region_name}
+        region_list_command = f'az vm list-usage --location "{region_name}"'
+        #print(f"region list commmand is: {region_list_command}")
+        process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+        output, error = process.communicate()
+        #print(f"region diect: {region_dict}")
+        output = json.loads(output.decode('utf-8'))
+        #print(f"region_list_command is: {output}")
+        #print(f"Pre For Loop")
+        for quota_iter in output:
+          #print(f" variable is  and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
+          quotaName = quota_iter["localName"]
+          #print(f"region_dict is : {region_dict} \n\n quota name is: {quotaName}")
+          region_dict[region_name][quotaName.upper()] = [int(quota_iter["currentValue"]), int(quota_iter["limit"])]
+        #az network list-usages --location eastus --out table
+        region_list_command = f'az network list-usages --location "{region_name}"'
+        #print(f"region list commmand is: {region_list_command}")
+        #Public IP Addresses - Basic
+        process = process = subprocess.Popen(region_list_command, stdout=subprocess.PIPE, shell=True)
+        output, error = process.communicate()
+        #print(f"region diect: {region_dict}")
+        output = json.loads(output.decode('utf-8'))
+        #print(f"region_list_command is: {output}")
+        #print(f"Pre For Loop")
+        for quota_iter in output:
+          #print(f" variable is  and the result is: {quota_iter['currentValue']} and  {quota_iter['limit']}")
+          quotaName = quota_iter["localName"]
+          #print(f"region_dict is : {region_dict} \n\n quota name is: {quotaName}")
+          region_dict[region_name][quotaName.upper()] = [int(quota_iter["currentValue"]), int(quota_iter["limit"])]
+        #print(f"the region dict should be: {region_dict[region_name]}")
+      except:
+        print(f"Error occurred when reading in quotas. Region was {region_name}")
+    print(f"Region Dict: {region_dict}")
+    
+
+    
+
     return region_dict
   else:
     pass
@@ -191,7 +255,7 @@ def get_cloud_quotas(cloud):
       elif quota_iter['AttributeName'] == 'max-elastic-ips':
         quota_dict['static_address_quota'] = quota_iter['AttributeValues'][0]['AttributeValue']
 
-  elif cloud = 'Azure':
+  elif cloud.upper() == 'AZURE':
     # Troy, if quotas are cloud-wide, get the info here and put it in quota_dict
     pass
 
@@ -199,6 +263,7 @@ def get_cloud_quotas(cloud):
 
 
 def get_region_from_zone(cloud, zone):
+  # print(f"cloud is : {cloud}. Zone is : {zone}")
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
@@ -214,14 +279,16 @@ def get_region_from_zone(cloud, zone):
       else:
         # return zone as it is. us-east-1
         return zone
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     # Troy, this may be all thats needed. Regions and zones have less distinction in azure, but i forget the specifics
+    
     return zone
   else:
     return None
 
 
 def get_max_bandwidth_from_machine_type(cloud, machine_type):
+  
   if cloud == 'GCP':
     machine_type = machine_type.lower()
     cpu_type = cpu_type_from_machine_type('GCP', machine_type).upper()
@@ -242,5 +309,5 @@ def get_max_bandwidth_from_machine_type(cloud, machine_type):
   elif cloud == 'AWS':
     return -1
 
-  elif cloud == 'Azure':
+  elif cloud.upper() == 'AZURE':
     return -1

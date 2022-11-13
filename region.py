@@ -239,7 +239,7 @@ class AwsRegion(Region):
   # def has_enough_cpus(self, cpu_count, machine_type):    
   #   return self.get_available_cpus(machine_type) >= cpu_count
 
-  def has_enough_resources(self, cpu_count, machine_type):
+  def has_enough_resources(self, cpu_count, machine_type, estimated_bandwidth):
     estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', machine_type)
     if (self.quotas['vm']['usage'] < self.quotas['vm']['limit']
       and self.quotas['elastic_ip']['usage'] < self.quotas['elastic_ip']['limit']
@@ -252,10 +252,10 @@ class AwsRegion(Region):
     return False
 
   def vm_has_enough_resources(self, vm):
-    return self.has_enough_resources(vm.cpu_count, vm.machine_type)
+    return self.has_enough_resources(vm.cpu_count, vm.machine_type, -1)
 
   def add_virtual_machine_if_possible(self, vm):
-    if self.has_enough_resources(vm.cpu_count, vm.machine_type):
+    if self.has_enough_resources(vm.cpu_count, vm.machine_type, -1):
       # cpu_type = self._get_cpu_type(vm.machine_type)
       estimated_bandwidth = cloud_util.get_max_bandwidth_from_machine_type('AWS', vm.machine_type)
       self.virtual_machines.append(vm)

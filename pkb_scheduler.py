@@ -223,7 +223,6 @@ def main(argv):
 
   # This method does almost everything
   run_benchmarks(full_graph)
-  # test_stuff(full_graph)
 
   end_time = time.time()
   total_run_time = (end_time - start_time)
@@ -294,16 +293,26 @@ def main(argv):
 
   print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
-  print("BENCHMARKS PER BIGQUERY TABLE")
-  print(benchmarks_per_table)
   with open('benchmarks_per_table.json', 'w') as json_file:
     json.dump(benchmarks_per_table, json_file)
-  upload_stats_to_bigquery(benchmarks_per_table)
+
+  if FLAGS.no_run == False:
+    upload_stats_to_bigquery(benchmarks_per_table)
 
   exit(0)
 
 
-def upload_stats_to_bigquery(benchmarks_per_table):
+def upload_stats_to_bigquery(benchmarks_per_table: Dict):
+  """Summary
+  
+  Args:
+      benchmarks_per_table (Dict): Description
+  
+  Returns:
+      TYPE: Description
+  """
+  if len(benchmarks_per_table) == 0:
+    return
   bigquery_client = bigquery.Client()
   # Prepares a reference to the dataset
   dataset_ref = bigquery_client.dataset('reporting')

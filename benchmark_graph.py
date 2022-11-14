@@ -15,7 +15,7 @@ import time
 
 from queue import Queue
 from deprecated import deprecated
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Any, Optional
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from region import Region
@@ -75,21 +75,54 @@ class BenchmarkGraph():
 
 
   def add_cloud_if_not_exists(self, cloud: str):
+    """Add a new cloud provider to the benchmark graph
+    
+    Args:
+        cloud (str): name of cloud provider
+    """
     if cloud.name not in self.clouds:
       self.clouds[cloud.name] = cloud
 
-  def cloud_exists(self, cloud: str):
+  def cloud_exists(self, cloud: str) -> bool:
+    """Return if cloud currently exists benchmark graph
+    
+    Args:
+        cloud (str): name of cloud provider
+    
+    Returns:
+        bool: True if cloud exists in benchmark graph, false otherwise
+    """
     return cloud in self.clouds
 
   def add_region_if_not_exists(self, new_region: Region):
+    """Add a new region to the benchmark graph
+    
+    Args:
+        new_region (Region): Add a new Region object
+    """
     if new_region.name not in self.regions:
       self.regions[new_region.name] = new_region
 
   def region_exists(self, region_name: str) -> bool:
+    """Return whether region currently exists benchmark graph
+    
+    Args:
+        region_name (str): name of cloud region
+    
+    Returns:
+        bool: True if region exists in benchmark graph, false otherwise
+    """
     return region_name in self.regions
 
-  def required_vm_exists(self, vm: VirtualMachine):
-    # print(os_type)
+  def required_vm_exists(self, vm: VirtualMachine) -> bool:
+    """Checks if there is a VM with equivalent specs/location in the graph
+    
+    Args:
+        vm (VirtualMachine): VirtualMachine object 
+    
+    Returns:
+        bool: if there is an equivalent VM
+    """
     for index in self.graph.nodes:
       tmp_vm = self.graph.nodes[index]['vm']
       if vm.vm_spec_is_equivalent(tmp_vm):
@@ -99,6 +132,8 @@ class BenchmarkGraph():
     return False
 
   def print_graph(self):
+    """Uses matplotlib to show a visual representation of the graph in its current state
+    """
     nx.draw(self.graph)
     plt.show()
 
@@ -160,7 +195,7 @@ class BenchmarkGraph():
       benchmarks_for_this_vm = self.graph.degree(vm.node_id)
       if benchmarks_for_this_vm > max_degree:
         max_degree = benchmarks_for_this_vm
-    print(f"MAX DEGREE {max_benchmarks}, MIN DEG FOR THIS BENCHMARK: {max_degree}")
+    logger.info(f"MAX DEGREE {max_benchmarks}, MIN DEG FOR THIS BENCHMARK: {max_degree}")
     if benchmarks_for_this_vm < max_benchmarks:
       return True
     return False
@@ -192,7 +227,7 @@ class BenchmarkGraph():
 
     return False, "Quota Exceeded"
 
-  def add_or_waitlist_benchmark_and_vms(self, bm: Benchmark) -> tuple[list[VirtualMachine], str]:
+  def add_or_waitlist_benchmark_and_vms(self, bm: Benchmark) -> Tuple[List[VirtualMachine], str]:
     vms = self.add_vms_for_benchmark_if_possible(bm)
 
     # Filter None values from list
@@ -208,17 +243,14 @@ class BenchmarkGraph():
       self.benchmark_wait_list.append(bm)
       return [], "Waitlisted"
 
-  def add_vms_for_benchmark_if_possible(self, bm: Benchmark) -> list[VirtualMachine]:
-    """[summary]
-    
-    [description]
+  def add_vms_for_benchmark_if_possible(self, bm: Benchmark) -> List[VirtualMachine]:
+    """Summary
     
     Args:
-      bm: [description]
+        bm (Benchmark): Description
     
     Returns:
-      [description]
-      bool
+        List[VirtualMachine]: Description
     """
     vm_ids = []
     vms = []
@@ -226,7 +258,6 @@ class BenchmarkGraph():
 
     for vm_spec in bm.vm_specs:
 
-      # print(vm_spec.id)
       vm_region = cloud_util.get_region_from_zone(vm_spec.cloud, vm_spec.zone)
       vm_id = self.vm_total_count
       vm = VirtualMachine(node_id=vm_id,
@@ -253,7 +284,7 @@ class BenchmarkGraph():
 
       # if a vm already exists
       if len(tmp_vm_list) > 0:
-        print(f"MATCHING VM FOR {vm} EXISTS")
+        logger.debug(f"MATCHING VM FOR {vm} EXISTS")
         can_add_another, status = self.check_if_can_add_vm(vm)
 
         add_from_list = True
@@ -265,11 +296,10 @@ class BenchmarkGraph():
             and FLAGS.allow_duplicate_vms == True
             # and self.check_if_should_add_vm(tmp_vm_list)
             and len(tmp_vm_list) < FLAGS.max_duplicate_vms + 1):
-          # print("here1")
           # checks if there is enough space in a region to add another vm
           success = self.regions[vm_region].add_virtual_machine_if_possible(vm)
           if success:
-            print(f"ADD DUPLICATE VM {vm}")
+            logger.debug(f"ADD DUPLICATE VM {vm}")
             add_from_list = False
             self.virtual_machines.append(vm)
             self.graph.add_node(vm_id, vm=vm)
@@ -307,7 +337,7 @@ class BenchmarkGraph():
             tmp_vm_index += 1
 
           if suitable_vm_found:
-            print(f"USING EXISTING VM {tmp_vm_list[min_degree_index]}FOR BENCMARK")
+            logger.debug(f"USING EXISTING VM {tmp_vm_list[min_degree_index]}FOR BENCMARK")
             vms.append(tmp_vm_list[min_degree_index])
             vm_ids.append(tmp_vm_list[min_degree_index].node_id)
             continue
@@ -315,32 +345,25 @@ class BenchmarkGraph():
       # if vm does not exist yet
       if (not suitable_vm_found):
         # try to add vm to region
-        # print("here2")
-        # print(f"vm region is: {vm_region}\n\n self.regions is: {self.regions}")
-        print("NO SUITABLE EXISTING VM FOUND")
+        logger.debug("NO SUITABLE EXISTING VM FOUND")
         status = self.regions[vm_region].add_virtual_machine_if_possible(vm)
-        # print("Status ", status)
 
         # if successful, also add that vm to virtual_machines list
         # and increment total number of vms, return True, and the vm
         if status is True:
-          # print("adding vm in zone " + vm.zone)
-          print("NO SUITABLE VM FOUND, CREATING NEW VM")
+          logger.debug("NO SUITABLE VM FOUND, CREATING NEW VM")
           self.virtual_machines.append(vm)
           self.graph.add_node(vm_id, vm=vm)
           vms.append(vm)
           vm_ids.append(vm.node_id)
           self.vm_total_count += 1
-        # return false, None if not enough space in region
         else:
           logger.debug("QUOTA EXCEEDED. VM waitlisted")
           vms.append(None)
-
-    # print(vms)
     return vms
 
   def equalize_graph(self):
-    print("RUN EQUALIZE GRAPH")
+    logger.debug("RUN EQUALIZE GRAPH")
     PERCENTAGE_TO_EQUALIZE = 1.0
     highest_degree_node_list = self.get_list_of_nodes_by_highest_degree()
     number_of_nodes_to_equalize = int(len(highest_degree_node_list)*PERCENTAGE_TO_EQUALIZE)
@@ -349,7 +372,7 @@ class BenchmarkGraph():
       max_node_degree = self.graph.degree(max_node_id)
       if max_node_degree <= 1:
         continue
-      print(f'EQUALIZING NODE {max_node_id} with degree {max_node_degree}')
+      logger.debug(f'EQUALIZING NODE {max_node_id} with degree {max_node_degree}')
       if max_node_id == None:
         continue
       max_node_adjacency_list = list(self.graph[max_node_id])
@@ -360,7 +383,7 @@ class BenchmarkGraph():
       # check if an equivalent VM exists with a lower degree
       max_node_vm = self.graph.nodes[max_node_id]['vm']
       equivalent_max_node_list = self.get_node_id_list_if_vm_exists(max_node_vm)
-      print(f'EQUIVALENT NODE LIST: {equivalent_max_node_list}')
+      logger.debug(f'EQUIVALENT NODE LIST: {equivalent_max_node_list}')
       # get and sort list of equivalent vms
       number_changed = 0
       equality_improved = True
@@ -381,7 +404,7 @@ class BenchmarkGraph():
             node_to_tranfer_degree = None
             for node, node_degree in max_node_adjacency_degree_list:
               incident_edges = self.graph.get_edge_data(max_node_id, node)
-              print(f'incident edges {incident_edges}')
+              logger.debug(f'incident edges {incident_edges}')
               for key in incident_edges:
                 if incident_edges[key]['bm'].status == "Not Executed":
                   bm_to_change = incident_edges[key]['bm']
@@ -390,12 +413,12 @@ class BenchmarkGraph():
                   node_to_tranfer_degree = node_degree
                   break
                 else:
-                  print(incident_edges[key]['bm'].status)
+                  logger.debug(incident_edges[key]['bm'].status)
               if node_to_transfer:
                 break
 
             if bm_to_change != None:
-              print(f'Moving bm from nodes {max_node_id} with degree {max_node_degree} to node {new_node_id} with degree {new_node_degree}')
+              logger.debug(f'Moving bm from nodes {max_node_id} with degree {max_node_degree} to node {new_node_id} with degree {new_node_degree}')
               equality_improved = True
               # change bm.vms[]
               bm_to_change.vms.remove(max_node_vm)
@@ -443,7 +466,7 @@ class BenchmarkGraph():
           # checks if there is enough space in a region to add another vm
           success = self.regions[vm_region].add_virtual_machine_if_possible(new_vm)
           if success:
-            print("DUPLICATE VM ADDED")
+            logger.debug("DUPLICATE VM ADDED")
             self.virtual_machines.append(new_vm)
             self.graph.add_node(new_vm_id, vm=new_vm)
             self.vm_total_count += 1
@@ -453,7 +476,7 @@ class BenchmarkGraph():
             node_to_tranfer_degree = None
             for node, node_degree in max_node_adjacency_degree_list:
               incident_edges = self.graph.get_edge_data(max_node_id, node)
-              print(f'incident edges {incident_edges}')
+              logger.debug(f'incident edges {incident_edges}')
               for key in incident_edges:
                 if incident_edges[key]['bm'].status == "Not Executed":
                   bm_to_change = incident_edges[key]['bm']
@@ -463,9 +486,9 @@ class BenchmarkGraph():
                   break
               if node_to_transfer:
                 break
-            print(f'node to transfer: {node_to_transfer}')
-            print(f'edge to change {key}')
-            print(f'bm to change {bm_to_change}')
+            # logger.debug(f'node to transfer: {node_to_transfer}')
+            # logger.debug(f'edge to change {key}')
+            # logger.debug(f'bm to change {bm_to_change}')
             if bm_to_change != None:
               # change bm.vms[]
               bm_to_change.vms.remove(max_node_vm)
@@ -477,20 +500,20 @@ class BenchmarkGraph():
               max_node_degree = self.graph.degree(max_node_id)
               number_changed += 1
               max_node_adjacency_list = list(self.graph[max_node_id])
-              print(f'new max node adjacency list {max_node_adjacency_list}')
-              print(f'new other node adjacency list {list(self.graph[new_node_id])}')
+              logger.debug(f'new max node adjacency list {max_node_adjacency_list}')
+              logger.debug(f'new other node adjacency list {list(self.graph[new_node_id])}')
               max_node_adjacency_degree_list = sorted(list(self.graph.degree(max_node_adjacency_list)),
                                                       key=lambda x: x[1], reverse=False)
-              print("MOVED BM TO NEW VM")
+              logger.debug("MOVED BM TO NEW VM")
 
             # answer = input("...").lower()
 
           else:
-            print("QUOTA EXCEEDED. CANNOT ADD ANOTHER VM")
-      print(f"NUMBER CHANGED {number_changed}")
+            logger.debug("QUOTA EXCEEDED. CANNOT ADD ANOTHER VM")
+      logger.debug(f"NUMBER CHANGED {number_changed}")
     # answer = input("...").lower()
 
-  def get_list_of_nodes_by_highest_degree(self) -> list[tuple[int, int]]:
+  def get_list_of_nodes_by_highest_degree(self) -> List[Tuple[int, int]]:
     """Returns list of nodes with highest degree and its degree in a tuple
 
     Returns:
@@ -500,7 +523,7 @@ class BenchmarkGraph():
     degree_list = sorted(list(self.graph.degree), key=lambda x: x[1], reverse=True)
     return degree_list
 
-  def get_node_with_highest_degree(self) -> tuple[int, int]:
+  def get_node_with_highest_degree(self) -> Tuple[int, int]:
     """Returns node with highest degree and its degree in a tuple
 
     Returns:
@@ -525,7 +548,7 @@ class BenchmarkGraph():
   def get_list_of_edges(self):
     return self.graph.edges
 
-  def add_benchmark_to_graph(self, bm: Benchmark, vms: list[VirtualMachine]):
+  def add_benchmark_to_graph(self, bm: Benchmark, vms: List[VirtualMachine]):
     #  M[v1][v2]
     # M.add_edges_from([(v1,v2,{'route':45645})])
     bm.vms = vms
@@ -547,20 +570,20 @@ class BenchmarkGraph():
     bm.benchmark_id = self.bm_total_count
     self.bm_total_count += 1
 
-  def maximum_matching(self) -> list[tuple[int,int]]:
+  def maximum_matching(self) -> List[Tuple[int,int]]:
     return nx.max_weight_matching(self.graph, maxcardinality=True)
 
-  def get_benchmark_set(self) -> list[tuple[int,int]]:
+  def get_benchmark_set(self) -> List[Tuple[int,int]]:
     # return bm_list: List[Tuple[int, int]]   list of tuples  [(node1, node2)]
 
-    print("GET BENCHMARK SET")
+    logger.debug("GET BENCHMARK SET")
 
     # convert multigraph to simplified graph with weighted edges
     for i in self.graph.nodes:
-      print(self.graph.nodes[i]['vm'].status)
+      logger.debug(self.graph.nodes[i]['vm'].status)
     # print(self.graph.edges)
     node_degree_dict = dict(nx.degree(self.graph))
-    print(node_degree_dict)
+    logger.debug(node_degree_dict)
     tmp_graph = nx.Graph()
     tmp_graph.add_nodes_from(self.graph.nodes)
     edges_list = []
@@ -568,8 +591,8 @@ class BenchmarkGraph():
       edges_list.append(e[0:2])
 
     edges_set = set(edges_list)
-    print("EDGE SET")
-    print(edges_set)
+    logger.debug("EDGE SET")
+    logger.debug(edges_set)
     edges_to_add = []
     dummy_node_index = -1
     dummy_nodes = []
@@ -599,13 +622,13 @@ class BenchmarkGraph():
         edges_to_add.append(t)
 
     tmp_graph.add_weighted_edges_from(edges_to_add)
-    print(tmp_graph)
-    print("NODES:")
-    print(tmp_graph.nodes)
-    print("EDGES:")
-    print(tmp_graph.edges)
+    logger.debug(tmp_graph)
+    logger.debug("NODES:")
+    logger.debug(tmp_graph.nodes)
+    logger.debug("EDGES:")
+    logger.debug(tmp_graph.edges)
     for e in tmp_graph.edges:
-      print(tmp_graph.edges[e])
+      logger.debug(tmp_graph.edges[e])
 
     node_list = self.graph.nodes
 
@@ -629,66 +652,9 @@ class BenchmarkGraph():
         maximum_match[i] = (maximum_match[i][1], maximum_match[i][1])
       elif maximum_match[i][1] < 0:
         maximum_match[i] = (maximum_match[i][0], maximum_match[i][0])
-
     return maximum_match
 
-  # def replace_edges_with_multiedge_set(max_match):
-
-
-  #   graph = nx.Graph()
-
-  #   def tuples_list_to_list(tuples_list: list[tuple[any,any]]) -> list[any]:
-  #     return [item for t in tuples_list for item in t]
-
-  #   graph.add_edge(0,1)
-  #   graph.add_edge(1,2)
-  #   graph.add_edge(2,3)
-  #   graph.add_edge(3,4)
-  #   graph.add_edge(4,5)
-  #   graph.add_edge(4,6)
-  #   graph.add_edge(1,6)
-  #   graph.add_edge(6,7)
-  #   graph.add_edge(7,8)
-  #   graph.add_edge(8,9)
-  #   graph.add_edge(8,10)
-  #   graph.add_edge(9,10)
-
-  #   graph_edges = list(graph.edges)
-
-  #   multi_edge_sets = []
-  #   multi_edge_sets.append(('a', [1,2,3,4,6]))
-  #   multi_edge_sets.append(('b', [8,9,10]))
-
-  #   print(multi_edge_sets)
-  #   # print(tuples_list_to_list(multi_edge_sets))
-  #   m_sets = list(zip(*multi_edge_sets))
-  #   print(m_sets)
-
-
-  #   max_match = list(nx.max_weight_matching(graph))
-  #   print(f"MAX MATCH: {max_match}")
-
-  #   for mes in m_sets[1]:
-  #     intersect_count = 0
-  #     intersect_tuples = []
-  #     for m in max_match:
-  #       intersect = list(set(mes).intersection(set(m)))
-  #       print(intersect)
-  #       if len(intersect) == 1:
-  #         intersect_count += 1
-  #         intersect_tuples.append(m)
-  #       elif len(intersect) == 2:
-  #         intersect_tuples.append(m)
-  #       else:
-  #         intersect_count += 0
-  #       print(intersect_count)
-  #     print(intersect_count)
-  #     if intersect_count < len(mes):
-  #       pass
-  #     else:
-  #       pass
-
-  def create_vms(self, vm_list: list[int] = []) -> list[int]:
+  def create_vms(self, vm_list: List[int] = []) -> List[int]:
     """Create Virtual Machines that have not yet been created
 
     Args:
@@ -708,8 +674,8 @@ class BenchmarkGraph():
     created_nodes = []
 
     logger.info("LENGTH NODE LIST: " + str(len(node_list)))
-    print("NODE LIST")
-    print(node_list)
+    logger.debug("NODE LIST")
+    logger.debug(node_list)
     # for each node in the graph
     while node_index < len(node_list):
       vm_processes = []
@@ -717,10 +683,6 @@ class BenchmarkGraph():
       while ((thread_count < max_processes or max_processes < 0) and
              node_index < len(node_list)):
         # for index in node_list:
-
-        # print("NODE INDEX", str(node_index))
-        # print(self.graph.nodes)
-        # print(node_list)
         vm = self.graph.nodes[node_list[node_index]]['vm']
 
         vm_proc_container = {}
@@ -747,11 +709,6 @@ class BenchmarkGraph():
         p = container['process']
         new_vm = container['data'].get()
         container['vm'].copy_contents(new_vm)
-        # print("VM PROCESS INFO STUFF HERE:")
-        # print("IN PROCESS VM:")
-        # print(container['vm'].creation_output)
-        # print("OUT PROCESS VM:")
-        # print(new_vm.creation_output)
         p.join()
         print("Process Done")
 
@@ -784,7 +741,7 @@ class BenchmarkGraph():
     """
     benchmarks_to_run = []
     benchmarks_to_run_tuples = []
-    print("RUN BENCHMARKS")
+    logger.debug("RUN BENCHMARKS")
 
     # Go through list of benchmarks to run and see what benchmarks are in each list
     # try to run benchmark with most occurences
@@ -822,8 +779,6 @@ class BenchmarkGraph():
       bm_dict = dict(self.graph[node_tuple[0]][node_tuple[1]])
       # get list of keys from dict
       bm_key_list = list(bm_dict.keys())
-      # print(f'BENCHMARK KEY LIST {bm_key_list}')
-      # get last benchmark on list
 
       # TODO have some optimization here so benchmarks take similar times?
       bm_chosen_key = bm_key_list[len(bm_key_list) - 1]
@@ -832,12 +787,11 @@ class BenchmarkGraph():
           bm_chosen_key = key
           break
       bm_index_to_run = bm_chosen_key
-      # print(f'BM index to run: {bm_index_to_run}')
       # edge tuple (node1, node2, key)
       bm_tuple = (node_tuple[0], node_tuple[1], bm_index_to_run)
       # get actual Benchmark object from edge in graph
       bm_to_run = self.graph[node_tuple[0]][node_tuple[1]][bm_index_to_run]['bm']
-      print(f'BM TO RUN TYPE: {bm_to_run.benchmark_type}')
+      logger.debug(f'BM TO RUN TYPE: {bm_to_run.benchmark_type}')
       # create config file, get file name 
       bm_config_file = None
 
@@ -877,11 +831,11 @@ class BenchmarkGraph():
         if FLAGS.precreate_and_share_vms:
           for vm in bm.vms:
             if vm.status != "Running":
-              print("Needed VM is ", vm.status)
+              logger.debug("Needed VM is ", vm.status)
               vms_created = False
 
           if not vms_created:
-            print("DO NOT RUN")
+            logger.debug("DO NOT RUN")
             bm_index += 1
             continue
         else:
@@ -932,14 +886,14 @@ class BenchmarkGraph():
       success = bm_data['success']
       if success:
         self.graph.remove_edge(bm_loc[0], bm_loc[1], bm_loc[2])
-        logging.info("benchmark removed: " + str(bm_loc))
+        logging.debug("benchmark removed: " + str(bm_loc))
       else:
         pass
 
 
   def run_benchmark_process(self,
                             bm: Benchmark,
-                            bm_tuple: tuple[int,int,int],
+                            bm_tuple: Tuple[int,int,int],
                             result_index: int,
                             queue: mp.Queue):
     # ./pkb.py --benchmarks=throughput_latency_jitter
@@ -957,7 +911,7 @@ class BenchmarkGraph():
     bm_clouds = []
     all_vms_have_preexisting_network = True
     for vm in bm.vms:
-      print(vm.__dict__)
+      logger.debug(vm.__dict__)
       bm_clouds.append(vm.cloud)
       if vm.preexisting_network == False:
         all_vms_have_preexisting_network = False
@@ -1000,12 +954,12 @@ class BenchmarkGraph():
     cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
 
     # TODO do install_packages if vm has already been used
-    print("BM TUPLE")
-    print(bm_tuple)
+    logger.debug("BM TUPLE")
+    logger.debug(bm_tuple)
     # print(bm.vm_specs[0].zone)
     # print(bm.vm_specs[1].zone)
-    print(bm.config_file)
-    print("RUN BM: " + cmd)
+    logger.debug(bm.config_file)
+    logger.debug("RUN BM: " + cmd)
     if FLAGS.no_run:
       results_dict['status'] = "Executed"
       bm.status = "Executed"
@@ -1032,7 +986,7 @@ class BenchmarkGraph():
 
   def create_benchmark_config_file_static_vm(self,
                                              bm: Benchmark,
-                                             vm_list: list[VirtualMachine]):
+                                             vm_list: List[VirtualMachine]):
 
     config_yaml = {}
     counter = 1
@@ -1084,7 +1038,7 @@ class BenchmarkGraph():
 
   def create_benchmark_config_file_traditional(self,
                                                bm: Benchmark,
-                                               vm_list: list[VirtualMachine]) -> str:
+                                               vm_list: List[VirtualMachine]) -> str:
 
     config_yaml = {}
     counter = 1
@@ -1108,8 +1062,8 @@ class BenchmarkGraph():
       # default:
       #   vm_count: 2
       #   vm_spec: *default_single_core
-      print("VM TO WRITE TO CONFIG")
-      print(vm_list[0].__dict__)
+      logger.debug("VM TO WRITE TO CONFIG")
+      logger.debug(vm_list[0].__dict__)
       temp = config_yaml[bm.benchmark_type]['vm_groups']
       vm_num = len(vm_list)
 
@@ -1138,8 +1092,8 @@ class BenchmarkGraph():
 
     else:
       for vm in vm_list:
-        print("VM TO WRITE TO CONFIG")
-        print(vm.__dict__)
+        logger.debug("VM TO WRITE TO CONFIG")
+        logger.debug(vm.__dict__)
         temp = config_yaml[bm.benchmark_type]['vm_groups']
         vm_num = 'vm_' + str(counter)
         temp[vm_num] = {}
@@ -1194,7 +1148,6 @@ class BenchmarkGraph():
 
     bms_added = []
     for bm in self.benchmark_wait_list:
-      # print("here4, ", str(len(self.benchmark_wait_list)))
       vms = self.add_vms_for_benchmark_if_possible(bm)
       vms_no_none = list(filter(None, vms))
 
@@ -1210,10 +1163,10 @@ class BenchmarkGraph():
     for bm in bms_added:
       self.benchmark_wait_list.remove(bm)
 
-    print("Number of benchmarks to run: " + str(len(self.graph.edges)))
+    logger.debug("Number of benchmarks to run: " + str(len(self.graph.edges)))
 
 
-  def remove_orphaned_nodes(self) -> list[int]:
+  def remove_orphaned_nodes(self) -> List[int]:
     """Remove nodes in graph that have no edges
 
     Removes nodes in graph that have no edges.

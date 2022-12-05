@@ -1,13 +1,22 @@
-
 import subprocess
 import json
 import re
 import logging
+from typing import List, Dict, Tuple, Set, Any, Sequence, Optional
 
-# TODO support other clouds
+# TODO add support for additional clouds
 
 
-def cpu_count_from_machine_type(cloud, machine_type):
+def cpu_count_from_machine_type(cloud: str, machine_type: str) -> int:
+  """Given a cloud and a machine type, return the associated cpu count
+  
+  Args:
+      cloud (str): name of cloud provider
+      machine_type (str): name of machine type
+  
+  Returns:
+      int: cpu count
+  """
   if cloud == 'GCP':
     return int(machine_type.split('-')[2])
   elif cloud == 'AWS':
@@ -48,24 +57,28 @@ def cpu_count_from_machine_type(cloud, machine_type):
     return None
 
 
-def cpu_type_from_machine_type(cloud, machine_type):
+def cpu_type_from_machine_type(cloud: str, machine_type: str) -> str:
+  """Given a cloud and a machine type, return the associated cpu type
+  
+  Args:
+      cloud (str): name of cloud provider
+      machine_type (str): name of machine type
+  
+  Returns:
+      str: cpu type
+  """
   if cloud == 'GCP':
     return machine_type.split('-')[0]
   elif cloud == 'AWS':
     return machine_type.split('.')[0]
   elif cloud.upper() == 'AZURE':
-    # Troy. Only bother editing this if Azure has CPU quotas we need to track
-    #Troy Update: I'm not sure what this does? 
-    #Answer: GCP has specific CPU quotas, n1 and n2. That's why this exists
     return None
   else:
     return None
 
 
-def get_region_info(cloud):
+def get_region_info(cloud: str):
   """get quota info for all regions in a specified cloud
-  
-  [description]
   
   Args:
     cloud: string in ['AWS','GCP','AZURE']
@@ -204,9 +217,6 @@ def get_region_info(cloud):
       except:
         print(f"Error occurred when reading in quotas. Region was {region_name}")
     print(f"Region Dict: {region_dict}")
-    
-
-    
 
     return region_dict
   else:
@@ -215,17 +225,14 @@ def get_region_info(cloud):
   return region_dict
 
 
-def get_cloud_quotas(cloud):
+def get_cloud_quotas(cloud: str) -> Dict[str,Any]:
   """Get cloud-wide quotas for each cloud service
   
-  NOT CURRENTLY USED
-  
   Args:
-    cloud: [description]
+      cloud (str): Name of cloud provider
   
   Returns:
-    [description]
-    [type]
+      Dict[str, Any]: dictionary of quotas
   """
   quota_dict = {}
   if cloud == 'GCP':
@@ -262,8 +269,16 @@ def get_cloud_quotas(cloud):
   return quota_dict
 
 
-def get_region_from_zone(cloud, zone):
-  # print(f"cloud is : {cloud}. Zone is : {zone}")
+def get_region_from_zone(cloud: str, zone: str) -> Optional[str]:
+  """Given a cloud and a zone, returns the region for the zone
+  
+  Args:
+      cloud (str): cloud provider name
+      zone (str): availability zone name
+  
+  Returns:
+      Optional[str]: name of region, or None if not found
+  """
   if cloud == 'GCP':
     return zone[:len(zone) - 2]
   elif cloud == 'AWS':
@@ -280,15 +295,23 @@ def get_region_from_zone(cloud, zone):
         # return zone as it is. us-east-1
         return zone
   elif cloud.upper() == 'AZURE':
-    # Troy, this may be all thats needed. Regions and zones have less distinction in azure, but i forget the specifics
+    # TODO Troy, this may be all thats needed. Regions and zones have less distinction in azure, but i forget the specifics
     
     return zone
   else:
     return None
 
 
-def get_max_bandwidth_from_machine_type(cloud, machine_type):
+def get_max_bandwidth_from_machine_type(cloud: str, machine_type: str) -> int:
+  """Given a cloud and machine type, returns the maximum bandwidth for that machine type
   
+  Args:
+      cloud (str): Cloud name
+      machine_type (str): machine type name
+  
+  Returns:
+      int: bandwidth in Gbps
+  """
   if cloud == 'GCP':
     machine_type = machine_type.lower()
     cpu_type = cpu_type_from_machine_type('GCP', machine_type).upper()

@@ -301,6 +301,30 @@ def get_region_from_zone(cloud: str, zone: str) -> Optional[str]:
   else:
     return None
 
+def get_meta_region_from_region(cloud: str, region: str) -> Optional[str]:
+  """Given a cloud and a region name, returns the meta region for the region
+  
+  Args:
+      cloud (str): cloud provider name
+      zone (str): cloud region name
+  
+  Returns:
+      Optional[str]: name of meta region, or None if not found
+  """
+  if cloud == 'GCP':
+    region_split = region.split('-')
+    if len(region_split) != 3:
+      logging.warn('Improperly formatted GCP region:' + region + ' This may cause errors.')
+    return region_split[0]
+  elif cloud == 'AWS':
+    region_split = region.split('-')
+    if len(region_split) != 3:
+      logging.warn('Improperly formatted AWS region:' + region + ' This may cause errors.')
+    return region_split[0]
+  elif cloud.upper() == 'AZURE':
+    return region
+  else:
+    return None
 
 def get_max_bandwidth_from_machine_type(cloud: str, machine_type: str) -> int:
   """Given a cloud and machine type, returns the maximum bandwidth for that machine type

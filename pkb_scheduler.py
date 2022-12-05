@@ -22,7 +22,7 @@ import sys
 
 from datetime import datetime
 from google.cloud import bigquery
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict, Tuple, Set, Any, Sequence, Optional
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from virtual_machine_spec import VirtualMachineSpec
@@ -254,16 +254,16 @@ def main(argv):
     for i in range(0, len(maximum_sets)):
       vms_at_time = vms_at_time + len(vms_created[i])
       vms_used_this_round = len(list(itertools.chain(*maximum_sets[i])))
-      print(f"ROUND \n{i}")
-      print(f"VM USAGE: {vms_used_this_round}/{vms_at_time}")
-      print(f"{len(vms_created[i])} VMS CREATED:")
-      print(vms_created[i])
-      print(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
-      print(maximum_sets[i])
-      print(f"{len(vms_removed[i])} VMS DESTROYED:")
-      print(vms_removed[i])
+      logger.debug(f"ROUND \n{i}")
+      logger.debug(f"VM USAGE: {vms_used_this_round}/{vms_at_time}")
+      logger.debug(f"{len(vms_created[i])} VMS CREATED:")
+      logger.debug(vms_created[i])
+      logger.debug(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      logger.debug(maximum_sets[i])
+      logger.debug(f"{len(vms_removed[i])} VMS DESTROYED:")
+      logger.debug(vms_removed[i])
       vms_at_time = vms_at_time - len(vms_removed[i])
-      print(f"ALL REGION QUOTA USAGE:")
+      logger.debug(f"ALL REGION QUOTA USAGE:")
       for region_quota in region_quota_usage[i]:
         for key in region_quota:
           quota = region_quota[key]
@@ -274,24 +274,24 @@ def main(argv):
       # print(region_quota_usage[i])
   else:
     for i in range(0, len(maximum_sets)):
-      print(f"ROUND \n{i}")
-      print(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
-      print(maximum_sets[i])
+      logger.debug(f"ROUND \n{i}")
+      logger.debug(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      logger.debug(maximum_sets[i])
   
-  print("ALL BENCHMARK TIMES:")
-  print(full_graph.benchmark_run_times)
+  logger.info("ALL BENCHMARK TIMES:")
+  logger.info(full_graph.benchmark_run_times)
   try:
-    print(f"TOTAL BENCHMARK TIME: {sum(full_graph.benchmark_run_times)}")
+    logger.info(f"TOTAL BENCHMARK TIME: {sum(full_graph.benchmark_run_times)}")
   except:
     pass
 
-  print("TOTAL VM UPTIME: ")
+  logger.info("TOTAL VM UPTIME: ")
   total_time = 0
   for vm in full_graph.virtual_machines:
     total_time = total_time + vm.uptime()
-  print(total_time)
+  logger.info(total_time)
 
-  print("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
+  logger.info("TOTAL RUN TIME: " + str(total_run_time) + " seconds")
 
   with open('benchmarks_per_table.json', 'w') as json_file:
     json.dump(benchmarks_per_table, json_file)
@@ -303,13 +303,10 @@ def main(argv):
 
 
 def upload_stats_to_bigquery(benchmarks_per_table: Dict):
-  """Summary
+  """Upload stats about test runs and failrues
   
   Args:
-      benchmarks_per_table (Dict): Description
-  
-  Returns:
-      TYPE: Description
+      benchmarks_per_table (Dict): json.dump dictionary of results
   """
   if len(benchmarks_per_table) == 0:
     return
@@ -334,7 +331,6 @@ def upload_stats_to_bigquery(benchmarks_per_table: Dict):
 
 
 def setup_logging():
-
   global logger
   numeric_level = getattr(logging, FLAGS.log_level.upper(), None)
   # create logger
@@ -347,18 +343,10 @@ def setup_logging():
   ch.setFormatter(formatter)
   logger.propagate = False
   logger.addHandler(ch)
-
   return logger
 
 
-def test_stuff(benchmark_graph):
-  maximum_set = benchmark_graph.get_benchmark_set()
-  print("MAXIMUM SET")
-  print(maximum_set)
-  print(len(maximum_set))
-
-
-def run_benchmarks(benchmark_graph):
+def run_benchmarks(benchmark_graph: benchmark_graph.BenchmarkGraph):
 
   benchmarks_run = []
   benchmark_graph.equalize_graph()
@@ -367,11 +355,11 @@ def run_benchmarks(benchmark_graph):
   max_set_empty_counter = 0
 
   while benchmark_graph.benchmarks_left() > 0:
-    logging.info(f"graph nodes remaining: {len(benchmark_graph.graph.nodes)}")
-    logging.info(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
-    logging.info(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
-    logging.info(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
-    logging.info(f"multiedge benchmarks: {benchmark_graph.multiedge_benchmarks}")
+    logger.info(f"graph nodes remaining: {len(benchmark_graph.graph.nodes)}")
+    logger.info(f"graph edges remaining: {len(benchmark_graph.graph.edges)}")
+    logger.info(f"benchmarks on waitlist: {len(benchmark_graph.benchmark_wait_list)}" )
+    logger.info(f"benchmarks left: {benchmark_graph.benchmarks_left()}")
+    logger.info(f"multiedge benchmarks: {benchmark_graph.multiedge_benchmarks}")
 
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = benchmark_graph.get_benchmark_set()
@@ -383,11 +371,11 @@ def run_benchmarks(benchmark_graph):
       max_set_empty_counter = 0
 
     if FLAGS.max_retries >= 0 and max_set_empty_counter > FLAGS.max_retries:
-      print("BENCHMARK WAIT LIST")
-      print(benchmark_graph.benchmark_wait_list)
+      logger.debug("BENCHMARK WAIT LIST")
+      logger.debug(benchmark_graph.benchmark_wait_list)
       return
-    print("MAXIMUM SET")
-    print(maximum_set)
+    logger.debug("MAXIMUM SET")
+    logger.debug(maximum_set)
 
     max_set_vms = list(itertools.chain(*maximum_set))
     if FLAGS.precreate_and_share_vms:
@@ -415,27 +403,27 @@ def run_benchmarks(benchmark_graph):
     benchmark_graph.equalize_graph()
     removed_list = benchmark_graph.remove_orphaned_nodes()
     vms_removed.append(removed_list)
-    logging.info("UPDATE REGION QUOTAS")
+    logger.info("UPDATE REGION QUOTAS")
     update_quota_usage(benchmark_graph)
-    logging.debug("create vms and add benchmarks")
+    logger.debug("create vms and add benchmarks")
     benchmark_graph.add_benchmarks_from_waitlist()
     benchmark_graph.equalize_graph()
-    logging.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
+    logger.debug("benchmarks left: " + str(benchmark_graph.benchmarks_left()))
     time.sleep(2)
     if FLAGS.print_graph:
       benchmark_graph.print_graph()
 
-  logging.debug(len(benchmarks_run))
-  logging.debug("BMS RUN EACH LOOP")
+  logger.debug(len(benchmarks_run))
+  logger.debug("BMS RUN EACH LOOP")
   for bmset in benchmarks_run:
-    logging.debug(len(bmset))
+    logger.debug(len(bmset))
 
-  logging.debug("VMS REMOVED EACH LOOP")
+  logger.debug("VMS REMOVED EACH LOOP")
   for vm_list in vms_removed:
-    logging.debug(vm_list)
+    logger.debug(vm_list)
 
 
-def update_quota_usage(benchmark_graph):
+def update_quota_usage(benchmark_graph: benchmark_graph.BenchmarkGraph):
   """update the regional quotas based on data pulled from the cloud provider
 
   Pulls current usage information from the cloud provider and updates
@@ -450,9 +438,8 @@ def update_quota_usage(benchmark_graph):
 
   for cloud in benchmark_graph.clouds:
     #TODO change this
-    print(f"\n\n\n\nHELLO? Cloud is: {cloud}\n\n\n\n")
     if cloud == 'GCP':
-      print(benchmark_graph.regions)
+      logger.debug(benchmark_graph.regions)
       region_dict = cloud_util.get_region_info(cloud='GCP')
       for region_name in benchmark_graph.regions:
         if benchmark_graph.regions[region_name].cloud == 'GCP':
@@ -460,8 +447,8 @@ def update_quota_usage(benchmark_graph):
           benchmark_graph.regions[region_name].update_quotas(quotas)
     elif cloud == 'AWS':
       region_dict = cloud_util.get_region_info(cloud='AWS')
-      print(benchmark_graph.regions)
-      print(region_dict)
+      logger.debug(benchmark_graph.regions)
+      logger.debug(region_dict)
       for region_name in benchmark_graph.regions:
         if benchmark_graph.regions[region_name].cloud == 'AWS':
           quotas = region_dict[region_name]
@@ -471,15 +458,14 @@ def update_quota_usage(benchmark_graph):
       for region_name in benchmark_graph.regions:
         if benchmark_graph.regions[region_name].cloud == 'Azure':
           quotas = region_dict[region_name]
-          print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
-          
+          # print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
           benchmark_graph.regions[region_name].update_quotas(quotas)
-          print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
+          # print(f"\n\n\nQuotas from main: {quotas}\n\n\n")
     else:
-      return
+      pass
 
 
-def create_benchmark_from_config(benchmark_config, benchmark_id):
+def create_benchmark_from_config(benchmark_config, benchmark_id: int):
   bm = None
   # print(config[1]['flags']['zones'])
   # print(benchmark_config[1]['flags']['extra_zones'])
@@ -551,8 +537,6 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
         if 'gcp_min_cpu_platform' in benchmark_config[1]['flags'] :
          vm_config_tmp['min_cpu_platform'] = benchmark_config[1]['flags']['gcp_min_cpu_platform']
 
-      # print("VM CONFIG TMP")
-      # print(vm_config_tmp)
       if 'vm_count' in vm:
         for i in range(0,vm['vm_count']):
           vm_config_list.append(vm_config_tmp)
@@ -670,18 +654,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id):
 
   return bm
 
-def create_graph_from_config_list(benchmark_config_list, pkb_command):
-  """[summary]
-
-  [description]
-
-  Args:
-    benchmark_config_list: list of dictionaries containing benchmark configs
-
-  Returns:
-    [description]
-    [type]
-  """
+def create_graph_from_config_list(benchmark_config_list, pkb_command: str) -> benchmark_graph.BenchmarkGraph:
 
   full_graph = benchmark_graph.BenchmarkGraph(ssh_pub="ssh_key.pub",
                                               ssh_priv="ssh_key",
@@ -714,8 +687,8 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
       clouds_in_benchmark_set.append(cloud)
 
   clouds_in_benchmark_set = list(set(clouds_in_benchmark_set))
-  print("CLOUDS IN BENCHMARK SET")
-  print(clouds_in_benchmark_set)
+  logger.debug("CLOUDS IN BENCHMARK SET")
+  logger.debug(clouds_in_benchmark_set)
 
   # CREATE and ADD regions for GCP
 
@@ -768,11 +741,6 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   benchmark_counter = 0
   temp_benchmarks = []
   for config in benchmark_config_list:
-    # print(config[1]['flags']['zones'])
-    # region_name = config[1]['flags']['zones']
-    # print(config[1]['flags']['extra_zones'])
-    # full_graph.add_region_if_not_exists(region_name)
-
     new_benchmark = create_benchmark_from_config(config,
                                                  benchmark_counter)
     temp_benchmarks.append(new_benchmark)
@@ -802,7 +770,7 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command):
   return full_graph
 
 
-def parse_config_list(config_list, ignore_hidden_folders=True):
+def parse_config_list(config_list, ignore_hidden_folders: bool = True):
   """Parse all config files found in a directory and sub directories
 
   Parse all .yaml and .yml config files in a folder
@@ -835,7 +803,7 @@ def parse_config_list(config_list, ignore_hidden_folders=True):
 
 
 
-def parse_config_folder(path="configs/", ignore_hidden_folders=True):
+def parse_config_folder(path: str = "configs/", ignore_hidden_folders: bool = True):
   """Parse all config files found in a directory and sub directories
 
   Parse all .yaml and .yml config files in a folder
@@ -862,19 +830,15 @@ def parse_config_folder(path="configs/", ignore_hidden_folders=True):
   return benchmark_config_list
 
 
-def parse_config_file(path="configs/file.yaml"):
-  """Parse config file functions
-
-  largely taken from the PKB parsing function
-
+def parse_config_file(path: str = "configs/file.yaml") -> List[Tuple[str,Dict[Any,Any]]]:
+  """Parse config file functions, largely taken from the PKB parsing function
+  
   Args:
-    path: [description] (default: {"configs/file.yaml"})
-
+      path (str, optional): Description
+  
   Returns:
-    [description]
-    [type]
+      List[Tuple[str, Dict[Any, Any]]]: Description
   """
-
   crossed_axes = []
   benchmark_config_list = []
 
@@ -886,11 +850,6 @@ def parse_config_file(path="configs/file.yaml"):
   if not isinstance(yaml_contents, dict):
     return []
 
-  print('YAML CONTENTS---------------------------')
-  print(yaml_contents)
-  print('----------------------------------------')
-
-  # print(yaml_contents.keys())
   benchmark_name = list(yaml_contents.keys())[0]
   config_dict = yaml_contents[benchmark_name]
 
@@ -904,37 +863,18 @@ def parse_config_file(path="configs/file.yaml"):
   config_dict.pop('flag_matrix', None)
   config_dict.pop('flag_zip', None)
 
-  # for f in flag_matrix:
-  #   print(flag_matrix[f])
-
-  # for c in config_dict:
-  #   print(config_dict[c])
-
   for flag, values in sorted(six.iteritems(flag_matrix)):
       crossed_axes.append([{flag: v} for v in values])
 
-  # print("crossed_axes")
-  # print(crossed_axes)
-
   for flag_config in itertools.product(*crossed_axes):
     config = {}
-    # print("FLAG CONFIG")
-    # print(flag_config)
     config = _GetConfigForAxis(config_dict, flag_config)
-    # print("CONFIG")
-    # print(config)
     if (flag_matrix_filter and not eval(flag_matrix_filter, {},
                                         config['flags'])):
-      print("Did not pass Flag Matrix Filter")
+      # logger.debug("Did not pass Flag Matrix Filter")
       continue
 
     benchmark_config_list.append((benchmark_name, config))
-    # print("BENCHMARK CONFIG")
-    # print(benchmark_config_list[0])
-
-  # print("BENCHMARK CONFIG LIST")
-  # for config in benchmark_config_list:
-  #   print(config)
 
   f.close()
 
@@ -944,7 +884,6 @@ def parse_config_file(path="configs/file.yaml"):
 def _GetConfigForAxis(benchmark_config, flag_config):
   config = copy.copy(benchmark_config)
   config_local_flags = config.get('flags', {})
-  # config['flags'] = []
   config['flags'].update(config_local_flags)
   for setting in flag_config:
     config['flags'].update(setting)

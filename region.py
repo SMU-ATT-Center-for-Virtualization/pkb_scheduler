@@ -442,8 +442,6 @@ class AzureRegion(Region):
       quotas Dict[str,Any]: dictionary of all the different quotas for this region
   """
 
-  machine_type_bandwidth_dict = {}
-
   def __init__(self, region_name, cloud, quotas, bandwidth_limit=None):
     # self.my_var = 123
     self.quotas = quotas # this is a dictionary

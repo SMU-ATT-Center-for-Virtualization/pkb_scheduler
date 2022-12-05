@@ -137,7 +137,7 @@ class BenchmarkGraph():
     nx.draw(self.graph)
     plt.show()
 
-  def get_list_if_vm_exists(self, vm: VirtualMachine) -> list[VirtualMachine]:
+  def get_list_if_vm_exists(self, vm: VirtualMachine) -> List[VirtualMachine]:
     """Tries to find a VM in the graph with equivalent specs
 
     Searches graph nodes and returns a list of VMs
@@ -147,8 +147,7 @@ class BenchmarkGraph():
       vm: vm with specs to search for
 
     Returns:
-      list of VMs with matching specs to parameter
-      list[virtual_machine.VirtualMachine]
+      List[virtual_machine.VirtualMachine]: list of VMs with matching specs to parameter
     """
     vm_list = []
     for index in self.graph.nodes:
@@ -160,7 +159,7 @@ class BenchmarkGraph():
         continue
     return vm_list
 
-  def get_node_id_list_if_vm_exists(self, vm: VirtualMachine) -> list[int]:
+  def get_node_id_list_if_vm_exists(self, vm: VirtualMachine) -> List[int]:
     """Tries to find a VM in the graph with equivalent specs
 
     Searches graph nodes and returns a list of VMs
@@ -179,12 +178,12 @@ class BenchmarkGraph():
       node_list.append(vm.node_id)
     return node_list
 
-  def check_if_should_add_vm(self, vm_list: list[VirtualMachine]) -> bool:
+  def check_if_should_add_vm(self, vm_list: List[VirtualMachine]) -> bool:
     """Checks if the degree of the vms on the list is less than the max of the
-       whoel network
+       whole network
 
     Args:
-        vm_list (list[VirtualMachine]): [description]
+        vm_list (List[VirtualMachine]): list of vms
 
     Returns:
         bool: True if we should add a new VM, false is we should try to use existing
@@ -228,6 +227,14 @@ class BenchmarkGraph():
     return False, "Quota Exceeded"
 
   def add_or_waitlist_benchmark_and_vms(self, bm: Benchmark) -> Tuple[List[VirtualMachine], str]:
+    """Either adds a benchmark to the graph if there is space, or adds it to the waitlist
+    
+    Args:
+        bm (Benchmark): benchmark object
+    
+    Returns:
+        Tuple[List[VirtualMachine], str]: list of virtual machines for the benchmark and a status string
+    """
     vms = self.add_vms_for_benchmark_if_possible(bm)
 
     # Filter None values from list
@@ -244,13 +251,13 @@ class BenchmarkGraph():
       return [], "Waitlisted"
 
   def add_vms_for_benchmark_if_possible(self, bm: Benchmark) -> List[VirtualMachine]:
-    """Summary
+    """Attempts to add VMs (nodes) to the graph for a specific benchmark
     
     Args:
-        bm (Benchmark): Description
+        bm (Benchmark): benchmark oject
     
     Returns:
-        List[VirtualMachine]: Description
+        List[VirtualMachine]: list of virtual machines for benchmark
     """
     vm_ids = []
     vms = []
@@ -363,6 +370,9 @@ class BenchmarkGraph():
     return vms
 
   def equalize_graph(self):
+    """Attempts to take nodes (VMs) that are equivalent in location and spec
+    and move edges between them so there is a more equal distribution
+    """
     logger.debug("RUN EQUALIZE GRAPH")
     PERCENTAGE_TO_EQUALIZE = 1.0
     highest_degree_node_list = self.get_list_of_nodes_by_highest_degree()
@@ -574,7 +584,11 @@ class BenchmarkGraph():
     return nx.max_weight_matching(self.graph, maxcardinality=True)
 
   def get_benchmark_set(self) -> List[Tuple[int,int]]:
-    # return bm_list: List[Tuple[int, int]]   list of tuples  [(node1, node2)]
+    """Get the next benchmark set to run
+    
+    Returns:
+        List[Tuple[int, int]]: list of tuples [(node1, node2)]
+    """
 
     logger.debug("GET BENCHMARK SET")
 
@@ -658,10 +672,10 @@ class BenchmarkGraph():
     """Create Virtual Machines that have not yet been created
 
     Args:
-        vm_list (list[int], optional): List of VMs to create if not already created. Defaults to [].
+        vm_list (List[int], optional): List of VMs to create if not already created. Defaults to [].
 
     Returns:
-        list[int]: List of VM IDs that were created
+        List[int]: List of VM IDs that were created
     """
     # TODO add max thread logic here, make sure things are stood up in a reasonable way
     # go through nodes in network. Stand up Vms that have not been created
@@ -729,7 +743,7 @@ class BenchmarkGraph():
   def create_vm(self, vm: VirtualMachine):
     vm.create_instance(self.pkb_location)
 
-  def run_benchmark_set(self, bm_list: list[tuple[int, int]]):
+  def run_benchmark_set(self, bm_list: List[Tuple[int, int]]):
     """When given a list of tuples, where each element
        in the tuple is a node id, this function figures
        out the benchmark to run between those nodes.

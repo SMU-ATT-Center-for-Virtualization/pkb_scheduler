@@ -169,6 +169,10 @@ flags.DEFINE_integer(
   'max_retries', 20,
   'Amount of times it will keep attempting to allocate and run tests that there are not space for. -1 for infinite')
 
+flags.DEFINE_list(
+  'meta_region_bandwidth_limits', [], 'A list of strings of the form '
+  '"cloud.meta_region=limit_value" to be passed to meta regions')
+
 logger = None
 
 maximum_sets = []
@@ -694,7 +698,6 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command: str) -> be
 
   if 'GCP' in clouds_in_benchmark_set:
     region_dict = cloud_util.get_region_info(cloud='GCP')
-
     new_cloud = Cloud('GCP', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
     full_graph.add_cloud_if_not_exists(new_cloud)
     for key in region_dict:
@@ -706,7 +709,6 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command: str) -> be
       full_graph.add_region_if_not_exists(new_region=new_region)
 
   if 'AWS' in clouds_in_benchmark_set:
-    # CREATE and ADD regions for AWS
     new_cloud = Cloud('AWS', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
     full_graph.add_cloud_if_not_exists(new_cloud)
     region_dict = cloud_util.get_region_info(cloud='AWS')
@@ -719,9 +721,6 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command: str) -> be
       full_graph.add_region_if_not_exists(new_region=new_region)
 
   if 'Azure' in clouds_in_benchmark_set:
-    # CREATE and ADD regions for Azure
-    # Troy if there are any cloud wide quotas, we should deal with them here
-    # Also let me know, because I'll need to add better support for cloud-wide quotas (currently there is ~None)
     new_cloud = Cloud('Azure', instance_quota=None, cpu_quota=None, address_quota=None, bandwidth_limit=FLAGS.cloud_bandwidth_limit)
     full_graph.add_cloud_if_not_exists(new_cloud)
     region_dict = cloud_util.get_region_info(cloud='Azure')
@@ -897,6 +896,19 @@ def parse_named_configs(config):
 
 def parse_named_config(config):
   pass
+
+
+def parse meta_region_bandwidth_limits_flag():
+  meta_region_bandwidth_limit_dict = {}
+  if FLAGS.meta_region_bandwidth_limits:
+    for region_bandwidth_string in FLAGS.meta_region_bandwidth_limits:
+    # cloud.meta_region=limit_value
+      string_split = region_bandwidth_string.split('=')
+      cloud_and_region = string_split[0].split('.')
+      bandwidth_limit = float(string_split[0])
+      meta_region_bandwidth_limit_dict[(cloud_and_region[0], cloud_and_region[1])] = bandwidth_limit
+
+  return meta_region_bandwidth_limit_dict
 
 
 if __name__ == "__main__":

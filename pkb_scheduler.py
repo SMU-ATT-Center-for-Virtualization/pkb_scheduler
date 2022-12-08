@@ -201,7 +201,6 @@ def main(argv):
     else:
       benchmark_config_list.extend(parse_config_folder(config_location))
 
-
   logger.debug("\nNUMBER OF CONFIGS")
   logger.debug(len(benchmark_config_list))
   # for config in benchmark_config_list:
@@ -332,6 +331,11 @@ def upload_stats_to_bigquery(benchmarks_per_table: Dict):
 
   errors = bigquery_client.insert_rows(table, rows_to_insert)
   print(errors)
+
+
+def test():
+  results = parse_meta_region_bandwidth_limits_flag()
+  print(results)
 
 
 def setup_logging():
@@ -733,6 +737,11 @@ def create_graph_from_config_list(benchmark_config_list, pkb_command: str) -> be
                                bandwidth_limit=FLAGS.regional_bandwidth_limit)
       full_graph.add_region_if_not_exists(new_region=new_region)
 
+  # TODO here process metaregion and possibly inter-region quotas and limits
+  meta_region_limits = parse_meta_region_bandwidth_limits_flag()
+  for cloud, meta_region in meta_region_limits:
+    if (cloud, meta_region) in full_graph.meta_regions:
+      full_graph.meta_regions[(cloud, meta_region)].bandwidth_limit = meta_region_limits[(cloud, meta_region)]
 
   # This takes all the stuff from the config dictionaries
   # and puts them in benchmark objects
@@ -898,14 +907,14 @@ def parse_named_config(config):
   pass
 
 
-def parse meta_region_bandwidth_limits_flag():
+def parse_meta_region_bandwidth_limits_flag():
   meta_region_bandwidth_limit_dict = {}
   if FLAGS.meta_region_bandwidth_limits:
     for region_bandwidth_string in FLAGS.meta_region_bandwidth_limits:
     # cloud.meta_region=limit_value
       string_split = region_bandwidth_string.split('=')
       cloud_and_region = string_split[0].split('.')
-      bandwidth_limit = float(string_split[0])
+      bandwidth_limit = float(string_split[1])
       meta_region_bandwidth_limit_dict[(cloud_and_region[0], cloud_and_region[1])] = bandwidth_limit
 
   return meta_region_bandwidth_limit_dict

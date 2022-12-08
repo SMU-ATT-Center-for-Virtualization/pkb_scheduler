@@ -19,6 +19,7 @@ from typing import List, Dict, Tuple, Set, Any, Optional
 from benchmark import Benchmark
 from virtual_machine import VirtualMachine
 from region import Region
+from meta_region import MetaRegion
 from absl import flags
 
 
@@ -47,6 +48,7 @@ class BenchmarkGraph():
 
     self.graph = nx.MultiGraph()
     self.regions = {}
+    self.meta_regions = {}
     self.clouds = {}
     self.virtual_machines = []
     self.benchmarks = []
@@ -102,6 +104,26 @@ class BenchmarkGraph():
     """
     if new_region.name not in self.regions:
       self.regions[new_region.name] = new_region
+
+      meta_region_name = cloud_util.get_meta_region_from_region(new_region.cloud.name, new_region.name)
+      meta_region = self.add_meta_region_if_not_exists(new_region.cloud.name, meta_region_name)
+      new_region.meta_region = meta_region
+      meta_region.regions.append(new_region)
+
+  def add_meta_region_if_not_exists(self, cloud_name, meta_region_name) -> MetaRegion:
+    """Add meta region to meta region dictionary
+    
+    Args:
+        cloud_name (str): name of cloud
+        meta_region_name (str): name of meta_region
+    """
+
+    if (cloud_name, meta_region_name) in self.meta_regions:
+      return self.meta_regions[(cloud_name, meta_region_name)]
+    else:
+      new_meta_region = MetaRegion(meta_region_name, cloud_name)
+      self.meta_regions[(cloud_name, meta_region_name)] = new_meta_region
+      return new_meta_region
 
   def region_exists(self, region_name: str) -> bool:
     """Return whether region currently exists benchmark graph
@@ -1154,6 +1176,7 @@ class BenchmarkGraph():
   # TODO improve this
   def add_benchmarks_from_waitlist(self):
 
+    print(self.graph)
     if len(self.benchmark_wait_list) == 0:
       logging.info("No benchmarks on waitlist")
       return

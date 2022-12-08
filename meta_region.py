@@ -12,8 +12,19 @@ class MetaRegion():
                meta_region_name: str, 
                cloud: str,
                bandwidth_limit: Optional[int] = None):
+    self.name = meta_region_name
+    self.cloud = cloud
     self.bandwidth_limit = bandwidth_limit
-    self.bandwidth_usage = 0
+    self.regions = []
+
+  def has_enough_resources(self, estimated_bandwidth) -> bool:
+    if self.bandwidth_limit is None:
+      return True
+
+    bandwidth_sum = estimated_bandwidth
+    for region in self.regions:
+      bandwidth_sum += region.bandwidth_usage
+    return (bandwidth_sum <= self.bandwidth_limit)
 
 class GcpMetaRegion(MetaRegion):
   def __init__(self, meta_region_name, cloud, quotas, bandwidth_limit=None):

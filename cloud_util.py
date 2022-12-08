@@ -311,14 +311,15 @@ def get_meta_region_from_region(cloud: str, region: str) -> Optional[str]:
   Returns:
       Optional[str]: name of meta region, or None if not found
   """
-  if cloud == 'GCP':
+
+  if cloud.upper() == 'GCP':
     region_split = region.split('-')
-    if len(region_split) != 3:
+    if len(region_split) != 2:
       logging.warn('Improperly formatted GCP region:' + region + ' This may cause errors.')
     return region_split[0]
   elif cloud == 'AWS':
     region_split = region.split('-')
-    if len(region_split) != 3:
+    if len(region_split) != 2:
       logging.warn('Improperly formatted AWS region:' + region + ' This may cause errors.')
     return region_split[0]
   elif cloud.upper() == 'AZURE':

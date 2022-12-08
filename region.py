@@ -4,6 +4,7 @@ import copy
 from typing import List, Dict, Tuple, Set, Any, Sequence, Optional
 from cloud import Cloud
 from virtual_machine import VirtualMachine
+# from meta_region import MetaRegion
 
 class Region():
   """Class that represents a region for a cloud provider
@@ -37,6 +38,8 @@ class Region():
     self.cloud = cloud
     self.bandwidth_limit = bandwidth_limit
     self.bandwidth_usage = 0
+    self.meta_region = None
+
 
   def get_available_cpus(self) -> int:
     """Get the number of available vCPUs in this cloud region
@@ -230,9 +233,14 @@ class GcpRegion(Region):
     if (self.get_available_cpus(machine_type) >= cpu_count and self.quotas['IN_USE_ADDRESSES']['limit'] > self.quotas['IN_USE_ADDRESSES']['usage']):
       if not self.bandwidth_limit or estimated_bandwidth + self.bandwidth_usage <= self.bandwidth_limit:
         if not self.cloud.bandwidth_limit or estimated_bandwidth + self.cloud.bandwidth_usage <= self.cloud.bandwidth_limit:
-          return True
+          if self.meta_region_has_enough_resources(estimated_bandwidth):
+            return True
   
     return False
+
+
+  def meta_region_has_enough_resources(self, estimated_bandwidth) -> bool:
+    return self.meta_region.has_enough_resources(estimated_bandwidth)
 
   def vm_has_enough_resources(self, vm: VirtualMachine) -> bool:
     """Abstraction of has_enough_resources that takes VirtualMachine as an argument

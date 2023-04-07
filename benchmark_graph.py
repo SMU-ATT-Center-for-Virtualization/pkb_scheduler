@@ -12,7 +12,9 @@ import logging
 import math
 import cloud_util
 import time
+import itertools
 
+from collections import defaultdict
 from queue import Queue
 from deprecated import deprecated
 from typing import List, Dict, Tuple, Set, Any, Optional
@@ -74,6 +76,7 @@ class BenchmarkGraph():
     self.vm_creation_times = []
     self.benchmark_run_times = []
     self.deletion_times = []
+    self.inter_meta_region_bandwidth_limits = {}
 
 
   def add_cloud_if_not_exists(self, cloud: str):
@@ -612,7 +615,15 @@ class BenchmarkGraph():
         List[Tuple[int, int]]: list of tuples [(node1, node2)]
     """
 
+    #TODO temporarily remove edges based on inter-region bandwidth quotas
+    # self.inter_meta_region_bandwidth_limits = {('asia', 'europe'): 30}
+    inter_meta_region_bandwidth_sums = defaultdict(int)
+    print(self.inter_meta_region_bandwidth_limits)
+
     logger.debug("GET BENCHMARK SET")
+
+    print('GRAPH EDGES')
+    print(self.graph.edges)
 
     # convert multigraph to simplified graph with weighted edges
     for i in self.graph.nodes:
@@ -648,6 +659,7 @@ class BenchmarkGraph():
         dummy_nodes.append(dummy_node)
         dummy_edges.append((e[0], dummy_node))
         dummy_node_index -= 1
+      # if not self-loop
       else:
         c = 10 / (node_degree_dict[e[0]] * node_degree_dict[e[1]])
         if self.graph.nodes[e[0]]['vm'].status == 'Running':
@@ -655,7 +667,50 @@ class BenchmarkGraph():
         if self.graph.nodes[e[1]]['vm'].status == 'Running':
           c = c + 10
         t = (e[0], e[1], c)
-        edges_to_add.append(t)
+
+        # TODO check inter-meta-region quotas here
+        # TODO also add specific inter-region quotas
+        bm = self.graph[e[0]][e[1]]
+        bms_for_edge = list(bm.keys())
+        bms_for_edge.sort()
+        bm = bm[bms_for_edge[0]]['bm']
+        if bm.estimated_bandwidth <= 0:
+          edges_to_add.append(t)
+
+        print(bm)
+        covered_meta_regions = set()
+        covered_regions = set()
+        for vm in bm.vms:
+          print(vm)
+          vm_region = cloud_util.get_region_from_zone(vm.cloud, vm.zone)
+          vm_meta_region = cloud_util.get_meta_region_from_region(vm.cloud, vm_region)
+          covered_meta_regions.add(vm_meta_region)
+          covered_regions.add(vm_region)
+
+        covered_meta_regions = list(covered_meta_regions)
+        covered_meta_regions.sort()
+        print(covered_meta_regions)
+        if len(covered_meta_regions) <= 1:
+          edges_to_add.append(t)
+          continue
+        meta_region_combos = itertools.combinations(covered_meta_regions, 2)
+
+        over_limit = False
+
+        # if any of these overflow a meta_region_quota,
+        # continue without adding
+        for combo in meta_region_combos:
+          inter_meta_region_bandwidth_sums[combo] += bm.estimated_bandwidth
+          if combo in self.inter_meta_region_bandwidth_limits:
+            print(f'QUOTAS: {self.inter_meta_region_bandwidth_limits[combo]}')
+            print(f'USAGE: {inter_meta_region_bandwidth_sums[combo]}')
+            if inter_meta_region_bandwidth_sums[combo] > self.inter_meta_region_bandwidth_limits[combo]:
+              print("OVER LIMIT")
+              over_limit = True
+
+
+        if not over_limit:
+          edges_to_add.append(t)
 
     tmp_graph.add_weighted_edges_from(edges_to_add)
     logger.debug(tmp_graph)
@@ -781,25 +836,26 @@ class BenchmarkGraph():
 
     # Go through list of benchmarks to run and see what benchmarks are in each list
     # try to run benchmark with most occurences
-    benchmark_count_dict = {}
-    for node_tuple in bm_list:
-      bm_dict = dict(self.graph[node_tuple[0]][node_tuple[1]])
-      # get list of keys from dict
-      bm_key_list = list(bm_dict.keys())
-      for bm_key in bm_key_list:
-        benchmark_type = self.graph[node_tuple[0]][node_tuple[1]][bm_key]['bm'].benchmark_type
-        if benchmark_type in benchmark_count_dict:
-          benchmark_count_dict[benchmark_type] += 1
-        else:
-          benchmark_count_dict[benchmark_type] = 1
 
-    highest_count_bm = ''
-    highest_count = 0
-    for key in benchmark_count_dict:
-      if benchmark_count_dict[key] > highest_count:
-        highest_count_bm = key
-        highest_count = benchmark_count_dict[key]
-    
+    # benchmark_count_dict = {}
+    # for node_tuple in bm_list:
+    #   bm_dict = dict(self.graph[node_tuple[0]][node_tuple[1]])
+    #   # get list of keys from dict
+    #   bm_key_list = list(bm_dict.keys())
+    #   for bm_key in bm_key_list:
+    #     benchmark_type = self.graph[node_tuple[0]][node_tuple[1]][bm_key]['bm'].benchmark_type
+    #     if benchmark_type in benchmark_count_dict:
+    #       benchmark_count_dict[benchmark_type] += 1
+    #     else:
+    #       benchmark_count_dict[benchmark_type] = 1
+
+    # highest_count_bm = ''
+    # highest_count = 0
+    # for key in benchmark_count_dict:
+    #   if benchmark_count_dict[key] > highest_count:
+    #     highest_count_bm = key
+    #     highest_count = benchmark_count_dict[key]
+
     # create benchmark configs for each benchmark in set
     # bm_list is a list of tuples [(n1,n2), (n3,n4)]
     for node_tuple in bm_list:
@@ -815,13 +871,15 @@ class BenchmarkGraph():
       bm_dict = dict(self.graph[node_tuple[0]][node_tuple[1]])
       # get list of keys from dict
       bm_key_list = list(bm_dict.keys())
+      bm_key_list.sort()
 
       # TODO have some optimization here so benchmarks take similar times?
-      bm_chosen_key = bm_key_list[len(bm_key_list) - 1]
-      for key in bm_key_list:
-        if bm_dict[key]['bm'].benchmark_type == highest_count_bm:
-          bm_chosen_key = key
-          break
+      bm_chosen_key = bm_key_list[0]
+      # for key in bm_key_list:
+        # if bm_dict[key]['bm'].benchmark_type == highest_count_bm:
+          # bm_chosen_key = key
+          # break
+
       bm_index_to_run = bm_chosen_key
       # edge tuple (node1, node2, key)
       bm_tuple = (node_tuple[0], node_tuple[1], bm_index_to_run)

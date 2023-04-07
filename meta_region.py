@@ -20,10 +20,11 @@ class MetaRegion():
   def has_enough_resources(self, estimated_bandwidth) -> bool:
     if self.bandwidth_limit is None:
       return True
-
     bandwidth_sum = estimated_bandwidth
     for region in self.regions:
       bandwidth_sum += region.bandwidth_usage
+
+    print(f"{bandwidth_sum} exceed meta-region limit")
     return (bandwidth_sum <= self.bandwidth_limit)
 
 class GcpMetaRegion(MetaRegion):

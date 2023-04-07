@@ -19,6 +19,7 @@ import logging
 import cloud_util
 import uuid
 import sys
+import re
 
 from datetime import datetime
 from google.cloud import bigquery
@@ -154,7 +155,7 @@ flags.DEFINE_boolean(
   'If true, this run VMs based on maximum matching')
 
 flags.DEFINE_boolean(
-  'skip_prepare', True,
+  'skip_prepare', False,
   'skips the prepare phase for benchmarks where this is implemented')
 
 flags.DEFINE_integer(
@@ -172,6 +173,11 @@ flags.DEFINE_integer(
 flags.DEFINE_list(
   'meta_region_bandwidth_limits', [], 'A list of strings of the form '
   '"cloud.meta_region=limit_value" to be passed to meta regions')
+
+flags.DEFINE_list(
+  'inter_meta_region_bandwidth_limits', [], 'A list of strings of the form '
+  '"cloud.meta_region+cloud.meta_region=limit_value" to be passed to meta regions.'
+  ' Currently only works for GCP.')
 
 logger = None
 
@@ -224,6 +230,8 @@ def main(argv):
   logger.debug(full_graph.get_list_of_edges())
   logger.debug("\n\n")
 
+  parse_inter_meta_region_bandwidth_limits_flag(full_graph)
+
   # This method does almost everything
   run_benchmarks(full_graph)
 
@@ -257,16 +265,16 @@ def main(argv):
     for i in range(0, len(maximum_sets)):
       vms_at_time = vms_at_time + len(vms_created[i])
       vms_used_this_round = len(list(itertools.chain(*maximum_sets[i])))
-      logger.debug(f"ROUND \n{i}")
-      logger.debug(f"VM USAGE: {vms_used_this_round}/{vms_at_time}")
-      logger.debug(f"{len(vms_created[i])} VMS CREATED:")
-      logger.debug(vms_created[i])
-      logger.debug(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
-      logger.debug(maximum_sets[i])
-      logger.debug(f"{len(vms_removed[i])} VMS DESTROYED:")
-      logger.debug(vms_removed[i])
+      logger.info(f"ROUND \n{i}")
+      logger.info(f"VM USAGE: {vms_used_this_round}/{vms_at_time}")
+      logger.info(f"{len(vms_created[i])} VMS CREATED:")
+      logger.info(vms_created[i])
+      logger.info(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      logger.info(maximum_sets[i])
+      logger.info(f"{len(vms_removed[i])} VMS DESTROYED:")
+      logger.info(vms_removed[i])
       vms_at_time = vms_at_time - len(vms_removed[i])
-      logger.debug(f"ALL REGION QUOTA USAGE:")
+      logger.info(f"ALL REGION QUOTA USAGE:")
       for region_quota in region_quota_usage[i]:
         for key in region_quota:
           quota = region_quota[key]
@@ -277,9 +285,9 @@ def main(argv):
       # print(region_quota_usage[i])
   else:
     for i in range(0, len(maximum_sets)):
-      logger.debug(f"ROUND \n{i}")
-      logger.debug(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
-      logger.debug(maximum_sets[i])
+      logger.info(f"ROUND \n{i}")
+      logger.info(f"MAXIMUM SET LENGTH: {len(maximum_sets[i])}, ARRAY:")
+      logger.info(maximum_sets[i])
   
   logger.info("ALL BENCHMARK TIMES:")
   logger.info(full_graph.benchmark_run_times)
@@ -304,6 +312,25 @@ def main(argv):
 
   exit(0)
 
+
+def parse_inter_meta_region_bandwidth_limits_flag(bm_graph: benchmark_graph.BenchmarkGraph):
+  """Parse inter_meta_region_bandwidth_limits flag
+  """
+
+  regex_string = r'(?P<cloud1>\w+)\s?\.\s?(?P<region1>\w+)\s?\+\s?(?P<cloud2>\w+)\s?\.\s?(?P<region2>\w+)\s?=\s?(?P<limit>\d+)'
+  for limit_string in FLAGS.inter_meta_region_bandwidth_limits:
+    #"cloud.meta_region,cloud.meta_region=limit_value"
+    #{('asia', 'europe'): 30}
+    matches = re.search(regex_string, limit_string)
+
+    try:
+      l = [matches.group('region1'), matches.group('region2')]
+      l.sort()
+      limit = int(matches.group('limit'))
+      bm_graph.inter_meta_region_bandwidth_limits[tuple(l)] = limit
+    except Exception as e:
+      logging.info(limit_string + ' in FLAGS.inter_meta_region_bandwidth_limits incorrectly formatted')
+      logging.info(e)
 
 def upload_stats_to_bigquery(benchmarks_per_table: Dict):
   """Upload stats about test runs and failrues
@@ -372,7 +399,6 @@ def run_benchmarks(benchmark_graph: benchmark_graph.BenchmarkGraph):
     # TODO make get_benchmark_set work better than maximum matching
     maximum_set = benchmark_graph.get_benchmark_set()
     # maximum_set = list(benchmark_graph.maximum_matching())
-
     if len(maximum_set) == 0:
       max_set_empty_counter += 1
     else:
@@ -382,17 +408,20 @@ def run_benchmarks(benchmark_graph: benchmark_graph.BenchmarkGraph):
       logger.debug("BENCHMARK WAIT LIST")
       logger.debug(benchmark_graph.benchmark_wait_list)
       return
-    logger.debug("MAXIMUM SET")
-    logger.debug(maximum_set)
+    logger.info("MAXIMUM SET")
+    logger.info(maximum_set)
+
 
     max_set_vms = list(itertools.chain(*maximum_set))
     if FLAGS.precreate_and_share_vms:
       created_list = benchmark_graph.create_vms(vm_list=max_set_vms)
       vms_created.append(created_list)
 
+    # These are for logging purposes
     maximum_sets.append(maximum_set)
     benchmarks_run.append(maximum_set)
     quota_usage = benchmark_graph.get_all_quota_usage()
+
     for region_quota in quota_usage:
       for key in region_quota:
         quota = region_quota[key]

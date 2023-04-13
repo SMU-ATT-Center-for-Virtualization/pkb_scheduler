@@ -21,7 +21,8 @@ class VirtualMachine():
                vpn_tunnel_count=0, ssh_private_key=None, ssl_cert=None,
                vm_spec=None, vm_spec_id=None, min_cpu_platform=None,
                network_name=None, subnet_name=None, preexisting_network=True,
-               estimated_bandwidth=-1):
+               sysctl=None, tcp_max_send_buffer=None, tcp_max_receive_buffer=None,
+               network_enable_BBR=True, estimated_bandwidth=-1):
 
     # get logger
     global logger
@@ -58,6 +59,11 @@ class VirtualMachine():
     self.vm_spec_id = vm_spec_id
     self.password = None
     self.estimated_bandwidth = estimated_bandwidth
+    #sysctls
+    self.sysctl = sysctl
+    self.tcp_max_receive_buffer = tcp_max_receive_buffer
+    self.tcp_max_send_buffer = tcp_max_send_buffer
+    self.network_enable_BBR = network_enable_BBR
 
   def vm_spec_is_equivalent(self, vm):
     """Returns true if the spec of a vm that is
@@ -69,6 +75,10 @@ class VirtualMachine():
         self.network_tier == vm.network_tier and
         self.vpn == vm.vpn and
         self.os_type == vm.os_type and
+        self.sysctl == vm.sysctl and
+        self.tcp_max_receive_buffer == vm.tcp_max_receive_buffer and
+        self.tcp_max_send_buffer == vm.tcp_max_send_buffer and
+        self.network_enable_BBR == vm.network_enable_BBR and
           ((self.preexisting_network == True and
             self.network_name == vm.network_name and
             self.subnet_name == vm.subnet_name) 
@@ -130,6 +140,15 @@ class VirtualMachine():
     elif self.cloud == 'Azure':
       pass # TODO
 
+    if self.sysctl:
+      cmd = (cmd +  " '--sysctl=" + self.sysctl + "'")
+    if self.tcp_max_receive_buffer:
+      cmd = (cmd +  " --tcp_max_receive_buffer=" + str(self.tcp_max_receive_buffer))
+    if self.tcp_max_send_buffer:
+      cmd = (cmd +  " --tcp_max_send_buffer=" + str(self.tcp_max_send_buffer))
+    if self.network_enable_BBR:
+      cmd = (cmd + " --network_enable_BBR=" + str(self.network_enable_BBR))
+
     if self.min_cpu_platform:
       cmd = (cmd + " --gcp_min_cpu_platform=" + self.min_cpu_platform)
     cmd = (cmd + f" --log_level={FLAGS.pkb_log_level}")
@@ -146,8 +165,9 @@ class VirtualMachine():
 
     start_time = time.time()
     self.create_timestamp = time.time() 
-    process = subprocess.Popen(cmd.split(),
-                               stdout=subprocess.PIPE)
+    process = subprocess.Popen(cmd,
+                               stdout=subprocess.PIPE,
+                               shell=True)
     output, error = process.communicate()
 
     end_time = time.time()
@@ -282,6 +302,10 @@ class VirtualMachine():
     self.preexisting_network = vm.preexisting_network
     self.vm_spec = vm.vm_spec
     self.vm_spec_id = vm.vm_spec_id
+    self.sysctl = vm.sysctl
+    self.tcp_max_receive_buffer = vm.tcp_max_receive_buffer
+    self.tcp_max_send_buffer = vm.tcp_max_send_buffer
+    self.network_enable_BBR = vm.network_enable_BBR
     self.estimated_bandwidth = vm.estimated_bandwidth
 
     # TODO, do something like this instead

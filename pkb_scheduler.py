@@ -521,6 +521,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id: int):
   if 'vpc_peering' in benchmark_config[1]:
     vpc_peering = True
 
+  # TODO add sysctl flag stuff here as well
   if 'vm_groups' in benchmark_config[1]:
     vm_config_list = []
     for key in benchmark_config[1]['vm_groups']:
@@ -611,6 +612,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id: int):
                    vpc_peering=vpc_peering,
                    flags=benchmark_config[1]['flags'])
 
+  # if config file does not define each vm in vm_groups
   else:
     cloud = benchmark_config[1]['flags']['cloud']
     machine_type=benchmark_config[1]['flags']['machine_type']
@@ -628,7 +630,7 @@ def create_benchmark_from_config(benchmark_config, benchmark_id: int):
     if 'bq_project' in benchmark_config[1]['flags']:
       bq_project = benchmark_config[1]['flags']['bq_project']
 
-    os_type = 'ubuntu1804'
+    os_type = 'ubuntu2004'
     if 'os_type' in benchmark_config[1]['flags']:
       os_type = benchmark_config[1]['flags']['os_type']
 
@@ -644,6 +646,22 @@ def create_benchmark_from_config(benchmark_config, benchmark_id: int):
     min_cpu_platform = None
     if 'gcp_min_cpu_platform' in benchmark_config[1]['flags']:
       min_cpu_platform = benchmark_config[1]['flags']['gcp_min_cpu_platform']
+
+    sysctl = None
+    if 'sysctl' in benchmark_config[1]['flags']:
+      sysctl = benchmark_config[1]['flags']['sysctl']
+
+    tcp_max_send_buffer = None
+    if 'tcp_max_send_buffer' in benchmark_config[1]['flags']:
+      tcp_max_send_buffer = benchmark_config[1]['flags']['tcp_max_send_buffer']
+    
+    tcp_max_receive_buffer = None
+    if 'tcp_max_receive_buffer' in benchmark_config[1]['flags']:
+      tcp_max_receive_buffer = benchmark_config[1]['flags']['tcp_max_receive_buffer']
+
+    network_enable_BBR = False
+    if 'network_enable_BBR' in benchmark_config[1]['flags']:
+      network_enable_BBR = benchmark_config[1]['flags']['network_enable_BBR']
 
     # TODO, assigning estimated bandwidth to VMs instead of benchmarks is suboptimal
     # but major changes are required to get it to work, so for now we are assigning estimated bandwidth to VMs
@@ -665,6 +683,10 @@ def create_benchmark_from_config(benchmark_config, benchmark_id: int):
                                    min_cpu_platform=min_cpu_platform,
                                    network_name=network_name,
                                    subnet_name=subnet_name,
+                                   sysctl=sysctl,
+                                   tcp_max_receive_buffer=tcp_max_receive_buffer,
+                                   tcp_max_send_buffer=tcp_max_send_buffer,
+                                   network_enable_BBR=network_enable_BBR,
                                    estimated_bandwidth=estimated_bandwidth)
     vm_specs = [vm_spec_1]
     if 'extra_zones' in benchmark_config[1]['flags']:
@@ -678,6 +700,10 @@ def create_benchmark_from_config(benchmark_config, benchmark_id: int):
                                      min_cpu_platform=min_cpu_platform,
                                      network_name=network_name,
                                      subnet_name=subnet_name,
+                                     sysctl=sysctl,
+                                     tcp_max_receive_buffer=tcp_max_receive_buffer,
+                                     tcp_max_send_buffer=tcp_max_send_buffer,
+                                     network_enable_BBR=network_enable_BBR,
                                      estimated_bandwidth=estimated_bandwidth)
       vm_specs.append(vm_spec_2)
     bm = Benchmark(benchmark_id=benchmark_id,

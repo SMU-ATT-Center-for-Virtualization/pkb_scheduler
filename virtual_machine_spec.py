@@ -15,7 +15,8 @@ class VirtualMachineSpec():
   def __init__(self, cpu_count, zone, uid=None, os_type='ubuntu2004', machine_type=None,
                cloud=None, network_tier=None, vpn=False, vpn_gateway_count=0,
                vpn_tunnel_count=0, min_cpu_platform=None, network_name=None, subnet_name=None,
-               estimated_bandwidth=-1):
+               estimated_bandwidth=-1, sysctl=None, tcp_max_send_buffer=None,
+               tcp_max_receive_buffer=None, network_enable_BBR=True):
 
     # get logger
     global logger
@@ -38,6 +39,11 @@ class VirtualMachineSpec():
       self.preexisting_network = False
     # self.ip_address = None
     self.estimated_bandwidth = estimated_bandwidth
+    #sysctls
+    self.sysctl = sysctl
+    self.tcp_max_receive_buffer = tcp_max_receive_buffer
+    self.tcp_max_send_buffer = tcp_max_send_buffer
+    self.network_enable_BBR = network_enable_BBR
 
   def vm_spec_is_equivalent(self, vm_spec):
     """Returns true if the spec of a vm that is
@@ -52,7 +58,11 @@ class VirtualMachineSpec():
         self.min_cpu_platform == vm.min_cpu_platform and
         self.network_name == vm.network_name and
         self.subnet_name == vm.subnet_name and
-        self.preexisting_network == vm.preexisting_network):
+        self.preexisting_network == vm.preexisting_network and
+        self.sysctl == vm.sysctl and
+        self.tcp_max_receive_buffer == vm.tcp_max_receive_buffer and
+        self.tcp_max_send_buffer == vm.tcp_max_send_buffer and
+        self.network_enable_BBR == vm.network_enable_BBR):
       return True
 
     return False
@@ -70,7 +80,11 @@ class VirtualMachineSpec():
     self.network_name = vm.network_name
     self.subnet_name = vm.subnet_name
     self.preexisting_network = vm.preexisting_network
-    self.estimated_bandwidth = vn.estimated_bandwidth
+    self.estimated_bandwidth = vm.estimated_bandwidth
+    self.sysctl = vm.sysctl
+    self.tcp_max_receive_buffer = vm.tcp_max_receive_buffer
+    self.tcp_max_send_buffer = vm.tcp_max_send_buffer
+    self.network_enable_BBR = vm.network_enable_BBR
 
     # TODO, do something like this instead
     # vm2.__dict__ = vm1.__dict__.copy()

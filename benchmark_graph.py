@@ -307,6 +307,10 @@ class BenchmarkGraph():
                           network_name=vm_spec.network_name,
                           subnet_name=vm_spec.subnet_name,
                           preexisting_network=vm_spec.preexisting_network,
+                          sysctl=vm_spec.sysctl,
+                          tcp_max_receive_buffer=vm_spec.tcp_max_receive_buffer,
+                          tcp_max_send_buffer=vm_spec.tcp_max_send_buffer,
+                          network_enable_BBR=vm_spec.network_enable_BBR,
                           estimated_bandwidth=vm_spec.estimated_bandwidth)
 
       # if VM with same specs already exists, return false 0
@@ -1030,9 +1034,10 @@ class BenchmarkGraph():
       pass
 
     # TODO figure out what to do if only one vm is windows
-    if 'windows' in bm.vm_specs[0].os_type:
-      cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
-                   " --skip_package_cleanup=True")
+    # if 'windows' in bm.vm_specs[0].os_type:
+
+    cmd = (cmd + " --os_type=" + bm.vm_specs[0].os_type +
+                 " --skip_package_cleanup=True")
 
     if all_vms_have_preexisting_network:
       cmd = cmd + " --skip_firewall_rules=True"
@@ -1053,7 +1058,7 @@ class BenchmarkGraph():
     # print(bm.vm_specs[0].zone)
     # print(bm.vm_specs[1].zone)
     logger.debug(bm.config_file)
-    logger.debug("RUN BM: " + cmd)
+    logger.info("RUN BM: " + cmd)
     if FLAGS.no_run:
       results_dict['status'] = "Executed"
       bm.status = "Executed"
@@ -1097,6 +1102,8 @@ class BenchmarkGraph():
     # TODO fix these
     config_flags["static_cloud_metadata"] = bm.vm_specs[0].cloud
     config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
+
+    config_flags['skip_sysctl'] = True
 
 
     for vm in vm_list:

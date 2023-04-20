@@ -1104,6 +1104,7 @@ class BenchmarkGraph():
     config_flags["static_network_tier_metadata"] = bm.vm_specs[0].network_tier
 
     config_flags['skip_sysctl'] = True
+    config_flags['skip_teardown'] = True
 
 
     for vm in vm_list:
@@ -1117,7 +1118,7 @@ class BenchmarkGraph():
       vm_config_dict['ssh_private_key'] = vm.ssh_private_key
       vm_config_dict['ip_address'] = vm.ip_address
       vm_config_dict['internal_ip'] = vm.internal_ip
-      vm_config_dict['install_packages'] = True
+      vm_config_dict['install_packages'] = False
       vm_config_dict['zone'] = vm.zone
       vm_config_dict['machine_type'] = vm.machine_type
 
